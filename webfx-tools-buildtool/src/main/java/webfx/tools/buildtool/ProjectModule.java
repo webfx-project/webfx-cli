@@ -247,12 +247,14 @@ public class ProjectModule extends ModuleImpl {
     private final ReusableStream<ProjectModule> automaticOrRequiredProvidersModulesSearchScopeCache =
             ReusableStream.concat(
                     transitiveProjectModulesWithoutImplicitProvidersCache,
-                    ReusableStream.create(() -> ReusableStream.of(
-                            getRootModule().findProjectModule("webfx-platform"),
-                            getRootModule().findProjectModule("webfx-kit"),
-                            getRootModule().findProjectModule("webfx-extras"),
-                            getRootModule().findProjectModule("webfx-framework"),
-                            getTopParentModule()))
+                    ReusableStream.create(() -> ReusableStream.concat(
+                                ReusableStream.of(
+                                    getRootModule().findProjectModule("webfx-platform"),
+                                    getRootModule().findProjectModule("webfx-kit"),
+                                    //getRootModule().findProjectModule("webfx-extras"),
+                                    getRootModule().findProjectModule("webfx-framework"),
+                                    getTopParentModule()),
+                                getRootModule().findProjectModuleStartingWith("webfx-extras")))
                             .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
                             .filter(m -> m.isCompatibleWithTargetModule(this))
             )
@@ -534,6 +536,11 @@ public class ProjectModule extends ModuleImpl {
         if (silent)
             return null;
         throw new IllegalArgumentException("Unable to find " + name + " module under " + getName() + " module");
+    }
+
+    ReusableStream<ProjectModule> findProjectModuleStartingWith(String name) {
+        return getChildrenModulesInDepth()
+                .filter(module -> module.getName().startsWith(name));
     }
 
     public ReusableStream<String> getResourcePackages() {
