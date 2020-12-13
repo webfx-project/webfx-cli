@@ -7,6 +7,6 @@ module webfx.tools.emultranslator {
     requires webfx.platform.shared.json;
 
     // Exported packages
-    exports webfx.tools.emultranslator;
+    exports dev.webfx.tools.emultranslator;
 
 }
