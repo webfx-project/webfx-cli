@@ -50,18 +50,18 @@ public final class RootModule extends ProjectModule {
      ********************************/
 
     private void registerThirdPartyModules() {
+        // Third party emulation packages
+        registerJavaPackageModule(createThirdPartyModule("java-nio-emul") /* will be translated to gwt-nio in a gwt application */, "java.nio", "java.nio.charset", "java.nio.file", "java.nio.file.attribute");
+
         // JDK
-        registerJavaPackageModule(createThirdPartyModule("java-base"), "java.io", "java.lang", "java.lang.annotation", "java.lang.management", "java.lang.ref", "java.lang.reflect", "java.math", "java.net", "java.nio", "java.nio.charset", "java.nio.file", "java.nio.file.attribute", "java.security", "java.text", "java.time", "java.time.format", "java.time.temporal", "java.util", "java.util.function", "java.util.regex", "java.util.stream", "java.util.concurrent", "java.util.concurrent.atomic");
+        registerJavaPackageModule(createThirdPartyModule("java-base"), "java.io", "java.lang", "java.lang.annotation", "java.lang.management", "java.lang.ref", "java.lang.reflect", "java.math", "java.net", "java.security", "java.text", "java.time", "java.time.format", "java.time.temporal", "java.util", "java.util.function", "java.util.regex", "java.util.stream", "java.util.concurrent", "java.util.concurrent.atomic");
         registerJavaPackageModule(createThirdPartyModule("java-xml"), "javax.xml", "javax.xml.parsers", "javax.xml.transform", "javax.xml.transform.dom", "javax.xml.transform.stream", "javax.xml.namespace", "javax.xml.xpath", "org.w3c.dom", "org.xml.sax");
         registerJavaPackageModule(createThirdPartyModule("java-sql"), "java.sql", "javax.sql");
         registerJavaPackageModule(createThirdPartyModule("java-logging"), "java.util.logging");
         registerJavaPackageModule(createThirdPartyModule("jdk-management"), "com.sun.management");
         registerJavaPackageModule(createThirdPartyModule("jdk-jsobject"), "netscape.javascript");
 
-        // JavaFx
-        //registerJavaPackageModule(createThirdPartyModule("javafx-base"), "javafx.beans", "javafx.beans.binding", "javafx.beans.property", "javafx.beans.value", "javafx.collections", "javafx.collections.transformation", "javafx.event", "javafx.util");
-        //registerJavaPackageModule(createThirdPartyModule("javafx-graphics"), "javafx.animation", "javafx.application", "javafx.css", "javafx.concurrent", "javafx.geometry", "javafx.scene", "javafx.scene.effect", "javafx.scene.image", "javafx.scene.input", "javafx.scene.layout", "javafx.scene.paint", "javafx.scene.shape", "javafx.scene.text", "javafx.scene.transform", "javafx.stage");
-        //registerJavaPackageModule(createThirdPartyModule("javafx-controls"), "javafx.scene.control", "javafx.scene.control.skin", "javafx.scene.chart");
+        // JavaFx modules or packages not yet covered by WebFx
         registerJavaPackageModule(createThirdPartyModule("javafx-graphics"), "javafx.concurrent");
         registerJavaPackageModule(createThirdPartyModule("javafx-controls"), "javafx.scene.chart");
         registerJavaPackageModule(createThirdPartyModule("javafx-web"), "javafx.scene.web");

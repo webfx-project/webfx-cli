@@ -91,6 +91,8 @@ public class JavaModuleFile extends ModuleFile {
     private static String getJavaModuleName(Module module) {
         String moduleName = module.getName();
         switch (moduleName) {
+            case "java-nio-emul":
+                return "java.base";
             case "webfx-kit-javafxbase-emul":
                 return "javafx.base";
             case "webfx-kit-javafxcontrols-emul":

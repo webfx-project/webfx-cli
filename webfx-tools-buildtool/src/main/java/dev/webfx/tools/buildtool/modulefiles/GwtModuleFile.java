@@ -144,6 +144,7 @@ public final class GwtModuleFile extends XmlModuleFile {
             case "elemental2-svg": return "elemental2.svg.Svg";
             case "gwt-charts": return "com.googlecode.gwt.charts.Charts";
             case "charba": return "org.pepstock.charba.Charba";
+            case "java-nio-emul": return "org.gwtproject.nio.GwtNioSupport"; // gwt-nio
             default: return null;
         }
     }

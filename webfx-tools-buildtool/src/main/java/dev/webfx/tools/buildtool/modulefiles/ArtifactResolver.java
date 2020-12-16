@@ -16,6 +16,8 @@ final class ArtifactResolver {
 
     static String getArtifactId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
+        if (moduleName.equals("java-nio-emul") && isForGwt && isExecutable)
+            return "gwt-nio";
         if (moduleName.startsWith("java-") || moduleName.startsWith("jdk-"))
             return null;
         switch (moduleName) {
@@ -68,7 +70,8 @@ final class ArtifactResolver {
             case "Java-WebSocket": return "org.java-websocket";
             case "com-zaxxer-hikari": return "com.zaxxer";
             case "slf4j-api": return "org.slf4j";
-            case "javafxsvg" : return "de.codecentric.centerdevice";
+            case "javafxsvg": return "de.codecentric.centerdevice";
+            case "java-nio-emul": return "org.treblereel.gwt.nio"; // gwt-nio
         }
         if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
             return "org.openjfx";
@@ -96,9 +99,10 @@ final class ArtifactResolver {
                 return null; // Managed by root pom
             case "com-zaxxer-hikari": return "3.3.1";
             case "slf4j-api": return "1.7.15";
-            case "gwt-time": return "2.0.1";
+            case "gwt-time": return "2.0.3";
             case "gwt-webworker": return "1.0.6";
             case "charba": return "3.3-gwt";
+            case "java-nio-emul": return "1.1"; // gwt-nio
         }
         if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
             return "${lib.openjfx.version}";
@@ -146,7 +150,7 @@ final class ArtifactResolver {
             return classifier;
         if (isForGwt && isExecutable) {
             String moduleName = moduleGroup.getKey().getName();
-            if (!moduleName.startsWith("gwt-") && !moduleName.startsWith("elemental2-"))
+            if (!moduleName.startsWith("gwt-") && !moduleName.startsWith("elemental2-") && !moduleName.equals("java-nio-emul"))
                 return moduleName.contains("-gwt-emul-") ? "shaded-sources" : "sources";
         }
         return null;
