@@ -63,7 +63,10 @@ final class ArtifactResolver {
             case "elemental2-dom":
             case "elemental2-svg":
                 return "${lib.elemental2.groupId}";
-            case "gwt-time": return "org.jresearch.gwt.time";
+            case "gwt-time":
+            case "org.jresearch.gwt.time.tzdb":
+                return "org.jresearch.gwt.time";
+            case "java-nio-emul": return "org.treblereel.gwt.nio"; // gwt-nio
             case "gwt-charts": return "com.googlecode.gwt-charts";
             case "gwt-webworker": return "de.knightsoft-net";
             case "charba": return "org.pepstock";
@@ -71,7 +74,6 @@ final class ArtifactResolver {
             case "com-zaxxer-hikari": return "com.zaxxer";
             case "slf4j-api": return "org.slf4j";
             case "javafxsvg": return "de.codecentric.centerdevice";
-            case "java-nio-emul": return "org.treblereel.gwt.nio"; // gwt-nio
         }
         if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
             return "org.openjfx";
@@ -100,9 +102,10 @@ final class ArtifactResolver {
             case "com-zaxxer-hikari": return "3.3.1";
             case "slf4j-api": return "1.7.15";
             case "gwt-time": return "2.0.3";
+            case "java-nio-emul": return "1.1"; // gwt-nio
+            case "org.jresearch.gwt.time.tzdb": return "1.4.15";
             case "gwt-webworker": return "1.0.6";
             case "charba": return "3.3-gwt";
-            case "java-nio-emul": return "1.1"; // gwt-nio
         }
         if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
             return "${lib.openjfx.version}";
@@ -150,7 +153,7 @@ final class ArtifactResolver {
             return classifier;
         if (isForGwt && isExecutable) {
             String moduleName = moduleGroup.getKey().getName();
-            if (!moduleName.startsWith("gwt-") && !moduleName.startsWith("elemental2-") && !moduleName.equals("java-nio-emul"))
+            if (!moduleName.startsWith("gwt-") && !moduleName.startsWith("elemental2-") && !moduleName.equals("java-nio-emul") && !moduleName.equals("org.jresearch.gwt.time.tzdb"))
                 return moduleName.contains("-gwt-emul-") ? "shaded-sources" : "sources";
         }
         return null;
