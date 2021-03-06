@@ -8,12 +8,12 @@ module webfx.tools {
     requires webfx.lib.reusablestream;
 
     // Exported packages
-    exports dev.webfx.tools.buildtool;
-    exports dev.webfx.tools.buildtool.modulefiles;
-    exports dev.webfx.tools.buildtool.sourcegenerators;
-    exports dev.webfx.tools.buildtool.util.javacode;
-    exports dev.webfx.tools.buildtool.util.splitfiles;
-    exports dev.webfx.tools.buildtool.util.textfile;
-    exports dev.webfx.tools.buildtool.util.xml;
+    exports dev.webfx.buildtool;
+    exports dev.webfx.buildtool.modulefiles;
+    exports dev.webfx.buildtool.sourcegenerators;
+    exports dev.webfx.buildtool.util.javacode;
+    exports dev.webfx.buildtool.util.splitfiles;
+    exports dev.webfx.buildtool.util.textfile;
+    exports dev.webfx.buildtool.util.xml;
 
 }
