@@ -18,7 +18,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
     }
 
     Path getModulePath() {
-        return resolveFromModuleHomeDirectory("src/main/resources/META-INF/webfx.xml");
+        return resolveFromModuleHomeDirectory("src/main/webfx.xml");
     }
 
     public boolean isExecutable() {
