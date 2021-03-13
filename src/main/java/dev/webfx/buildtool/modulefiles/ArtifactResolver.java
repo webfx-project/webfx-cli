@@ -50,8 +50,6 @@ final class ArtifactResolver {
                     return null;
                 case "gwt-user":
                     return "gwt-dev";
-                case "gwt-time":
-                    return "org.jresearch.gwt.time";
             }
         }
         return moduleName;
@@ -63,17 +61,6 @@ final class ArtifactResolver {
             String groupId = ((LibraryModule) module).getGroupId();
             if (groupId != null)
                 return groupId;
-        }
-        switch (moduleName) {
-            case "elemental2-core":
-            case "elemental2-dom":
-            case "elemental2-svg":
-                return "${lib.elemental2.groupId}";
-            case "gwt-time":
-            case "org.jresearch.gwt.time.tzdb":
-                return "org.jresearch.gwt.time";
-            case "java-nio-emul": return "org.treblereel.gwt.nio"; // gwt-nio
-            case "slf4j-api": return "org.slf4j";
         }
         if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
             return "org.openjfx";
@@ -92,12 +79,6 @@ final class ArtifactResolver {
             String version = ((LibraryModule) module).getVersion();
             if (version != null)
                 return version;
-        }
-        switch (moduleName) {
-            case "slf4j-api": return "1.7.15";
-            case "gwt-time": return "2.0.3";
-            case "java-nio-emul": return "1.1"; // gwt-nio
-            case "org.jresearch.gwt.time.tzdb": return "1.4.15";
         }
         if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
             return "${lib.openjfx.version}";

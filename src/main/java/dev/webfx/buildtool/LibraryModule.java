@@ -25,15 +25,22 @@ public class LibraryModule extends ModuleImpl {
     }
 
     public String getArtifactId() {
-        return XmlUtil.lookupNodeTextContent(moduleNode, "artifactId");
+        return getTagContent("artifactId", false);
     }
 
     public String getGroupId() {
-        return XmlUtil.lookupNodeTextContent(moduleNode, "groupId");
+        return getTagContent("groupId", true);
     }
 
     public String getVersion() {
-        return XmlUtil.lookupNodeTextContent(moduleNode, "version");
+        return getTagContent("version", true);
+    }
+
+    private String getTagContent(String tagName, boolean lookInGroupIfNull) {
+        String tagContent = XmlUtil.lookupNodeTextContent(moduleNode, tagName);
+        if (tagContent == null && lookInGroupIfNull)
+            tagContent = XmlUtil.lookupNodeTextContent(moduleNode.getParentNode(), tagName);
+        return tagContent;
     }
 
 }

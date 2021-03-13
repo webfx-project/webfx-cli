@@ -393,7 +393,6 @@ public class ProjectModule extends ModuleImpl {
     }
 
     void registerLibraryModules() {
-        //libraryModules.forEach(rootModule::registerLibraryModule);
         getWebfxModuleFile().getLibraryModules().forEach(rootModule::registerLibraryModule);
     }
 
@@ -627,10 +626,15 @@ public class ProjectModule extends ModuleImpl {
 
     private ReusableStream<Module> collectExecutableEmulationModules() {
         if (isExecutable(Platform.GWT))
-            return ReusableStream.of(getRootModule().findModule("webfx-kit-gwt"), getRootModule().findModule("webfx-platform-gwt-emul-javabase"), getRootModule().findModule("gwt-time"));
+            return ReusableStream.of(
+                    getRootModule().findModule("webfx-kit-gwt"),
+                    getRootModule().findModule("webfx-platform-gwt-emul-javabase"),
+                    getRootModule().findModule("gwt-time"));
         if (isExecutable(Platform.JRE)) {
             if (getTarget().hasTag(TargetTag.JAVAFX) || getTarget().hasTag(TargetTag.GLUON))
-                return ReusableStream.of(getRootModule().findModule("webfx-kit-javafx"), getRootModule().findModule("webfx-platform-java-appcontainer-impl"));
+                return ReusableStream.of(
+                        getRootModule().findModule("webfx-kit-javafx"),
+                        getRootModule().findModule("webfx-platform-java-appcontainer-impl"));
             return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                     .filter(RootModule::isJavaFxEmulModule);
         }
