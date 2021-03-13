@@ -16,7 +16,7 @@ public class ProjectModule extends ModuleImpl {
     /**
      * A path matcher for java files (filtering files with .java extension)
      */
-    private final static PathMatcher javaFileMatcher = FileSystems.getDefault().getPathMatcher("glob:**.java");
+    private final static PathMatcher JAVA_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.java");
 
     /**
      * Returns the children project modules if any (only first level under this module).
@@ -25,7 +25,7 @@ public class ProjectModule extends ModuleImpl {
             getChildrenHomePaths()
                     .filter(path -> !SplitFiles.uncheckedIsSameFile(path, getHomeDirectory()))
                     .filter(Files::isDirectory)
-                    .filter(path -> Files.exists(path.resolve("pom.xml")))
+                    .filter(path -> Files.exists(path.resolve("webfx.xml")))
                     .map(path -> new ProjectModule(path, this))
                     .cache();
 
@@ -43,7 +43,7 @@ public class ProjectModule extends ModuleImpl {
      */
     private final ReusableStream<JavaClass> declaredJavaClassesCache =
             ReusableStream.create(() -> hasJavaSourceDirectory() ? SplitFiles.uncheckedWalk(getJavaSourceDirectory()) : Spliterators.emptySpliterator())
-                    .filter(javaFileMatcher::matches)
+                    .filter(JAVA_FILE_MATCHER::matches)
                     .filter(path -> !path.getFileName().toString().endsWith("-info.java")) // Ignoring module-info.java and package-info.java files
                     .map(path -> new JavaClass(path, this))
                     .cache();
@@ -493,7 +493,8 @@ public class ProjectModule extends ModuleImpl {
      *************************/
 
     ReusableStream<Path> getChildrenHomePaths() {
-        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(getHomeDirectory(), 1, FileVisitOption.FOLLOW_LINKS));
+        //return ReusableStream.create(() -> SplitFiles.uncheckedWalk(getHomeDirectory(), 1, FileVisitOption.FOLLOW_LINKS));
+        return ReusableStream.create(() -> getWebfxModuleFile().getChildrenModules());
     }
 
     ///// Java classes

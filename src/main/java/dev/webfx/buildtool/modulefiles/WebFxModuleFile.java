@@ -42,6 +42,10 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return getModuleAttributeValue(property);
     }
 
+    public ReusableStream<Path> getChildrenModules() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("/module/modules//module"), node -> resolveFromModuleHomeDirectory(node.getTextContent()));
+    }
+
     public ReusableStream<ModuleDependency> getSourceModuleDependencies() {
         return lookupDependencies("/module/dependencies/source-modules//module", ModuleDependency.Type.SOURCE);
     }
