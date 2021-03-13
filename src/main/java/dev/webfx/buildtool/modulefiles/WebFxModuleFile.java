@@ -1,5 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
+import dev.webfx.buildtool.LibraryModule;
 import org.w3c.dom.Node;
 import dev.webfx.buildtool.ModuleDependency;
 import dev.webfx.buildtool.ProjectModule;
@@ -17,8 +18,8 @@ public final class WebFxModuleFile extends XmlModuleFile {
         super(module, true);
     }
 
-    Path getModulePath() {
-        return resolveFromModuleHomeDirectory("src/main/webfx.xml");
+    public Path getModulePath() {
+        return resolveFromModuleHomeDirectory("webfx.xml");
     }
 
     public boolean isExecutable() {
@@ -51,6 +52,10 @@ public final class WebFxModuleFile extends XmlModuleFile {
 
     public ReusableStream<ModuleDependency> getResourceModuleDependencies() {
         return lookupDependencies("/module/dependencies/resource-modules//module", ModuleDependency.Type.RESOURCE);
+    }
+
+    public ReusableStream<LibraryModule> getLibraryModules() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("/module/libraries//module"), LibraryModule::new);
     }
 
     public ReusableStream<String> getResourcePackages() {

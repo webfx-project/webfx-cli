@@ -19,7 +19,7 @@ public class ProjectModule extends ModuleImpl {
     private final static PathMatcher javaFileMatcher = FileSystems.getDefault().getPathMatcher("glob:**.java");
 
     /**
-     * Returns the children modules if any (only first level under this module).
+     * Returns the children project modules if any (only first level under this module).
      */
     private final ReusableStream<ProjectModule> childrenModulesCache =
             getChildrenHomePaths()
@@ -30,7 +30,7 @@ public class ProjectModule extends ModuleImpl {
                     .cache();
 
     /**
-     * Returns the children modules if any (all levels under this module).
+     * Returns the children project modules if any (all levels under this module).
      */
     private final ReusableStream<ProjectModule> childrenModulesInDepthCache =
             childrenModulesCache
@@ -250,8 +250,8 @@ public class ProjectModule extends ModuleImpl {
                     ReusableStream.create(() -> ReusableStream.concat(
                                 ReusableStream.of(
                                     getRootModule().findProjectModule("webfx-platform"),
+                                    getRootModule().findProjectModule("webfx-stack-platform"),
                                     getRootModule().findProjectModule("webfx-kit"),
-                                    //getRootModule().findProjectModule("webfx-extras"),
                                     getRootModule().findProjectModule("webfx-framework"),
                                     getTopParentModule()),
                                 getRootModule().findProjectModuleStartingWith("webfx-extras")))
@@ -390,6 +390,11 @@ public class ProjectModule extends ModuleImpl {
         this.parentModule = parentModule;
         this.homeDirectory = homeDirectory;
         rootModule = parentModule != null ? parentModule.getRootModule() : (RootModule) this;
+    }
+
+    void registerLibraryModules() {
+        //libraryModules.forEach(rootModule::registerLibraryModule);
+        getWebfxModuleFile().getLibraryModules().forEach(rootModule::registerLibraryModule);
     }
 
 

@@ -96,6 +96,11 @@ public final class XmlUtil {
         return lookup(item, xpathExpression, XPathConstants.NODE);
     }
 
+    public static String lookupNodeTextContent(Object item, String xpathExpression) {
+        Node node = lookupNode(item, xpathExpression);
+        return node == null ? null : node.getTextContent();
+    }
+
     private static <T> T lookup(Object item, String xpathExpression, QName returnType) {
         XPathFactory xpf = XPathFactory.newInstance();
         XPath xpath = xpf.newXPath();

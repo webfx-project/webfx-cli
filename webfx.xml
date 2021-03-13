@@ -1,0 +1,21 @@
+<module>
+
+    <libraries>
+
+        <module name="java-xml">
+            <packages>
+                <package>javax.xml</package>
+                <package>javax.xml.parsers</package>
+                <package>javax.xml.transform</package>
+                <package>javax.xml.transform.dom</package>
+                <package>javax.xml.transform.stream</package>
+                <package>javax.xml.namespace</package>
+                <package>javax.xml.xpath</package>
+                <package>org.w3c.dom</package>
+                <package>org.xml.sax</package>
+            </packages>
+        </module>
+
+    </libraries>
+
+</module>

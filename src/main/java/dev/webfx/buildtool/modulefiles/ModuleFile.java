@@ -1,5 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
+import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ProjectModule;
 
 import java.io.File;
@@ -10,18 +11,22 @@ import java.nio.file.Path;
  */
 abstract class ModuleFile {
 
-    private final ProjectModule module;
+    private final Module module;
 
-    ModuleFile(ProjectModule module) {
+    ModuleFile(Module module) {
         this.module = module;
     }
 
-    public ProjectModule getModule() {
+    public Module getModule() {
         return module;
     }
 
+    public ProjectModule getProjectModule() {
+        return (ProjectModule) module;
+    }
+
     Path resolveFromModuleHomeDirectory(String relativePath) {
-        return getModule().getHomeDirectory().resolve(relativePath);
+        return getProjectModule().getHomeDirectory().resolve(relativePath);
     }
 
     abstract Path getModulePath();

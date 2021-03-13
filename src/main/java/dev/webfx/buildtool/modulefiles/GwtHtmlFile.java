@@ -33,7 +33,7 @@ public class GwtHtmlFile extends ModuleFile {
 
     @Override
     Path getModulePath() {
-        return getModule().getResourcesDirectory().resolve("public/index.html");
+        return getProjectModule().getResourcesDirectory().resolve("public/index.html");
     }
 
     @Override
@@ -44,7 +44,7 @@ public class GwtHtmlFile extends ModuleFile {
     public void writeFile() {
         StringBuilder headSb = new StringBuilder(), bodySb = new StringBuilder();
         ReusableStream<ProjectModule> transitiveProjectModules =
-                ProjectModule.filterProjectModules(getModule().getThisAndTransitiveModules()).distinct();
+                ProjectModule.filterProjectModules(getProjectModule().getThisAndTransitiveModules()).distinct();
         ReusableStream.concat(
                 transitiveProjectModules.map(m -> m.getWebfxModuleFile().getHtmlNode()),
                 ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order=\"0\"><script type=\"text/javascript\" src=\"" + getModule().getName().replaceAll("-", "_") + ".nocache.js\" charset=\"utf-8\"/></body></html>"), "/html"))

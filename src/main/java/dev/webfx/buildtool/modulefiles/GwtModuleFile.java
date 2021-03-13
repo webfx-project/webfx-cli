@@ -69,7 +69,7 @@ public final class GwtModuleFile extends XmlModuleFile {
         document.getDocumentElement().setAttribute("rename-to", getModule().getName().replaceAll("-", "_"));
         Node moduleSourceCommentNode = lookupNode("/module//comment()[2]");
         Node moduleSourceEndNode = moduleSourceCommentNode.getNextSibling();
-        getModule().getTransitiveDependencies()
+        getProjectModule().getTransitiveDependencies()
                 .stream().collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                 .stream().sorted(Map.Entry.comparingByKey())
                 .forEach(moduleGroup -> {

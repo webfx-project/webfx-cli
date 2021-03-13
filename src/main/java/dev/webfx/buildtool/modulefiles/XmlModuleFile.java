@@ -1,15 +1,15 @@
 package dev.webfx.buildtool.modulefiles;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ModuleDependency;
-import dev.webfx.buildtool.ProjectModule;
 import dev.webfx.buildtool.Target;
 import dev.webfx.buildtool.TargetTag;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
 import dev.webfx.buildtool.util.xml.XmlUtil;
+import dev.webfx.tools.util.reusablestream.ReusableStream;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -22,7 +22,7 @@ abstract class XmlModuleFile extends ModuleFile {
     private Document document;
     private final boolean readFileIfExists;
 
-    XmlModuleFile(ProjectModule module, boolean readFileIfExists) {
+    XmlModuleFile(Module module, boolean readFileIfExists) {
         super(module);
         this.readFileIfExists = readFileIfExists;
     }
@@ -90,8 +90,7 @@ abstract class XmlModuleFile extends ModuleFile {
     }
 
     String lookupNodeTextContent(String xpathExpression) {
-        Node node = lookupNode(xpathExpression);
-        return node == null ? null : node.getTextContent();
+        return XmlUtil.lookupNodeTextContent(getDocument(), xpathExpression);
     }
 
     ReusableStream<String> lookupNodeListTextContent(String xPathExpression) {
@@ -106,7 +105,7 @@ abstract class XmlModuleFile extends ModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node ->
                 new ModuleDependency(
                         getModule(),
-                        getModule().getRootModule().findModule(node.getTextContent()),
+                        getProjectModule().getRootModule().findModule(node.getTextContent()),
                         type,
                         XmlUtil.getBooleanAttributeValue(node, "optional"),
                         XmlUtil.getAttributeValue(node, "scope"),

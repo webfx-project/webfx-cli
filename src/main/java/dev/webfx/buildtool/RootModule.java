@@ -10,7 +10,7 @@ import java.util.*;
  */
 public final class RootModule extends ProjectModule {
 
-    private final Map<String, Module> thirdPartyModules = new HashMap<>();
+    private final Map<String, Module> libraryModules = new HashMap<>();
     private final Map<String /* package name */, List<Module>> javaPackagesModules = new HashMap<>();
     private final ReusableStream<ProjectModule> thisAndChildrenModulesInDepthResume =
             getThisAndChildrenModulesInDepth()
@@ -31,7 +31,6 @@ public final class RootModule extends ProjectModule {
     RootModule(Path rootDirectory, Path... additionalChildrenModulesHomePaths) {
         super(register(rootDirectory, additionalChildrenModulesHomePaths));
         additionalChildrenHomePaths.addAll(ADDITIONAL_CHILDREN_HOME_PATHS_THREAD_LOCAL.get());
-        registerThirdPartyModules();
     }
 
     private static Path register(Path rootDirectory, Path... additionalPaths) {
@@ -49,66 +48,9 @@ public final class RootModule extends ProjectModule {
      ***** Registration methods *****
      ********************************/
 
-    private void registerThirdPartyModules() {
-        // Third party emulation packages
-        registerJavaPackageModule(createThirdPartyModule("java-nio-emul") /* will be translated to gwt-nio in a gwt application */, "java.nio", "java.nio.charset", "java.nio.file", "java.nio.file.attribute");
-
-        // JDK
-        registerJavaPackageModule(createThirdPartyModule("java-base"), "java.io", "java.lang", "java.lang.annotation", "java.lang.management", "java.lang.ref", "java.lang.reflect", "java.math", "java.net", "java.security", "java.text", "java.time", "java.time.format", "java.time.temporal", "java.util", "java.util.function", "java.util.regex", "java.util.stream", "java.util.concurrent", "java.util.concurrent.atomic");
-        registerJavaPackageModule(createThirdPartyModule("java-xml"), "javax.xml", "javax.xml.parsers", "javax.xml.transform", "javax.xml.transform.dom", "javax.xml.transform.stream", "javax.xml.namespace", "javax.xml.xpath", "org.w3c.dom", "org.xml.sax");
-        registerJavaPackageModule(createThirdPartyModule("java-sql"), "java.sql", "javax.sql");
-        registerJavaPackageModule(createThirdPartyModule("java-logging"), "java.util.logging");
-        registerJavaPackageModule(createThirdPartyModule("jdk-management"), "com.sun.management");
-        registerJavaPackageModule(createThirdPartyModule("jdk-jsobject"), "netscape.javascript");
-
-        // JavaFx modules or packages not yet covered by WebFx
-        registerJavaPackageModule(createThirdPartyModule("javafx-graphics"), "javafx.concurrent");
-        registerJavaPackageModule(createThirdPartyModule("javafx-controls"), "javafx.scene.chart");
-        registerJavaPackageModule(createThirdPartyModule("javafx-web"), "javafx.scene.web");
-        registerJavaPackageModule(createThirdPartyModule("javafx-swing"), "javafx.embed.swing");
-
-        // JavaFx SVG
-        registerJavaPackageModule(createThirdPartyModule("javafxsvg"), "de.codecentric.centerdevice.javafxsvg");
-
-        // GWT
-        registerJavaPackageModule(createThirdPartyModule("gwt-user"), "com.google.gwt.user.client", "com.google.gwt.core.client", "com.google.gwt.resources.client", "com.google.gwt.regexp.shared", "com.google.gwt.storage.client", "com.google.gwt.media.client");
-        registerJavaPackageModule(createThirdPartyModule("jsinterop-base"), "jsinterop.base");
-        registerJavaPackageModule(createThirdPartyModule("jsinterop-annotations"), "jsinterop.annotations");
-        registerJavaPackageModule(createThirdPartyModule("elemental2-core"), "elemental2.core");
-        registerJavaPackageModule(createThirdPartyModule("elemental2-dom"), "elemental2.dom");
-        registerJavaPackageModule(createThirdPartyModule("elemental2-svg"), "elemental2.svg");
-
-        // GWT Charba charts
-        registerJavaPackageModule(createThirdPartyModule("charba"), "org.pepstock.charba.client", "org.pepstock.charba.client.configuration", "org.pepstock.charba.client.data", "org.pepstock.charba.client.enums", "org.pepstock.charba.client.resources");
-
-        // GWT Google charts
-        registerJavaPackageModule(createThirdPartyModule("gwt-charts"), "com.googlecode.gwt.charts.client", "com.googlecode.gwt.charts.client.corechart");
-
-        // GWT Web Worker
-        registerJavaPackageModule(createThirdPartyModule("gwt-webworker"), "com.google.gwt.webworker.client");
-
-        // TeaVM
-        registerJavaPackageModule(createThirdPartyModule("teavm-interop"), "org.teavm.interop");
-        registerJavaPackageModule(createThirdPartyModule("teavm-jso"), "org.teavm.jso");
-        registerJavaPackageModule(createThirdPartyModule("teavm-jso-apis"), "org.teavm.jso.core", "org.teavm.jso.dom.events", "org.teavm.jso.typedarrays");
-
-        // Vert.x
-        registerJavaPackageModule(createThirdPartyModule("vertx-core"), "io.vertx.core", "io.vertx.core.eventbus", "io.vertx.core.http", "io.vertx.core.json", "io.vertx.core.net");
-        registerJavaPackageModule(createThirdPartyModule("vertx-web"), "io.vertx.ext.web", "io.vertx.ext.web.handler", "io.vertx.ext.web.handler.sockjs");
-        registerJavaPackageModule(createThirdPartyModule("vertx-bridge-common"), "io.vertx.ext.bridge");
-        registerJavaPackageModule(createThirdPartyModule("vertx-sql-common"), "io.vertx.ext.sql");
-        registerJavaPackageModule(createThirdPartyModule("vertx-jdbc-client"), "io.vertx.ext.jdbc");
-        registerJavaPackageModule(createThirdPartyModule("vertx-mysql-postgresql-client-jasync"), "io.vertx.ext.asyncsql");
-
-        // JavaWebSocket
-        registerJavaPackageModule(createThirdPartyModule("Java-WebSocket"), "org.java_websocket", "org.java_websocket.client", "org.java_websocket.drafts", "org.java_websocket.enums", "org.java_websocket.handshake");
-
-        // HikariCP
-        registerJavaPackageModule(createThirdPartyModule("com-zaxxer-hikari"), "com.zaxxer.hikari");
-    }
-
-    private void registerJavaPackageModule(Module module, String... javaPackages) {
-        for (String javaPackage : javaPackages)
+    public void registerLibraryModule(LibraryModule module) {
+        libraryModules.put(module.getName(), module);
+        for (String javaPackage : module.getJavaPackages())
             registerJavaPackageModule(javaPackage, module);
     }
 
@@ -127,6 +69,7 @@ public final class RootModule extends ProjectModule {
     }
 
     void registerJavaPackagesProjectModule(ProjectModule module) {
+        module.registerLibraryModules();
         module.getDeclaredJavaPackages().forEach(javaPackage -> registerJavaPackageModule(javaPackage, module));
     }
 
@@ -175,7 +118,7 @@ public final class RootModule extends ProjectModule {
     }
 
     public Module findModule(String name) {
-        Module module = thirdPartyModules.get(name);
+        Module module = libraryModules.get(name);
         if (module == null) {
             module = javaPackagesModules.values().stream().flatMap(Collection::stream).filter(m -> m.getName().equals(name)).findFirst().orElseGet(() -> findProjectModule(name, true));
             if (module == null)
@@ -192,12 +135,12 @@ public final class RootModule extends ProjectModule {
     }
 
     Module getThirdPartyModule(String artifactId) {
-        return thirdPartyModules.get(artifactId);
+        return libraryModules.get(artifactId);
     }
 
     private Module createThirdPartyModule(String artifactId) {
         Module module = Module.create(artifactId);
-        thirdPartyModules.put(artifactId, module);
+        libraryModules.put(artifactId, module);
         return module;
     }
 

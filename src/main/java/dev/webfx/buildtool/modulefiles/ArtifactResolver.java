@@ -1,9 +1,7 @@
 package dev.webfx.buildtool.modulefiles;
 
 import dev.webfx.buildtool.Module;
-import dev.webfx.buildtool.ModuleDependency;
-import dev.webfx.buildtool.ProjectModule;
-import dev.webfx.buildtool.RootModule;
+import dev.webfx.buildtool.*;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +18,11 @@ final class ArtifactResolver {
             return "gwt-nio";
         if (moduleName.startsWith("java-") || moduleName.startsWith("jdk-"))
             return null;
+        if (module instanceof LibraryModule) {
+            String artifactId = ((LibraryModule) module).getArtifactId();
+            if (artifactId != null)
+                return artifactId;
+        }
         switch (moduleName) {
             //case "gwt-charts":
             case "jsinterop-base":
@@ -33,8 +36,6 @@ final class ArtifactResolver {
                 return isForGwt || isRegistry ? moduleName : "javafx-controls";
             case "webfx-kit-javafxmedia-emul":
                 return isForGwt || isRegistry ? moduleName : "javafx-media";
-            case "com-zaxxer-hikari":
-                return "HikariCP";
         }
         if (isRegistry && "javafx-graphics".equals(moduleName))
             return "webfx-kit-javafxgraphics-emul";
@@ -58,6 +59,11 @@ final class ArtifactResolver {
 
     static String getGroupId(Module module, boolean isForGwt, boolean isRegistry) {
         String moduleName = module.getName();
+        if (module instanceof LibraryModule) {
+            String groupId = ((LibraryModule) module).getGroupId();
+            if (groupId != null)
+                return groupId;
+        }
         switch (moduleName) {
             case "elemental2-core":
             case "elemental2-dom":
@@ -67,59 +73,39 @@ final class ArtifactResolver {
             case "org.jresearch.gwt.time.tzdb":
                 return "org.jresearch.gwt.time";
             case "java-nio-emul": return "org.treblereel.gwt.nio"; // gwt-nio
-            case "gwt-charts": return "com.googlecode.gwt-charts";
-            case "gwt-webworker": return "de.knightsoft-net";
-            case "charba": return "org.pepstock";
-            case "Java-WebSocket": return "org.java-websocket";
-            case "com-zaxxer-hikari": return "com.zaxxer";
             case "slf4j-api": return "org.slf4j";
-            case "javafxsvg": return "de.codecentric.centerdevice";
         }
         if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
             return "org.openjfx";
         if (moduleName.startsWith("gwt-"))
             return "com.google.gwt";
-        if (moduleName.startsWith("teavm-"))
-            return "org.teavm";
         if (moduleName.startsWith("webfx-"))
             return "${webfx.groupId}";
         if (moduleName.startsWith("mongoose-"))
             return "${mongoose.groupId}";
-        if (moduleName.startsWith("vertx-"))
-            return "io.vertx";
         return "???";
     }
 
     static String getVersion(Module module, boolean isForGwt, boolean isRegistry) {
         String moduleName = module.getName();
+        if (module instanceof LibraryModule) {
+            String version = ((LibraryModule) module).getVersion();
+            if (version != null)
+                return version;
+        }
         switch (moduleName) {
-            case "elemental2-core":
-            case "elemental2-dom":
-            case "elemental2-svg":
-            case "Java-WebSocket":
-            case "javafxsvg":
-                return null; // Managed by root pom
-            case "com-zaxxer-hikari": return "3.3.1";
             case "slf4j-api": return "1.7.15";
             case "gwt-time": return "2.0.3";
             case "java-nio-emul": return "1.1"; // gwt-nio
             case "org.jresearch.gwt.time.tzdb": return "1.4.15";
-            case "gwt-webworker": return "1.0.6";
-            case "charba": return "3.3-gwt";
         }
         if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
             return "${lib.openjfx.version}";
-        if (moduleName.startsWith("gwt-"))
-            return null; // Managed by root pom
-        if (moduleName.startsWith("teavm-"))
-            return null; // Managed by root pom
         if (moduleName.startsWith("webfx-"))
             return "${webfx.version}";
         if (moduleName.startsWith("mongoose-"))
             return "${mongoose.version}";
-        if (moduleName.startsWith("vertx-"))
-            return null; // Managed by root pom
-        return "???";
+        return null; // Managed by root pom
     }
 
     static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, boolean isForGwt, boolean isForJavaFx, boolean isExecutable, boolean isRegistry) {
