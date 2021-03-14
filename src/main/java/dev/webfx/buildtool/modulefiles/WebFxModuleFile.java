@@ -34,8 +34,8 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return getBooleanModuleAttributeValue("automatic");
     }
 
-    public boolean areJavaSourcePackagesExported() {
-        return lookupNode("/module/packages[@export-sources='true']") != null;
+    public boolean areSourcePackagesExported() {
+        return lookupNode("/module/packages/source-packages") != null;
     }
 
     public ReusableStream<String> getExplicitSourcePackages() {
