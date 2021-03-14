@@ -34,20 +34,28 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return getBooleanModuleAttributeValue("automatic");
     }
 
-    public boolean areJavaSourcePackagesAutomaticallyExported() {
-        return lookupNode("/module/packages[@export-sources='false']") == null;
+    public boolean areJavaSourcePackagesExported() {
+        return lookupNode("/module/packages[@export-sources='true']") != null;
     }
 
     public ReusableStream<String> getExplicitExportedPackages() {
-        return lookupNodeListTextContent("/module/packages//package[not(@export='false') and not(@resource='true') or @export='true']");
+        return lookupNodeListTextContent("" +
+                "/module/packages//package[@export='true'] | " +
+                "/module/packages[@export='true']//package[not(@export='false')] | " +
+                "/module/packages[not(@export='false')]//package[not(@export='false') and @resource='false'] | " +
+                "/module/packages[not(@export='false') and not(@resource='true')]//package[not(@export='false') and not(@resource='true')]");
     }
 
     public ReusableStream<String> getExplicitNotExportedPackages() {
-        return lookupNodeListTextContent("/module/packages//package[@export='false']");
+        return lookupNodeListTextContent("" +
+                "/module/packages//package[@export='false'] | " +
+                "/module/packages[@export='false']//package[not(@export='true')]");
     }
 
     public ReusableStream<String> getResourcePackages() {
-        return lookupNodeListTextContent("/module/packages//package[@resource='true']");
+        return lookupNodeListTextContent("" +
+                "/module/packages//package[@resource='true'] | " +
+                "/module/packages[@resource='true']//package[not(@resource='false')]");
     }
 
     public String implementingInterface() {
