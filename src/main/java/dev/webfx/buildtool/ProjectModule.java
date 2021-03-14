@@ -511,7 +511,7 @@ public class ProjectModule extends ModuleImpl {
 
     public ReusableStream<String> getExportedJavaPackages() {
         ReusableStream<String> exportedPackages = getWebfxModuleFile().getExplicitExportedPackages();
-        if (getWebfxModuleFile().arePackagesExportedByDefault()) {
+        if (getWebfxModuleFile().areJavaSourcePackagesAutomaticallyExported()) {
             exportedPackages = ReusableStream.concat(getDeclaredJavaPackages(), exportedPackages).distinct();
             ReusableStream<String> explicitNotExportedPackages = getWebfxModuleFile().getExplicitNotExportedPackages();
             if (explicitNotExportedPackages.count() > 0)
