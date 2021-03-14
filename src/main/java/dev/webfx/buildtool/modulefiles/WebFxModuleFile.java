@@ -31,7 +31,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
     }
 
     public boolean isAutomatic() {
-        return getBooleanModuleAttributeValue("automatic");
+        return lookupNode("/module/auto-conditions") != null;
     }
 
     public boolean areSourcePackagesExported() {
@@ -78,8 +78,8 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("/module/libraries//module"), LibraryModule::new);
     }
 
-    public ReusableStream<String> getRequiredPackages() {
-        return lookupNodeListTextContent("/module/required-conditions//if-uses-java-package");
+    public ReusableStream<String> getPackagesAutoCondition() {
+        return lookupNodeListTextContent("/module/auto-conditions//if-uses-java-package");
     }
 
     public ReusableStream<String> getEmbedResources() {
