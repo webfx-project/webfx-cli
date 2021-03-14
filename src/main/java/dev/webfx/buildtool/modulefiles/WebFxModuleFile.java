@@ -39,7 +39,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
     }
 
     public ReusableStream<String> getExplicitExportedPackages() {
-        return lookupNodeListTextContent("/module/packages//package[not(@export='false')]");
+        return lookupNodeListTextContent("/module/packages//package[not(@export='false') and not(@resource='true') or @export='true']");
     }
 
     public ReusableStream<String> getExplicitNotExportedPackages() {
@@ -47,8 +47,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
     }
 
     public ReusableStream<String> getResourcePackages() {
-        return lookupNodeListTextContent("/module/resource-packages//package");
-        //return lookupNodeListTextContent("/module/packages//package[@resource='true']");
+        return lookupNodeListTextContent("/module/packages//package[@resource='true']");
     }
 
     public String implementingInterface() {
