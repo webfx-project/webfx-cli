@@ -81,7 +81,7 @@ public final class XmlUtil {
             StringWriter sw = new StringWriter();
             StreamResult result = new StreamResult(sw);
             transformer.transform(source, result);
-            return sw.toString();
+            return sw.toString().replace("?><", "?>\n<"); // Adding a line feed if missing after xml declaration
         } catch (TransformerException e) {
             e.printStackTrace();
             return null;
