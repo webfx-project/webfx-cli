@@ -43,8 +43,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
     }
 
     public ReusableStream<String> getHiddenPackages() {
-        return lookupNodeListTextContent("" +
-                "/module/packages//hidden-package");
+        return lookupNodeListTextContent("/module/packages//hidden-package");
     }
 
     public ReusableStream<String> getResourcePackages() {
@@ -72,7 +71,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
     }
 
     public ReusableStream<ModuleDependency> getResourceModuleDependencies() {
-        return lookupDependencies("/module/dependencies/resource-modules//module", ModuleDependency.Type.RESOURCE);
+        return lookupDependencies("/module/dependencies//resource-module", ModuleDependency.Type.RESOURCE);
     }
 
     public ReusableStream<LibraryModule> getLibraryModules() {
