@@ -34,6 +34,23 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return getBooleanModuleAttributeValue("automatic");
     }
 
+    public boolean arePackagesExportedByDefault() {
+        return lookupNode("/module/packages[@exports='false']") == null;
+    }
+
+    public ReusableStream<String> getExplicitExportedPackages() {
+        return lookupNodeListTextContent("/module/packages//package[not(@export='false')]");
+    }
+
+    public ReusableStream<String> getExplicitNotExportedPackages() {
+        return lookupNodeListTextContent("/module/packages//package[@export='false']");
+    }
+
+    public ReusableStream<String> getResourcePackages() {
+        return lookupNodeListTextContent("/module/resource-packages//package");
+        //return lookupNodeListTextContent("/module/packages//package[@resource='true']");
+    }
+
     public String implementingInterface() {
         return getModuleAttributeValue("implements-module");
     }
@@ -60,10 +77,6 @@ public final class WebFxModuleFile extends XmlModuleFile {
 
     public ReusableStream<LibraryModule> getLibraryModules() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("/module/libraries//module"), LibraryModule::new);
-    }
-
-    public ReusableStream<String> getResourcePackages() {
-        return lookupNodeListTextContent("/module/resource-packages//package");
     }
 
     public ReusableStream<String> getRequiredPackages() {

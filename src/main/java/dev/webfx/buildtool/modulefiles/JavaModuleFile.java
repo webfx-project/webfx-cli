@@ -48,7 +48,7 @@ public class JavaModuleFile extends ModuleFile {
         );
 
         processSection(sb, "Exported packages", "exports",
-                module.getDeclaredJavaPackages()
+                module.getExportedJavaPackages()
         );
         processSection(sb, "Resources packages", "opens",
                 module.getResourcePackages()
