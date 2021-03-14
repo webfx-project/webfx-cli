@@ -510,10 +510,10 @@ public class ProjectModule extends ModuleImpl {
     }
 
     public ReusableStream<String> getExportedJavaPackages() {
-        ReusableStream<String> exportedPackages = getWebfxModuleFile().getExplicitExportedPackages();
+        ReusableStream<String> exportedPackages = getWebfxModuleFile().getExplicitSourcePackages();
         if (getWebfxModuleFile().areJavaSourcePackagesExported()) {
             exportedPackages = ReusableStream.concat(getDeclaredJavaPackages(), exportedPackages).distinct();
-            ReusableStream<String> explicitNotExportedPackages = getWebfxModuleFile().getExplicitNotExportedPackages().cache();
+            ReusableStream<String> explicitNotExportedPackages = getWebfxModuleFile().getHiddenPackages().cache();
             if (explicitNotExportedPackages.count() > 0)
                 exportedPackages = exportedPackages.filter(p -> explicitNotExportedPackages.noneMatch(p::equals));
         }

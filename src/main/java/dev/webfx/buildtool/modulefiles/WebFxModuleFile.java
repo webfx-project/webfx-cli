@@ -38,16 +38,13 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return lookupNode("/module/packages[@export-sources='true']") != null;
     }
 
-    public ReusableStream<String> getExplicitExportedPackages() {
-        return lookupNodeListTextContent("" +
-                "/module/packages//package[@export='true'] | " +
-                "/module/packages[@export='true']//package[not(@export='false')]");
+    public ReusableStream<String> getExplicitSourcePackages() {
+        return lookupNodeListTextContent("/module/packages//source-package");
     }
 
-    public ReusableStream<String> getExplicitNotExportedPackages() {
+    public ReusableStream<String> getHiddenPackages() {
         return lookupNodeListTextContent("" +
-                "/module/packages//package[@export='false'] | " +
-                "/module/packages[@export='false']//package[not(@export='true')]");
+                "/module/packages//hidden-package");
     }
 
     public ReusableStream<String> getResourcePackages() {
