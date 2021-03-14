@@ -68,7 +68,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
     }
 
     public ReusableStream<ModuleDependency> getPluginModuleDependencies() {
-        return lookupDependencies("/module/dependencies/plugin-modules//module", ModuleDependency.Type.PLUGIN);
+        return lookupDependencies("/module/dependencies//plugin-module", ModuleDependency.Type.PLUGIN);
     }
 
     public ReusableStream<ModuleDependency> getResourceModuleDependencies() {
