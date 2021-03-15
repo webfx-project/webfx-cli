@@ -34,7 +34,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return lookupNode("/module/auto-conditions") != null;
     }
 
-    public boolean areSourcePackagesExported() {
+    public boolean areSourcePackagesAutomaticallyAdded() {
         return lookupNode("/module/packages/source-packages") != null;
     }
 
@@ -60,6 +60,10 @@ public final class WebFxModuleFile extends XmlModuleFile {
 
     public ReusableStream<Path> getChildrenModules() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("/module/modules//module"), node -> resolveFromModuleHomeDirectory(node.getTextContent()));
+    }
+
+    public boolean areSourceModuleDependenciesAutomaticallyAdded() {
+        return lookupNode("/module/dependencies/source-modules") != null;
     }
 
     public ReusableStream<ModuleDependency> getSourceModuleDependencies() {

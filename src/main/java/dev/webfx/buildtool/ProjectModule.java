@@ -119,14 +119,15 @@ public class ProjectModule extends ModuleImpl {
      * found by the source code analyzer.
      */
     private final ReusableStream<ModuleDependency> foundByCodeAnalyzerSourceDependenciesCache =
-            usedJavaPackagesCache
-                    .map(p -> getRootModule().getJavaPackageModule(p, this))
-                    //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
-                    .filter(module -> module != this && !module.getName().equals(getName()))
-                    .distinct()
-                    .map(m -> ModuleDependency.createSourceDependency(this, m))
-                    .distinct()
-                    .cache();
+            ReusableStream.create(() -> !getWebfxModuleFile().areSourceModuleDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
+                    usedJavaPackagesCache
+                            .map(p -> getRootModule().getJavaPackageModule(p, this))
+                            //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
+                            .filter(module -> module != this && !module.getName().equals(getName()))
+                            .distinct()
+                            .map(m -> ModuleDependency.createSourceDependency(this, m))
+                            .distinct()
+                            .cache());
 
     /**
      * Returns all source module dependencies directly required by the source code of this module but that couldn't be
@@ -511,7 +512,7 @@ public class ProjectModule extends ModuleImpl {
 
     public ReusableStream<String> getExportedJavaPackages() {
         ReusableStream<String> exportedPackages = getWebfxModuleFile().getExplicitSourcePackages();
-        if (getWebfxModuleFile().areSourcePackagesExported()) {
+        if (getWebfxModuleFile().areSourcePackagesAutomaticallyAdded()) {
             exportedPackages = ReusableStream.concat(getDeclaredJavaPackages(), exportedPackages).distinct();
             ReusableStream<String> explicitNotExportedPackages = getWebfxModuleFile().getHiddenPackages().cache();
             if (explicitNotExportedPackages.count() > 0)

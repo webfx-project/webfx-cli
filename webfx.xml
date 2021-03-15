@@ -5,6 +5,10 @@
         <source-packages/>
     </packages>
 
+    <dependencies>
+        <source-modules/>
+    </dependencies>
+
     <libraries>
 
         <module name="java-xml">
