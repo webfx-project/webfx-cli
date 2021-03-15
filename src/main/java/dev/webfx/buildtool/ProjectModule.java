@@ -110,7 +110,8 @@ public class ProjectModule extends ModuleImpl {
      * Returns all java services provided by this module (returns the list of files under META-INF/services).
      */
     private final ReusableStream<String> providedJavaServicesCache =
-            ReusableStream.create(() -> getWebfxModuleFile().providedJavaServices())
+            ReusableStream.create(() -> getWebfxModuleFile().providedServerProviders())
+                    .map(ServiceProvider::getSpi)
                     .distinct()
                     .cache();
 
@@ -824,7 +825,9 @@ public class ProjectModule extends ModuleImpl {
 
     public ReusableStream<String> getProvidedJavaServiceImplementations(String javaService, boolean replaceDollarWithDot) {
         // Providers declared in the webfx module file
-        ReusableStream<String> implementations = getWebfxModuleFile().providedJavaServicesProviders(javaService);
+        ReusableStream<String> implementations = getWebfxModuleFile().providedServerProviders()
+                .filter(p -> p.getSpi().equals(javaService))
+                .map(ServiceProvider::getImplementation);
         if (replaceDollarWithDot)
             implementations = implementations.map(s -> s.replace('$', '.'));
         return implementations;

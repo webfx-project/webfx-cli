@@ -1,9 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.LibraryModule;
-import dev.webfx.buildtool.ModuleDependency;
-import dev.webfx.buildtool.ModuleProperty;
-import dev.webfx.buildtool.ProjectModule;
+import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 import org.w3c.dom.Node;
@@ -103,12 +100,8 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return lookupNodeTextContent("/project/graalvm-reflection-json");
     }
 
-    public ReusableStream<String> providedJavaServices() {
-        return lookupNodeListAttribute("/project/providers//provider", "spi").distinct();
-    }
-
-    public ReusableStream<String> providedJavaServicesProviders(String javaService) {
-        return lookupNodeListTextContent("/project/providers//provider[@spi='" + javaService + "']");
+    public ReusableStream<ServiceProvider> providedServerProviders() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/providers//*"), node -> new ServiceProvider(node.getNodeName(), node.getTextContent()));
     }
 
     public Node getHtmlNode() {
