@@ -103,7 +103,7 @@ public class GwtHtmlFile extends ModuleFile {
 
     private static boolean checkNodeConditions(Node headOrBodyNode, ReusableStream<ProjectModule> transitiveProjectModules) {
         String ifModulePropertyTrue = XmlUtil.getAttributeValue(headOrBodyNode, "if-module-property-true");
-        if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> "true".equalsIgnoreCase(m.getWebfxModuleFile().getModuleProperty(ifModulePropertyTrue))))
+        if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> m.getWebfxModuleFile().getModuleProperties().anyMatch(p -> p.getName().equals(ifModulePropertyTrue) && "true".equalsIgnoreCase(p.getValue()))))
             return false;
         String ifUsesJavaPackage = XmlUtil.getAttributeValue(headOrBodyNode, "if-uses-java-package");
         if (ifUsesJavaPackage != null && !ProjectModule.modulesUsesJavaPackage(transitiveProjectModules, ifUsesJavaPackage))

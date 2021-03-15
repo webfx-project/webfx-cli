@@ -1,11 +1,12 @@
 package dev.webfx.buildtool.modulefiles;
 
 import dev.webfx.buildtool.LibraryModule;
-import org.w3c.dom.Node;
 import dev.webfx.buildtool.ModuleDependency;
+import dev.webfx.buildtool.ModuleProperty;
 import dev.webfx.buildtool.ProjectModule;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
 import dev.webfx.buildtool.util.xml.XmlUtil;
+import dev.webfx.tools.util.reusablestream.ReusableStream;
+import org.w3c.dom.Node;
 
 import java.nio.file.Path;
 
@@ -54,8 +55,8 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return lookupNodeListTextContent("/module/implements//module");
     }
 
-    public String getModuleProperty(String property) {
-        return getModuleAttributeValue(property);
+    public ReusableStream<ModuleProperty> getModuleProperties() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("/module/properties//*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
     }
 
     public ReusableStream<Path> getChildrenModules() {
