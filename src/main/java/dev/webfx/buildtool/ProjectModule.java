@@ -590,7 +590,7 @@ public class ProjectModule extends ModuleImpl {
     }
 
     public boolean isImplementingInterface() {
-        return getWebfxModuleFile().implementingInterface() != null;
+        return getWebfxModuleFile().implementedInterfaces().count() > 0;
     }
 
     /******************************
@@ -756,7 +756,7 @@ public class ProjectModule extends ModuleImpl {
     }
 
     private boolean implementsModule(Module module) {
-        return this != module && (getName().startsWith(module.getName()) || module.getName().equals(getWebfxModuleFile().implementingInterface()));
+        return this != module && (getName().startsWith(module.getName()) || getWebfxModuleFile().implementedInterfaces().anyMatch(m -> module.getName().equals(m)));
     }
 
     private boolean isCompatibleWithTargetModule(ProjectModule targetModule) {

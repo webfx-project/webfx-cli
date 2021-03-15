@@ -1,6 +1,5 @@
 package dev.webfx.buildtool.modulefiles;
 
-import org.w3c.dom.Element;
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ModuleDependency;
 import dev.webfx.buildtool.Platform;
@@ -104,8 +103,7 @@ public class JavaModuleFile extends ModuleFile {
             default:
                 if (module instanceof ProjectModule) {
                     ProjectModule projectModule = (ProjectModule) module;
-                    Element documentElement = projectModule.getWebfxModuleFile().getDocument().getDocumentElement();
-                    String abstractModule = documentElement == null ? null : documentElement.getAttribute("implements-module");
+                    String abstractModule = projectModule.getWebfxModuleFile().implementedInterfaces().findFirst().orElse(null);
                     if (abstractModule != null && !abstractModule.equals(""))
                         moduleName = projectModule.getRootModule().findModule(abstractModule).getName();
                 }

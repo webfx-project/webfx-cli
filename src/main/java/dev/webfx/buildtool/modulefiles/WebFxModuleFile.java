@@ -50,8 +50,8 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return lookupNodeListTextContent("/module/packages//resource-package");
     }
 
-    public String implementingInterface() {
-        return getModuleAttributeValue("implements-module");
+    public ReusableStream<String> implementedInterfaces() {
+        return lookupNodeListTextContent("/module/implements//module");
     }
 
     public String getModuleProperty(String property) {
