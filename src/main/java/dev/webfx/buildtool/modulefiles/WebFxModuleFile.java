@@ -77,7 +77,7 @@ public final class WebFxModuleFile extends XmlModuleFile {
     }
 
     public ReusableStream<LibraryModule> getLibraryModules() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/libraries//module"), LibraryModule::new);
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/libraries//library"), LibraryModule::new);
     }
 
     public ReusableStream<String> getPackagesAutoCondition() {

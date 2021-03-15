@@ -11,7 +11,7 @@
 
     <libraries>
 
-        <module name="java-xml">
+        <library name="java-xml">
             <packages>
                 <package>javax.xml</package>
                 <package>javax.xml.parsers</package>
@@ -23,7 +23,7 @@
                 <package>org.w3c.dom</package>
                 <package>org.xml.sax</package>
             </packages>
-        </module>
+        </library>
 
     </libraries>
 
