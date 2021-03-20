@@ -151,6 +151,6 @@ final class ModuleReporter {
     }
 
     private static void log(Object message) {
-        System.out.println(message.toString());
+        Logger.log(message.toString());
     }
 }

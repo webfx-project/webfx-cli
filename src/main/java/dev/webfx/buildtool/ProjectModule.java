@@ -27,7 +27,8 @@ public class ProjectModule extends ModuleImpl {
                     .filter(Files::isDirectory)
                     .filter(path -> Files.exists(path.resolve("webfx.xml")))
                     .map(path -> new ProjectModule(path, this))
-                    .cache();
+                    //.cache()
+            ;
 
     /**
      * Returns the children project modules if any (all levels under this module).
@@ -252,11 +253,13 @@ public class ProjectModule extends ModuleImpl {
                     ReusableStream.create(() -> ReusableStream.concat(
                                 ReusableStream.of(
                                     getRootModule().findProjectModule("webfx-platform"),
-                                    getRootModule().findProjectModule("webfx-stack-platform"),
                                     getRootModule().findProjectModule("webfx-kit"),
-                                    getRootModule().findProjectModule("webfx-framework"),
                                     getTopParentModule()),
-                                getRootModule().findProjectModuleStartingWith("webfx-extras")))
+                            getRootModule().findProjectModuleStartingWith("webfx-stack-platform"),
+                            getRootModule().findProjectModuleStartingWith("webfx-framework"),
+                            getRootModule().findProjectModuleStartingWith("webfx-extras")
+                            )
+                    )
                             .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
                             .filter(m -> m.isCompatibleWithTargetModule(this))
             )
@@ -388,7 +391,7 @@ public class ProjectModule extends ModuleImpl {
     }
 
     ProjectModule(Path homeDirectory, ProjectModule parentModule) {
-        super(homeDirectory.getFileName().toString());
+        super(homeDirectory.toAbsolutePath().getFileName().toString());
         this.parentModule = parentModule;
         this.homeDirectory = homeDirectory;
         rootModule = parentModule != null ? parentModule.getRootModule() : (RootModule) this;
@@ -441,7 +444,7 @@ public class ProjectModule extends ModuleImpl {
         return target;
     }
 
-    boolean hasSourceDirectory() {
+    public boolean hasSourceDirectory() {
         if (hasSourceDirectory == null)
             hasSourceDirectory = Files.exists(getSourceDirectory());
         return hasSourceDirectory;
@@ -537,7 +540,7 @@ public class ProjectModule extends ModuleImpl {
         return childrenModulesInDepthCache;
     }
 
-    ReusableStream<ProjectModule> getThisAndChildrenModulesInDepth() {
+    public ReusableStream<ProjectModule> getThisAndChildrenModulesInDepth() {
         return ReusableStream.concat(ReusableStream.of(this), getChildrenModulesInDepth());
     }
 
@@ -545,19 +548,29 @@ public class ProjectModule extends ModuleImpl {
         return findProjectModule(name, false);
     }
 
+    ReusableStream<ProjectModule> getProjectModuleSearchScope() {
+        return getChildrenModulesInDepth();
+    }
+
     ProjectModule findProjectModule(String name, boolean silent) {
-        Optional<ProjectModule> projectModule = getChildrenModulesInDepth()
+        Optional<ProjectModule> projectModule;
+        projectModule = getProjectModuleSearchScope()
+                .filter(module -> module.getName().equals(name))
+                .findFirst();
+        if (projectModule.isPresent())
+            return projectModule.get();
+        projectModule = getRootModule().getProjectModuleSearchScope()
                 .filter(module -> module.getName().equals(name))
                 .findFirst();
         if (projectModule.isPresent())
             return projectModule.get();
         if (silent)
             return null;
-        throw new IllegalArgumentException("Unable to find " + name + " module under " + getName() + " module");
+        throw new UnresolvedException("Unable to find " + name + " module under " + getName() + " module");
     }
 
     ReusableStream<ProjectModule> findProjectModuleStartingWith(String name) {
-        return getChildrenModulesInDepth()
+        return getProjectModuleSearchScope()
                 .filter(module -> module.getName().startsWith(name));
     }
 
@@ -714,7 +727,7 @@ public class ProjectModule extends ModuleImpl {
                     Providers providers = new Providers(spiClassName, RootModule.findModulesProvidingJavaService(searchScope, spiClassName, getTarget(), single));
                     providers.getProviderModules().collect(Collectors.toCollection(() -> allProviderModules));
                     if (providers.getProviderClassNames().count() == 0)
-                        warning("No provider found for " + spiClassName + " among " + searchScope.map(ProjectModule::getName).stream().sorted().collect(Collectors.toList()));
+                        verbose("No provider found for " + spiClassName + " among " + searchScope.map(ProjectModule::getName).stream().sorted().collect(Collectors.toList()));
                     return providers;
                 })
                 .filter(Objects::nonNull) // Removing nulls
@@ -884,6 +897,10 @@ public class ProjectModule extends ModuleImpl {
     }
 
     static void warning(Object message) {
-        System.err.println("WARNING: " + message);
+        Logger.log("WARNING: " + message);
+    }
+
+    static void verbose(Object message) {
+        Logger.log("VERBOSE: " + message);
     }
 }

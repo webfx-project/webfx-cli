@@ -1,5 +1,6 @@
 package dev.webfx.buildtool.util.textfile;
 
+import dev.webfx.buildtool.Logger;
 import dev.webfx.buildtool.util.splitfiles.SplitFiles;
 
 import java.io.BufferedWriter;
@@ -21,12 +22,12 @@ public class TextFileReaderWriter {
 
     public static void writeTextFile(String content, Path path) {
         try {
-            System.out.println(">>> Writing " + path);
             Files.createDirectories(path.getParent()); // Creating all necessary directories
             BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
             writer.write(content);
             writer.flush();
             writer.close();
+            Logger.log("Updated " + path);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

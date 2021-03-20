@@ -3,6 +3,7 @@
 
     <packages>
         <source-packages/>
+        <resource-package>dev.webfx.buildtool.cli</resource-package>
     </packages>
 
     <dependencies>
@@ -22,6 +23,15 @@
                 <package>javax.xml.xpath</package>
                 <package>org.w3c.dom</package>
                 <package>org.xml.sax</package>
+            </packages>
+        </library>
+
+        <library name="info-picocli">
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.6.1</version>
+            <packages>
+                <package>picocli</package>
             </packages>
         </library>
 

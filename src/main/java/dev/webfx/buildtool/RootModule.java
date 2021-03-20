@@ -12,36 +12,41 @@ public final class RootModule extends ProjectModule {
 
     private final Map<String, Module> libraryModules = new HashMap<>();
     private final Map<String /* package name */, List<Module>> javaPackagesModules = new HashMap<>();
-    private final ReusableStream<ProjectModule> thisAndChildrenModulesInDepthResume =
-            getThisAndChildrenModulesInDepth()
-                    .resume();
-    private final ReusableStream<Collection<Module>> cyclicDependencyLoopsCache =
-            getThisAndChildrenModulesInDepth()
-                    .flatMap(RootModule::analyzeCyclicDependenciesLoops)
-                    .distinct()
-                    .cache();
+    private final ReusableStream<ProjectModule> packageModuleSearchScopeResume;
+    private final ReusableStream<Collection<Module>> cyclicDependencyLoopsCache;
 
     /***********************
      ***** Constructor *****
      ***********************/
 
-    private final static ThreadLocal<List<Path>> ADDITIONAL_CHILDREN_HOME_PATHS_THREAD_LOCAL = new ThreadLocal<>();
-    private final List<Path> additionalChildrenHomePaths = new ArrayList<>();
+    private final ReusableStream<ProjectModule> libraryProjectModules;
 
-    RootModule(Path rootDirectory, Path... additionalChildrenModulesHomePaths) {
-        super(register(rootDirectory, additionalChildrenModulesHomePaths));
-        additionalChildrenHomePaths.addAll(ADDITIONAL_CHILDREN_HOME_PATHS_THREAD_LOCAL.get());
+    public RootModule(String rootDirectory, String... libraryModulesHomePaths) {
+        this(Path.of(rootDirectory), Arrays.stream(libraryModulesHomePaths).map(Path::of).toArray(Path[]::new));
     }
 
-    private static Path register(Path rootDirectory, Path... additionalPaths) {
-        ADDITIONAL_CHILDREN_HOME_PATHS_THREAD_LOCAL.set(Arrays.asList(additionalPaths));
-        return rootDirectory;
+    public RootModule(Path rootDirectory, Path... libraryModulesHomePaths) {
+        super(rootDirectory);
+        libraryProjectModules =
+                ReusableStream.of(libraryModulesHomePaths)
+                .map(p -> new ProjectModule(p, this))
+                .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
+                .cache();
+        packageModuleSearchScopeResume =
+                getProjectModuleSearchScope()
+                        .resume();
+        cyclicDependencyLoopsCache =
+                getThisAndChildrenModulesInDepth()
+                        .flatMap(RootModule::analyzeCyclicDependenciesLoops)
+                        .distinct()
+                        .cache();
     }
 
     @Override
-    ReusableStream<Path> getChildrenHomePaths() {
-        List<Path> paths = additionalChildrenHomePaths != null ? additionalChildrenHomePaths : ADDITIONAL_CHILDREN_HOME_PATHS_THREAD_LOCAL.get();
-        return super.getChildrenHomePaths().concat(paths);
+    ReusableStream<ProjectModule> getProjectModuleSearchScope() {
+        return ReusableStream.concat(
+                getChildrenModulesInDepth(),
+                libraryProjectModules);
     }
 
     /********************************
@@ -77,7 +82,7 @@ public final class RootModule extends ProjectModule {
         Module module = getJavaPackageModuleNow(packageToSearch, sourceModule, true);
         if (module != null)
             return module;
-        thisAndChildrenModulesInDepthResume.takeWhile(m -> getJavaPackageModuleNow(packageToSearch, sourceModule, true) == null).forEach(this::registerJavaPackagesProjectModule);
+        packageModuleSearchScopeResume.takeWhile(m -> getJavaPackageModuleNow(packageToSearch, sourceModule, true) == null).forEach(this::registerJavaPackagesProjectModule);
         return getJavaPackageModuleNow(packageToSearch, sourceModule, false);
     }
 
@@ -91,7 +96,7 @@ public final class RootModule extends ProjectModule {
             if (sourceModule.getDeclaredJavaPackages().anyMatch(p -> p.equals(packageToSearch)))
                 module = sourceModule;
             else if (!canReturnNull) // Otherwise raising an exception (unless returning null is permitted)
-                throw new IllegalArgumentException("Unknown module for package " + packageToSearch + " (requested by " + sourceModule + ")");
+                throw new UnresolvedException("Unknown module for package " + packageToSearch + " (requested by " + sourceModule + ")");
         }
         return module;
     }

@@ -3,6 +3,7 @@ package dev.webfx.buildtool;
 import dev.webfx.buildtool.sourcegenerators.GluonFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.GwtFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.JavaFilesGenerator;
+import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,6 +19,22 @@ public final class BuildTool {
 
         ProjectModule parentModule = new RootModule(getWebfxRootDirectory(), // Webfx root directory
                 Arrays.stream(args).map(Path::of).toArray(Path[]::new));     // Additional project modules passed through command line
+
+        if (false) {
+            parentModule
+                    .getChildrenModulesInDepth()
+                    .filter(ProjectModule::hasJavaSourceDirectory)
+                    .forEach(m -> TextFileReaderWriter.writeTextFileIfNewOrModified(
+                            TextFileReaderWriter.readTextFile(m.getWebfxModuleFile().getModulePath())
+                                    .replace("?>\n<module>", "?>\n<module>\n\n    <packages exports=\"true\"/>")
+                                    .replace("?>\n<module interface=\"true\">", "?>\n<module interface=\"true\">\n\n    <packages exports=\"true\"/>")
+                                    .replace("?>\n<module automatic=\"true\">", "?>\n<module automatic=\"true\">\n\n    <packages exports=\"true\"/>")
+                                    .replace("?>\n<module show-loading-spinner-on-startup=\"true\">", "?>\n<module show-loading-spinner-on-startup=\"true\">\n\n    <packages exports=\"true\"/>")
+                                    .replace("?>\n<module/>", "?>\n<module>\n\n    <packages exports=\"true\"/> \n\n</module>")
+                            , m.getWebfxModuleFile().getModulePath()));
+
+            return;
+        }
 
         // Updating Maven module files for all source modules (<dependencies> section in pom.xml)
         parentModule
@@ -104,7 +121,7 @@ public final class BuildTool {
 */
 
         long t1 = System.currentTimeMillis();
-        System.out.println("Executed in " + (t1 - t0) + "ms");
+        Logger.log("Executed in " + (t1 - t0) + "ms");
     }
 
     private static Path getWebfxRootDirectory() {
