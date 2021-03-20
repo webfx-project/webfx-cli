@@ -7,7 +7,6 @@ import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * @author Bruno Salmon
@@ -17,8 +16,11 @@ public final class BuildTool {
     public static void main(String[] args) {
         long t0 = System.currentTimeMillis();
 
+/*
         ProjectModule parentModule = new RootModule(getWebfxRootDirectory(), // Webfx root directory
                 Arrays.stream(args).map(Path::of).toArray(Path[]::new));     // Additional project modules passed through command line
+*/
+        ProjectModule parentModule = null;
 
         if (false) {
             parentModule

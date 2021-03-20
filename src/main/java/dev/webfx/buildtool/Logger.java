@@ -7,14 +7,21 @@ import java.util.function.Consumer;
  */
 public final class Logger {
 
-    private static Consumer<String> logConsumer = System.out::println;
+    private static Consumer<Object> logConsumer = System.out::println;
 
-    public static void setLogConsumer(Consumer<String> logConsumer) {
+    public static void setLogConsumer(Consumer<Object> logConsumer) {
         Logger.logConsumer = logConsumer;
     }
 
-    public static void log(String message) {
+    public static void log(Object message) {
         logConsumer.accept(message);
     }
 
+    static void warning(Object message) {
+        log("WARNING: " + message);
+    }
+
+    static void verbose(Object message) {
+        log("VERBOSE: " + message);
+    }
 }

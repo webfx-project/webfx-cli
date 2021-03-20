@@ -119,7 +119,7 @@ final class ModuleReporter {
                 .collect(Collectors.toList()));
     }
 
-    private static void logJavaClassWithPackagesDependingOn(JavaClass jc, String destinationModule) {
+    private static void logJavaClassWithPackagesDependingOn(JavaFile jc, String destinationModule) {
         RootModule rootModule = jc.getProjectModule().getRootModule();
         log(jc + " through packages " +
                 jc.getUsedJavaPackages()

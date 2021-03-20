@@ -32,6 +32,10 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return lookupNode("/project/auto-conditions") != null;
     }
 
+    public boolean isAggregate() {
+        return lookupNode("/project/modules") != null;
+    }
+
     public boolean areSourcePackagesAutomaticallyAdded() {
         return lookupNode("/project/packages/source-packages") != null;
     }

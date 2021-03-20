@@ -11,11 +11,11 @@ import java.nio.file.Path;
 /**
  * @author Bruno Salmon
  */
-final class JavaClass {
+public final class JavaFile {
 
-    private final Path javaFilePath;
+    private final Path path;
     private final ProjectModule projectModule;
-    private final JavaCode javaCode = new JavaCode(this::getJavaFilePath);
+    private final JavaCode javaCode = new JavaCode(this::getPath);
     private String packageName;
     private String className;
     private final ReusableStream<String> usedJavaPackagesCache =
@@ -35,8 +35,8 @@ final class JavaClass {
      ***** Constructor *****
      ***********************/
 
-    JavaClass(Path javaFilePath, ProjectModule projectModule) {
-        this.javaFilePath = javaFilePath;
+    JavaFile(Path path, ProjectModule projectModule) {
+        this.path = path;
         this.projectModule = projectModule;
     }
 
@@ -50,8 +50,8 @@ final class JavaClass {
      *************************/
 
 
-    Path getJavaFilePath() {
-        return javaFilePath;
+    Path getPath() {
+        return path;
     }
 
     ProjectModule getProjectModule() {
@@ -69,7 +69,7 @@ final class JavaClass {
 
     String getClassName() {
         if (className == null)
-            className = javaFilePath.toString().substring(projectModule.getJavaSourceDirectory().toString().length() + 1, javaFilePath.toString().length() - 5).replaceAll("[/\\\\]", ".");
+            className = path.toString().substring(projectModule.getJavaSourceDirectory().toString().length() + 1, path.toString().length() - 5).replaceAll("[/\\\\]", ".");
         return className;
     }
 

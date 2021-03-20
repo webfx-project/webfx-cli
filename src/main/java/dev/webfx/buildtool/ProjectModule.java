@@ -26,7 +26,7 @@ public class ProjectModule extends ModuleImpl {
                     .filter(path -> !SplitFiles.uncheckedIsSameFile(path, getHomeDirectory()))
                     .filter(Files::isDirectory)
                     .filter(path -> Files.exists(path.resolve("webfx.xml")))
-                    .map(path -> new ProjectModule(path, this))
+                    .map(path -> getOrCreateProjectModule(path.normalize(), this))
                     //.cache()
             ;
 
@@ -40,13 +40,13 @@ public class ProjectModule extends ModuleImpl {
             ;
 
     /**
-     * Returns all java classes declared in this module (or empty if this is not a java source module).
+     * Returns all java files declared in this module (or empty if this is not a java source module).
      */
-    private final ReusableStream<JavaClass> declaredJavaClassesCache =
+    private final ReusableStream<JavaFile> declaredJavaFilesCache =
             ReusableStream.create(() -> hasJavaSourceDirectory() ? SplitFiles.uncheckedWalk(getJavaSourceDirectory()) : Spliterators.emptySpliterator())
                     .filter(JAVA_FILE_MATCHER::matches)
                     .filter(path -> !path.getFileName().toString().endsWith("-info.java")) // Ignoring module-info.java and package-info.java files
-                    .map(path -> new JavaClass(path, this))
+                    .map(path -> new JavaFile(path, this))
                     .cache();
 
     /**
@@ -54,8 +54,8 @@ public class ProjectModule extends ModuleImpl {
      * simply deduced from the declared java classes.
      */
     private final ReusableStream<String> declaredJavaPackagesCache =
-            declaredJavaClassesCache
-                    .map(JavaClass::getPackageName)
+            declaredJavaFilesCache
+                    .map(JavaFile::getPackageName)
                     .distinct();
 
     /**
@@ -63,8 +63,8 @@ public class ProjectModule extends ModuleImpl {
      * are found through a source code analyze of all java classes.
      */
     private final ReusableStream<String> usedJavaPackagesCache =
-            declaredJavaClassesCache
-                    .flatMap(JavaClass::getUsedJavaPackages)
+            declaredJavaFilesCache
+                    .flatMap(JavaFile::getUsedJavaPackages)
                     .distinct()
                     .cache();
 
@@ -73,8 +73,8 @@ public class ProjectModule extends ModuleImpl {
      * full name of the SPI class.
      */
     private final ReusableStream<String> usedRequiredJavaServicesCache =
-            declaredJavaClassesCache
-                    .flatMap(JavaClass::getUsedRequiredJavaServices)
+            declaredJavaFilesCache
+                    .flatMap(JavaFile::getUsedRequiredJavaServices)
                     .distinct()
                     .cache();
 
@@ -83,8 +83,8 @@ public class ProjectModule extends ModuleImpl {
      * full name of the SPI class.
      */
     private final ReusableStream<String> usedOptionalJavaServicesCache =
-            declaredJavaClassesCache
-                    .flatMap(JavaClass::getUsedOptionalJavaServices)
+            declaredJavaFilesCache
+                    .flatMap(JavaFile::getUsedOptionalJavaServices)
                     .distinct()
                     .cache();
 
@@ -104,7 +104,7 @@ public class ProjectModule extends ModuleImpl {
      */
     private final ReusableStream<String> declaredJavaServicesCache =
             usedJavaServicesCache
-                    .filter(s -> declaredJavaClassesCache.anyMatch(jc -> s.equals(jc.getClassName())))
+                    .filter(s -> declaredJavaFilesCache.anyMatch(jc -> s.equals(jc.getClassName())))
                     .cache();
 
     /**
@@ -252,19 +252,20 @@ public class ProjectModule extends ModuleImpl {
                     transitiveProjectModulesWithoutImplicitProvidersCache,
                     ReusableStream.create(() -> ReusableStream.concat(
                                 ReusableStream.of(
+                                    getRootModule(),
                                     getRootModule().findProjectModule("webfx-platform"),
-                                    getRootModule().findProjectModule("webfx-kit"),
-                                    getTopParentModule()),
-                            getRootModule().findProjectModuleStartingWith("webfx-stack-platform"),
-                            getRootModule().findProjectModuleStartingWith("webfx-framework"),
-                            getRootModule().findProjectModuleStartingWith("webfx-extras")
+                                    getRootModule().findProjectModule("webfx-kit")
+                                    ),
+                            getRootModule().findProjectModuleStartingWith("webfx-stack"),
+                            getRootModule().findProjectModuleStartingWith("webfx-extras"),
+                            getRootModule().findProjectModuleStartingWith("webfx-framework")
                             )
                     )
-                            .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
-                            .filter(m -> m.isCompatibleWithTargetModule(this))
+                    .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
+                    .filter(m -> m.isCompatibleWithTargetModule(this))
             )
-                    .distinct()
-                    .cache();
+            .distinct()
+            .cache();
 
     /**
      * Returns the automatic modules required for this executable module (returns nothing if this module is not executable).
@@ -386,15 +387,14 @@ public class ProjectModule extends ModuleImpl {
      ***** Constructors *****
      ************************/
 
-    ProjectModule(Path homeDirectory) {
-        this(homeDirectory, null);
-    }
-
     ProjectModule(Path homeDirectory, ProjectModule parentModule) {
         super(homeDirectory.toAbsolutePath().getFileName().toString());
         this.parentModule = parentModule;
         this.homeDirectory = homeDirectory;
-        rootModule = parentModule != null ? parentModule.getRootModule() : (RootModule) this;
+        ProjectModule m = this;
+        while (m != null && !(m instanceof RootModule))
+            m = m.getParentModule();
+        rootModule = (RootModule) m;
     }
 
     void registerLibraryModules() {
@@ -426,16 +426,26 @@ public class ProjectModule extends ModuleImpl {
         return getResourcesDirectory().resolve("META-INF/services/");
     }
 
-    ProjectModule getParentModule() {
+    public ProjectModule getParentModule() {
         return parentModule;
     }
 
+/*
     ProjectModule getTopParentModule() {
         return parentModule == null ? this : parentModule.getParentModule() == getRootModule() ? parentModule : parentModule.getTopParentModule();
     }
+*/
 
     public RootModule getRootModule() {
         return rootModule;
+    }
+
+    ModuleRegistry getModuleRegistry() {
+        return rootModule.getModuleRegistry();
+    }
+
+    ProjectModule getOrCreateProjectModule(Path homeDirectory, ProjectModule parentModule) {
+        return getModuleRegistry().getOrCreateProjectModule(homeDirectory, parentModule);
     }
 
     public Target getTarget() {
@@ -504,8 +514,8 @@ public class ProjectModule extends ModuleImpl {
 
     ///// Java classes
 
-    public ReusableStream<JavaClass> getDeclaredJavaClasses() {
-        return declaredJavaClassesCache;
+    public ReusableStream<JavaFile> getDeclaredJavaClasses() {
+        return declaredJavaFilesCache;
     }
 
     ///// Java packages
@@ -528,15 +538,15 @@ public class ProjectModule extends ModuleImpl {
 
     ///// Modules
 
-    ReusableStream<ProjectModule> getChildrenModules() {
+    public ReusableStream<ProjectModule> getChildrenModules() {
         return childrenModulesCache;
     }
 
-    ReusableStream<ProjectModule> getThisAndChildrenModules() {
+    public ReusableStream<ProjectModule> getThisAndChildrenModules() {
         return ReusableStream.concat(ReusableStream.of(this), getChildrenModules());
     }
 
-    ReusableStream<ProjectModule> getChildrenModulesInDepth() {
+    public ReusableStream<ProjectModule> getChildrenModulesInDepth() {
         return childrenModulesInDepthCache;
     }
 
@@ -554,14 +564,12 @@ public class ProjectModule extends ModuleImpl {
 
     ProjectModule findProjectModule(String name, boolean silent) {
         Optional<ProjectModule> projectModule;
-        projectModule = getProjectModuleSearchScope()
+        projectModule = getProjectModuleSearchScope() // Trying first in the scope of this project
                 .filter(module -> module.getName().equals(name))
-                .findFirst();
-        if (projectModule.isPresent())
-            return projectModule.get();
-        projectModule = getRootModule().getProjectModuleSearchScope()
-                .filter(module -> module.getName().equals(name))
-                .findFirst();
+                .findFirst()
+                .or(() -> getRootModule().getProjectModuleSearchScope() // Otherwise in the widest scope
+                    .filter(module -> module.getName().equals(name))
+                    .findFirst());
         if (projectModule.isPresent())
             return projectModule.get();
         if (silent)
@@ -603,8 +611,16 @@ public class ProjectModule extends ModuleImpl {
         return getWebfxModuleFile().isAutomatic();
     }
 
+    public boolean isAggregate() {
+        return getWebfxModuleFile().isAggregate();
+    }
+
     public boolean isImplementingInterface() {
-        return getWebfxModuleFile().implementedInterfaces().count() > 0;
+        return implementedInterfaces().count() > 0;
+    }
+
+    public ReusableStream<String> implementedInterfaces() {
+        return getWebfxModuleFile().implementedInterfaces();
     }
 
     /******************************
@@ -654,14 +670,14 @@ public class ProjectModule extends ModuleImpl {
     private ReusableStream<Module> collectExecutableEmulationModules() {
         if (isExecutable(Platform.GWT))
             return ReusableStream.of(
-                    getRootModule().findModule("webfx-kit-gwt"),
-                    getRootModule().findModule("webfx-platform-gwt-emul-javabase"),
-                    getRootModule().findModule("gwt-time"));
+                    getRootModule().findOrCreateModule("webfx-kit-gwt"),
+                    getRootModule().findOrCreateModule("webfx-platform-gwt-emul-javabase"),
+                    getRootModule().findOrCreateModule("gwt-time"));
         if (isExecutable(Platform.JRE)) {
             if (getTarget().hasTag(TargetTag.JAVAFX) || getTarget().hasTag(TargetTag.GLUON))
                 return ReusableStream.of(
-                        getRootModule().findModule("webfx-kit-javafx"),
-                        getRootModule().findModule("webfx-platform-java-appcontainer-impl"));
+                        getRootModule().findOrCreateModule("webfx-kit-javafx"),
+                        getRootModule().findOrCreateModule("webfx-platform-java-appcontainer-impl"));
             return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                     .filter(RootModule::isJavaFxEmulModule);
         }
@@ -727,7 +743,7 @@ public class ProjectModule extends ModuleImpl {
                     Providers providers = new Providers(spiClassName, RootModule.findModulesProvidingJavaService(searchScope, spiClassName, getTarget(), single));
                     providers.getProviderModules().collect(Collectors.toCollection(() -> allProviderModules));
                     if (providers.getProviderClassNames().count() == 0)
-                        verbose("No provider found for " + spiClassName + " among " + searchScope.map(ProjectModule::getName).stream().sorted().collect(Collectors.toList()));
+                        Logger.verbose("No provider found for " + spiClassName + " among " + searchScope.map(ProjectModule::getName).stream().sorted().collect(Collectors.toList()));
                     return providers;
                 })
                 .filter(Objects::nonNull) // Removing nulls
@@ -763,7 +779,11 @@ public class ProjectModule extends ModuleImpl {
                             .distinct()
                             ;
                 }
-                warning("No concrete module found for interface module " + module + " in executable module " + this + " among " + searchScope.map(ProjectModule::getName).stream().sorted().collect(Collectors.toList()));
+                String message = "No concrete module found for interface module " + module + " in executable module " + this + " among " + searchScope.map(ProjectModule::getName).stream().sorted().collect(Collectors.toList());
+                if (isModuleUnderRootHomeDirectory(this))
+                    Logger.warning(message);
+                else
+                    Logger.verbose(message);
             }
         }
         return ReusableStream.of(dependency);
@@ -791,7 +811,7 @@ public class ProjectModule extends ModuleImpl {
         return usedJavaPackagesCache;
     }
 
-    ReusableStream<JavaClass> getJavaClassesDependingOn(String destinationModule) {
+    ReusableStream<JavaFile> getJavaClassesDependingOn(String destinationModule) {
         return getDeclaredJavaClasses()
                 .filter(jc -> jc.getUsedJavaPackages().anyMatch(p -> destinationModule.equals(rootModule.getJavaPackageModule(p, this).getName())))
                 ;
@@ -896,11 +916,8 @@ public class ProjectModule extends ModuleImpl {
         return dependencies.map(ModuleDependency::getDestinationModule);
     }
 
-    static void warning(Object message) {
-        Logger.log("WARNING: " + message);
+    boolean isModuleUnderRootHomeDirectory(Module module) {
+        return module instanceof ProjectModule && ((ProjectModule) module).getHomeDirectory().startsWith(getRootModule().getHomeDirectory());
     }
 
-    static void verbose(Object message) {
-        Logger.log("VERBOSE: " + message);
-    }
 }

@@ -103,9 +103,9 @@ public class JavaModuleFile extends ModuleFile {
             default:
                 if (module instanceof ProjectModule) {
                     ProjectModule projectModule = (ProjectModule) module;
-                    String abstractModule = projectModule.getWebfxModuleFile().implementedInterfaces().findFirst().orElse(null);
+                    String abstractModule = projectModule.implementedInterfaces().findFirst().orElse(null);
                     if (abstractModule != null && !abstractModule.equals(""))
-                        moduleName = projectModule.getRootModule().findModule(abstractModule).getName();
+                        moduleName = projectModule.getRootModule().findOrCreateModule(abstractModule).getName();
                 }
                 return moduleName.replaceAll("[^a-zA-Z0-9]", ".");
         }

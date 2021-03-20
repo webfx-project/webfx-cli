@@ -105,7 +105,7 @@ abstract class XmlModuleFile extends ModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node ->
                 new ModuleDependency(
                         getModule(),
-                        getProjectModule().getRootModule().findModule(node.getTextContent()),
+                        getProjectModule().getRootModule().findOrCreateModule(node.getTextContent()),
                         type,
                         XmlUtil.getBooleanAttributeValue(node, "optional"),
                         XmlUtil.getAttributeValue(node, "scope"),

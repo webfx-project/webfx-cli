@@ -10,8 +10,7 @@ import java.util.*;
  */
 public final class RootModule extends ProjectModule {
 
-    private final Map<String, Module> libraryModules = new HashMap<>();
-    private final Map<String /* package name */, List<Module>> javaPackagesModules = new HashMap<>();
+    private final ModuleRegistry moduleRegistry;
     private final ReusableStream<ProjectModule> packageModuleSearchScopeResume;
     private final ReusableStream<Collection<Module>> cyclicDependencyLoopsCache;
 
@@ -19,19 +18,9 @@ public final class RootModule extends ProjectModule {
      ***** Constructor *****
      ***********************/
 
-    private final ReusableStream<ProjectModule> libraryProjectModules;
-
-    public RootModule(String rootDirectory, String... libraryModulesHomePaths) {
-        this(Path.of(rootDirectory), Arrays.stream(libraryModulesHomePaths).map(Path::of).toArray(Path[]::new));
-    }
-
-    public RootModule(Path rootDirectory, Path... libraryModulesHomePaths) {
-        super(rootDirectory);
-        libraryProjectModules =
-                ReusableStream.of(libraryModulesHomePaths)
-                .map(p -> new ProjectModule(p, this))
-                .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
-                .cache();
+    RootModule(Path rootDirectory, ModuleRegistry moduleRegistry) {
+        super(rootDirectory.toAbsolutePath(), null);
+        this.moduleRegistry = moduleRegistry;
         packageModuleSearchScopeResume =
                 getProjectModuleSearchScope()
                         .resume();
@@ -43,10 +32,15 @@ public final class RootModule extends ProjectModule {
     }
 
     @Override
+    public ModuleRegistry getModuleRegistry() {
+        return moduleRegistry;
+    }
+
+    @Override
     ReusableStream<ProjectModule> getProjectModuleSearchScope() {
         return ReusableStream.concat(
-                getChildrenModulesInDepth(),
-                libraryProjectModules);
+                getThisAndChildrenModulesInDepth(),
+                moduleRegistry.getLibraryProjectModules());
     }
 
     /********************************
@@ -54,98 +48,38 @@ public final class RootModule extends ProjectModule {
      ********************************/
 
     public void registerLibraryModule(LibraryModule module) {
-        libraryModules.put(module.getName(), module);
-        for (String javaPackage : module.getJavaPackages())
-            registerJavaPackageModule(javaPackage, module);
-    }
-
-    private void registerJavaPackageModule(String javaPackage, Module module) {
-        List<Module> lm = javaPackagesModules.get(javaPackage);
-        if (lm != null && !lm.contains(module)) {
-            Module m = lm.get(0);
-            warning(module + " and " + m + " share the same package " + javaPackage);
-            // Should always return, the exception is a hack to replace m = webfx-kit-gwt with module = webfx-kit-peers-extracontrols (they share the same package dev.webfx.extras.cell.collator.grid)
-            //if (!(m instanceof ProjectModule) || ((ProjectModule) m).getTarget().isPlatformSupported(Platform.JRE))
-            //    return;
-        }
-        if (lm == null)
-            javaPackagesModules.put(javaPackage, lm = new ArrayList<>(1));
-        lm.add(module);
+        moduleRegistry.registerLibraryModule(module);
     }
 
     void registerJavaPackagesProjectModule(ProjectModule module) {
-        module.registerLibraryModules();
-        module.getDeclaredJavaPackages().forEach(javaPackage -> registerJavaPackageModule(javaPackage, module));
+        moduleRegistry.registerJavaPackagesProjectModule(module);
     }
 
     Module getJavaPackageModule(String packageToSearch, ProjectModule sourceModule) {
-        Module module = getJavaPackageModuleNow(packageToSearch, sourceModule, true);
+        Module module = moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, true);
         if (module != null)
             return module;
-        packageModuleSearchScopeResume.takeWhile(m -> getJavaPackageModuleNow(packageToSearch, sourceModule, true) == null).forEach(this::registerJavaPackagesProjectModule);
-        return getJavaPackageModuleNow(packageToSearch, sourceModule, false);
+        packageModuleSearchScopeResume.takeWhile(m -> moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, true) == null).forEach(this::registerJavaPackagesProjectModule);
+        return moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, false);
     }
 
-    private Module getJavaPackageModuleNow(String packageToSearch, ProjectModule sourceModule, boolean canReturnNull) {
-        List<Module> lm = javaPackagesModules.get(packageToSearch);
-        Module module = lm == null ? null : lm.stream().filter(m -> isSuitableModule(m, sourceModule))
-                .findFirst()
-                .orElse(null);
-        if (module == null) { // Module not found :-(
-            // Last chance: the package was actually in the source package! (ex: webfx-kit-extracontrols-registry-spi
-            if (sourceModule.getDeclaredJavaPackages().anyMatch(p -> p.equals(packageToSearch)))
-                module = sourceModule;
-            else if (!canReturnNull) // Otherwise raising an exception (unless returning null is permitted)
-                throw new UnresolvedException("Unknown module for package " + packageToSearch + " (requested by " + sourceModule + ")");
-        }
-        return module;
-    }
-
-    private boolean isSuitableModule(Module m, ProjectModule sourceModule) {
-        if (!(m instanceof ProjectModule))
-            return true;
-        ProjectModule pm = (ProjectModule) m;
-        // First case: only executable source modules should include implementing interface modules (others should include the interface module instead)
-        if (pm.isImplementingInterface() && !sourceModule.isExecutable()) {
-            // Exception is however made for non executable source modules that implements a provider
-            // Ex: webfx-kit-extracontrols-registry-javafx can include webfx-kit-extracontrols-registry-spi (which implements webfx-kit-extracontrols-registry)
-            boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> pm.getDeclaredJavaClasses().anyMatch(c -> c.getClassName().equals(s)));
-            if (!exception)
-                return false;
-        }
-        // Second not permitted case:
-        // Ex: webfx-kit-extracontrols-registry-javafx should not include webfx-kit-extracontrols-registry (but webfx-kit-extracontrols-registry-spi instead)
-        if (pm.isInterface()) {
-            if (sourceModule.getName().startsWith(pm.getName()))
-                return false;
-        }
-        return true;
-    }
-
-    public Module findModule(String name) {
-        Module module = libraryModules.get(name);
-        if (module == null) {
-            module = javaPackagesModules.values().stream().flatMap(Collection::stream).filter(m -> m.getName().equals(name)).findFirst().orElseGet(() -> findProjectModule(name, true));
-            if (module == null)
-                module = getOrCreateThirdPartyModule(name);
-        }
-        return module;
-    }
-
-    Module getOrCreateThirdPartyModule(String artifactId) {
-        Module module = getThirdPartyModule(artifactId);
+    public Module findOrCreateModule(String name) {
+        Module module = findModule(name, true);
         if (module == null)
-            module = createThirdPartyModule(artifactId);
+            module = moduleRegistry.createThirdPartyModule(name);
         return module;
     }
 
-    Module getThirdPartyModule(String artifactId) {
-        return libraryModules.get(artifactId);
-    }
-
-    private Module createThirdPartyModule(String artifactId) {
-        Module module = Module.create(artifactId);
-        libraryModules.put(artifactId, module);
+    public Module findModule(String name, boolean silent) {
+        Module module = moduleRegistry.findModule(name);
+        if (module == null) {
+            module = findProjectModule(name, true);
+            if (module == null) {
+                module = moduleRegistry.getThirdPartyModule(name);
+                if (module == null && !silent)
+                    throw new UnresolvedException("Unknown module " + name);
+            }
+        }
         return module;
     }
 

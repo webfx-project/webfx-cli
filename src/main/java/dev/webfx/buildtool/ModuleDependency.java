@@ -124,6 +124,11 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return sourceModule + " -> " + destinationModule + " (type = " + type + (optional ? ", optional" : "") + (scope == null ? "" : ", scope = " + scope) + (classifier == null ? "" : ", classifier = " + classifier) + (executableTarget == null ? "" : ", executableTarget = " + executableTarget) + ")";
+    }
+
     public static ModuleDependency createDependency(Module srcModule, Module dstModule, Type type) {
         return new ModuleDependency(srcModule, dstModule, type);
     }
