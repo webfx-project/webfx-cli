@@ -672,12 +672,20 @@ public class ProjectModule extends ModuleImpl {
             return ReusableStream.of(
                     getRootModule().findOrCreateModule("webfx-kit-gwt"),
                     getRootModule().findOrCreateModule("webfx-platform-gwt-emul-javabase"),
-                    getRootModule().findOrCreateModule("gwt-time"));
+                    getRootModule().findOrCreateModule("gwt-time")
+            );
         if (isExecutable(Platform.JRE)) {
-            if (getTarget().hasTag(TargetTag.JAVAFX) || getTarget().hasTag(TargetTag.GLUON))
-                return ReusableStream.of(
+            if (getTarget().hasTag(TargetTag.JAVAFX) || getTarget().hasTag(TargetTag.GLUON)) {
+                boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().contains("webfx-kit-javafxmedia-emul"));
+                return usesMedia ? ReusableStream.of(
                         getRootModule().findOrCreateModule("webfx-kit-javafx"),
-                        getRootModule().findOrCreateModule("webfx-platform-java-appcontainer-impl"));
+                        getRootModule().findOrCreateModule("webfx-kit-javafxmedia-emul"),
+                        getRootModule().findOrCreateModule("webfx-platform-java-appcontainer-impl")
+                ) : ReusableStream.of(
+                        getRootModule().findOrCreateModule("webfx-kit-javafx"),
+                        getRootModule().findOrCreateModule("webfx-platform-java-appcontainer-impl")
+                );
+            }
             return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                     .filter(RootModule::isJavaFxEmulModule);
         }
