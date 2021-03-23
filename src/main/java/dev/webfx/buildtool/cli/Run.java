@@ -15,9 +15,6 @@ final class Run extends CommonSubcommand implements Runnable {
     @Option(names= {"-c", "--class"}, description = "JavaFX application class to run.")
     String javaFxClass;
 
-    @Option(names= {"-m", "--module"}, description = "JavaFX application module to run.")
-    String module;
-
     @Option(names= {"-p", "--port"}, description = "Port of the web server.")
     int port;
 

@@ -8,7 +8,7 @@ import picocli.CommandLine.Parameters;
 /**
  * @author Bruno Salmon
  */
-@Command(name = "create", description = "Create modules for a new WebFX application.")
+@Command(name = "create", description = "Create WebFX module(s).")
 final class Create extends CommonSubcommand implements Runnable {
 
     @Option(names = {"-g", "--gluon"}, description = "Also create the gluon module.")

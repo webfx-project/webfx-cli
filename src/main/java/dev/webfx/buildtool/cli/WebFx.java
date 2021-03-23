@@ -1,6 +1,5 @@
 package dev.webfx.buildtool.cli;
 
-import dev.webfx.buildtool.UnresolvedException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help;
@@ -12,7 +11,6 @@ import picocli.CommandLine.Model.PositionalParamSpec;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +25,7 @@ import java.util.stream.Collectors;
                 Create.class,
                 Build.class,
                 Run.class,
-                Analyze.class,
+                DoStream.class,
                 Rename.class,
                 Move.class,
                 Conf.class,
@@ -40,18 +38,22 @@ import java.util.stream.Collectors;
 public final class WebFx extends CommonCommand {
 
     public static void main(String... args) {
-        System.exit(
-                new CommandLine(new WebFx())
-                        .setHelpFactory(new HelpFactory())
-                        .setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
-                            // Removing the stack trace if this happens in the cli package (just reporting a wrong user input)
-                            String throwerClassName = ex.getStackTrace()[0].getClassName();
-                            if (throwerClassName.startsWith(WebFx.class.getPackageName()) || ex.getClass().getName().startsWith(UnresolvedException.class.getPackageName()))
-                                ex.setStackTrace(new StackTraceElement[0]);
-                            throw ex;
-                        })
-                        .execute(args)
-        );
+        System.exit(executeCommand(args));
+    }
+
+    public static int executeCommand(String... args) {
+        return new CommandLine(new WebFx())
+                .setHelpFactory(new HelpFactory())
+                .setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
+                    // Removing the stack trace if this happens in the cli package (just reporting a wrong user input)
+/*
+                    String throwerClassName = ex.getStackTrace()[0].getClassName();
+                    if (throwerClassName.startsWith(WebFx.class.getPackageName()) || ex.getClass().getName().startsWith(UnresolvedException.class.getPackageName()))
+                        ex.setStackTrace(new StackTraceElement[0]);
+*/
+                    throw ex;
+                })
+                .execute(args);
     }
 
     private static class HelpFactory implements IHelpFactory {
@@ -59,7 +61,7 @@ public final class WebFx extends CommonCommand {
         public Help create(CommandSpec commandSpec, ColorScheme colorScheme) {
             return new Help(commandSpec, colorScheme) {
                 @Override
-                public String parameterList(List<PositionalParamSpec> positionalParams) {
+                public String parameterList(java.util.List<PositionalParamSpec> positionalParams) {
                     return super.parameterList(positionalParams.stream().filter(this::isNotKeywordParameter).collect(Collectors.toList()));
                 }
 
@@ -70,7 +72,7 @@ public final class WebFx extends CommonCommand {
                 @Override
                 protected Ansi.Text createDetailedSynopsisPositionalsText(Collection<ArgSpec> done) {
                     Ansi.Text positionalParamText = ansi().new Text(0);
-                    List<PositionalParamSpec> positionals = new ArrayList<>(commandSpec.positionalParameters()); // iterate in declaration order
+                    java.util.List<PositionalParamSpec> positionals = new ArrayList<>(commandSpec.positionalParameters()); // iterate in declaration order
                     if (hasAtFileParameter()) {
                         positionals.add(0, AT_FILE_POSITIONAL_PARAM);
                         AT_FILE_POSITIONAL_PARAM.messages(commandSpec.usageMessage().messages());

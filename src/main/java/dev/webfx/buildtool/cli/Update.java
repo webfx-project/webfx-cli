@@ -2,7 +2,6 @@ package dev.webfx.buildtool.cli;
 
 import dev.webfx.buildtool.Platform;
 import dev.webfx.buildtool.ProjectModule;
-import dev.webfx.buildtool.RootModule;
 import dev.webfx.buildtool.TargetTag;
 import dev.webfx.buildtool.sourcegenerators.GluonFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.GwtFilesGenerator;
@@ -82,32 +81,22 @@ final class Update extends CommonSubcommand implements Runnable {
     }
 
     private void enableTask(int taskIndex, boolean value) {
-        switch (taskIndex) {
-            case 0 :
-                mavenPom = value;
-                break;
-            case 1 :
-                moduleInfoJava = value;
-                break;
-            case 2 :
-                metaInfServices = value;
-                break;
-            case 3 :
-                indexHtml = value;
-                break;
-            case 4 :
-                gwtXml = value;
-                break;
-            case 5 :
-                gwtSuperSources = value;
-                break;
-            case 6 :
-                gwtServiceLoader = value;
-                break;
-            case 7 :
-                gwtResourceBundles = value;
-                break;
-        }
+        if (taskIndex == 0)
+            mavenPom = value;
+        else if (taskIndex == 1)
+            moduleInfoJava = value;
+        else if (taskIndex == 2)
+            metaInfServices = value;
+        else if (taskIndex == 3)
+            indexHtml = value;
+        else if (taskIndex == 4)
+            gwtXml = value;
+        else if (taskIndex == 5)
+            gwtSuperSources = value;
+        else if (taskIndex == 6)
+            gwtServiceLoader = value;
+        else if (taskIndex == 7)
+            gwtResourceBundles = value;
     }
 
     @Override
@@ -131,7 +120,7 @@ final class Update extends CommonSubcommand implements Runnable {
                 );
 */
 
-        RootModule rootModule = getRootModule();
+        ProjectModule rootModule = getWorkingProjectModule();
 
         // Updating Maven module files for all source modules (<dependencies> section in pom.xml)
         if (mavenPom)
