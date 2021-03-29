@@ -4,6 +4,7 @@
     <packages>
         <source-packages/>
         <resource-package>dev.webfx.buildtool.cli</resource-package>
+        <resource-package>dev.webfx.buildtool.templates</resource-package>
     </packages>
 
     <dependencies>

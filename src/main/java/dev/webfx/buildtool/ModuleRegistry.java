@@ -11,7 +11,7 @@ import java.util.*;
 final public class ModuleRegistry {
 
     private final Path workspaceDirectory;
-    private final Map<String, Module> libraryModules = new HashMap<>();
+    private final Map<String, LibraryModule> libraryModules = new HashMap<>();
     private final Map<Path, ProjectModule> projectModules = new HashMap<>();
     private final Map<String /* package name */, List<Module>> javaPackagesModules = new HashMap<>();
     private final ReusableStream<ProjectModule> libraryProjectModules;
@@ -100,7 +100,7 @@ final public class ModuleRegistry {
         if (pm.isImplementingInterface() && !sourceModule.isExecutable()) {
             // Exception is however made for non executable source modules that implements a provider
             // Ex: webfx-kit-extracontrols-registry-javafx can include webfx-kit-extracontrols-registry-spi (which implements webfx-kit-extracontrols-registry)
-            boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> pm.getDeclaredJavaClasses().anyMatch(c -> c.getClassName().equals(s)));
+            boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> pm.getDeclaredJavaFiles().anyMatch(c -> c.getClassName().equals(s)));
             if (!exception)
                 return false;
         }
@@ -120,21 +120,8 @@ final public class ModuleRegistry {
         return module;
     }
 
-    Module getOrCreateThirdPartyModule(String artifactId) {
-        Module module = getThirdPartyModule(artifactId);
-        if (module == null)
-            module = createThirdPartyModule(artifactId);
-        return module;
-    }
-
-    Module getThirdPartyModule(String artifactId) {
+    LibraryModule getLibraryModule(String artifactId) {
         return libraryModules.get(artifactId);
-    }
-
-    Module createThirdPartyModule(String artifactId) {
-        Module module = Module.create(artifactId);
-        libraryModules.put(artifactId, module);
-        return module;
     }
 
     public ProjectModule getOrCreateProjectModule(Path projectDirectory) {
@@ -146,7 +133,7 @@ final public class ModuleRegistry {
             ProjectModule projectModule = parentDirectory.equals(workspaceDirectory) ? null : getOrCreateProjectModule(parentDirectory);
             return createProjectModule(projectDirectory, projectModule);
         }
-        throw new IllegalArgumentException("projectDirectory (" + projectDirectory + ") must be under workspace directory (" + workspaceDirectory + ")");
+        throw new BuildException("projectDirectory (" + projectDirectory + ") must be under workspace directory (" + workspaceDirectory + ")");
     }
 
     ProjectModule getOrCreateProjectModule(Path projectDirectory, ProjectModule parentModule) {

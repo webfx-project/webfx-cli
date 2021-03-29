@@ -1,5 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
+import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -25,43 +26,13 @@ public final class GwtModuleFile extends XmlModuleFile {
     }
 
     @Override
-    Path getModulePath() {
+    Path getModuleFilePath() {
         return resolveFromModuleHomeDirectory("src/main/module.gwt.xml");
     }
 
     @Override
     Document createInitialDocument() {
-        return XmlUtil.parseXmlString("<module>\n" +
-                    "\n" +
-                    "    <!-- Configuring logging (must be in first position) -->\n" +
-                    "    <inherits name=\"com.google.gwt.logging.Logging\"/>\n" +
-                    "    <set-property name=\"gwt.logging.enabled\" value=\"TRUE\"/>\n" +
-                    "    <set-property name=\"gwt.logging.logLevel\" value=\"FINEST\"/>\n" +
-                    "    <set-property name=\"gwt.logging.consoleHandler\" value=\"ENABLED\"/>\n" +
-                    "\n" +
-                    "    <!-- Listing transitive dependencies modules -->\n" +
-                    "\n" +
-                    "    <source path=\"mongoose/client/services/bus/conf/gwt\"/>\n" +
-                    "    <source path=\"mongoose/shared/domainmodel/gwt\"/>\n" +
-                    "    <source path=\"mongoose/client/icons/gwt\"/>\n" +
-                    "\n" +
-                    "    <!-- Speeding up GWT compilation time in development mode -->\n" +
-                    "    <set-property name=\"user.agent\" value=\"safari\"/> <!-- to make only 1 permutation for testing with Chrome -->\n" +
-                    "    <set-property name=\"jre.checks.checkLevel\" value=\"MINIMAL\"/>\n" +
-                    "\n" +
-                    "    <!-- Specify the app entry point class. -->\n" +
-                    "    <entry-point class=\"dev.webfx.platform.gwt.services.appcontainer.spi.impl.GwtApplicationContainerProvider\"/>\n" +
-                    "\n" +
-                    "    <super-source path=\"super\"/>\n" +
-                    "    <super-source path=\"\" includes=\"java/io/\"/>\n" +
-                    "    <super-source path=\"\" includes=\"java/lang/\"/>\n" +
-                    "    <super-source path=\"\" includes=\"java/security/\"/>\n" +
-                    "    <super-source path=\"\" includes=\"java/text/\"/>\n" +
-                    "    <super-source path=\"\" includes=\"java/util/\"/>\n" +
-                    "\n" +
-                    "    <public path=\"public\"/>\n" +
-                    "\n" +
-                    "</module>");
+        return XmlUtil.parseXmlString(ResourceTextFileReader.readTemplate("module.gwt.xml"));
     }
 
     @Override

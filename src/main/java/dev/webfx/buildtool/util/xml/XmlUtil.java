@@ -17,10 +17,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.*;
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
+import java.io.*;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
@@ -47,8 +44,11 @@ public final class XmlUtil {
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             try {
                 return dBuilder.parse(is);
+            } catch (FileNotFoundException ie) {
+                return null;
             } catch (IOException e) {
-                return dBuilder.newDocument();
+                e.printStackTrace();
+                return null;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -102,6 +102,8 @@ public final class XmlUtil {
     }
 
     private static <T> T lookup(Object item, String xpathExpression, QName returnType) {
+        if (item == null)
+            return null;
         XPathFactory xpf = XPathFactory.newInstance();
         XPath xpath = xpf.newXPath();
         try {
@@ -113,6 +115,8 @@ public final class XmlUtil {
     }
 
     public static <T> ReusableStream<T> nodeListToReusableStream(NodeList nodeList, Function<Node, ? extends T> transformer) {
+        if (nodeList == null)
+            return ReusableStream.empty();
         return ReusableStream.create(() -> new Spliterators.AbstractSpliterator<>(nodeList.getLength(), Spliterator.SIZED) {
             private int index = 0;
             @Override
@@ -134,5 +138,16 @@ public final class XmlUtil {
 
     public static boolean getBooleanAttributeValue(Node node, String name) {
         return "true".equalsIgnoreCase(getAttributeValue(node, name));
+    }
+
+    public static void appendIndentNode(Node node, Node parentNode) {
+        StringBuilder sb = new StringBuilder("\n");
+        for (Node p = parentNode.getParentNode().getParentNode(); p != null; p = p.getParentNode())
+            sb.append("    "); // 4 spaces indent per depth level
+        boolean linefeed = !parentNode.hasChildNodes();
+        Document document = parentNode.getOwnerDocument();
+        parentNode.appendChild(document.createTextNode((linefeed ? sb : "") + "    "));
+        parentNode.appendChild(node);
+        parentNode.appendChild(document.createTextNode(sb.toString()));
     }
 }

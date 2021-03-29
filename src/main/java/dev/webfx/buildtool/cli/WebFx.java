@@ -1,5 +1,6 @@
 package dev.webfx.buildtool.cli;
 
+import dev.webfx.buildtool.BuildException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
                 Create.class,
                 Build.class,
                 Run.class,
-                DoStream.class,
+                STream.class,
                 Rename.class,
                 Move.class,
                 Conf.class,
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
                 Watch.class,
         },
         mixinStandardHelpOptions = true,
-        version = "2021-03-16")
+        version = "2021-04-02")
 public final class WebFx extends CommonCommand {
 
     public static void main(String... args) {
@@ -46,11 +47,8 @@ public final class WebFx extends CommonCommand {
                 .setHelpFactory(new HelpFactory())
                 .setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
                     // Removing the stack trace if this happens in the cli package (just reporting a wrong user input)
-/*
-                    String throwerClassName = ex.getStackTrace()[0].getClassName();
-                    if (throwerClassName.startsWith(WebFx.class.getPackageName()) || ex.getClass().getName().startsWith(UnresolvedException.class.getPackageName()))
+                    if (ex instanceof BuildException)
                         ex.setStackTrace(new StackTraceElement[0]);
-*/
                     throw ex;
                 })
                 .execute(args);

@@ -1,8 +1,11 @@
 package dev.webfx.buildtool.modulefiles;
 
 import dev.webfx.buildtool.*;
+import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import java.nio.file.Path;
@@ -16,24 +19,20 @@ public final class WebFxModuleFile extends XmlModuleFile {
         super(module, true);
     }
 
-    public Path getModulePath() {
+    public Path getModuleFilePath() {
         return resolveFromModuleHomeDirectory("webfx.xml");
     }
 
     public boolean isExecutable() {
-        return getBooleanModuleAttributeValue("executable");
+        return getBooleanProjectAttributeValue("executable");
     }
 
     public boolean isInterface() {
-        return getBooleanModuleAttributeValue("interface");
+        return getBooleanProjectAttributeValue("interface");
     }
 
     public boolean isAutomatic() {
         return lookupNode("/project/auto-conditions") != null;
-    }
-
-    public boolean isAggregate() {
-        return lookupNode("/project/modules") != null;
     }
 
     public boolean areSourcePackagesAutomaticallyAdded() {
@@ -58,10 +57,6 @@ public final class WebFxModuleFile extends XmlModuleFile {
 
     public ReusableStream<ModuleProperty> getModuleProperties() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/properties//*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
-    }
-
-    public ReusableStream<Path> getChildrenModules() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/modules//module"), node -> resolveFromModuleHomeDirectory(node.getTextContent()));
     }
 
     public boolean areSourceModuleDependenciesAutomaticallyAdded() {
@@ -112,7 +107,34 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return lookupNode("/project/html");
     }
 
-    private boolean getBooleanModuleAttributeValue(String attribute) {
-        return XmlUtil.getBooleanAttributeValue(getDocument().getDocumentElement(), attribute);
+    private boolean getBooleanProjectAttributeValue(String attribute) {
+        return XmlUtil.getBooleanAttributeValue(getDocumentElement(), attribute);
+    }
+
+    @Override
+    Document createInitialDocument() {
+        ProjectModule projectModule = getProjectModule();
+        String template = ResourceTextFileReader.readTemplate("webfx.xml")
+                .replace("${groupId}",    ArtifactResolver.getGroupId(projectModule))
+                .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
+                .replace("${version}",    ArtifactResolver.getVersion(projectModule))
+                ;
+        return XmlUtil.parseXmlString(template);
+    }
+
+    public void setExecutable(boolean executable) {
+        if (executable != isExecutable()) {
+            Attr attribute = getOrCreateDocument().createAttribute("executable");
+            attribute.setValue(String.valueOf(executable));
+            getDocumentElement().getAttributes().setNamedItem(attribute);
+        }
+    }
+
+    public void addProvider(String spiClassName, String providerClassName) {
+        appendTextNodeIfNotAlreadyExists("/project/providers/" + spiClassName, providerClassName);
+    }
+
+    void updateDocument(Document document) {
+        // Nothing to update as this is the source
     }
 }

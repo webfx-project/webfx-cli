@@ -27,13 +27,13 @@ public final class BuildTool {
                     .getChildrenModulesInDepth()
                     .filter(ProjectModule::hasJavaSourceDirectory)
                     .forEach(m -> TextFileReaderWriter.writeTextFileIfNewOrModified(
-                            TextFileReaderWriter.readTextFile(m.getWebfxModuleFile().getModulePath())
+                            TextFileReaderWriter.readTextFile(m.getWebfxModuleFile().getModuleFilePath())
                                     .replace("?>\n<module>", "?>\n<module>\n\n    <packages exports=\"true\"/>")
                                     .replace("?>\n<module interface=\"true\">", "?>\n<module interface=\"true\">\n\n    <packages exports=\"true\"/>")
                                     .replace("?>\n<module automatic=\"true\">", "?>\n<module automatic=\"true\">\n\n    <packages exports=\"true\"/>")
                                     .replace("?>\n<module show-loading-spinner-on-startup=\"true\">", "?>\n<module show-loading-spinner-on-startup=\"true\">\n\n    <packages exports=\"true\"/>")
                                     .replace("?>\n<module/>", "?>\n<module>\n\n    <packages exports=\"true\"/> \n\n</module>")
-                            , m.getWebfxModuleFile().getModulePath()));
+                            , m.getWebfxModuleFile().getModuleFilePath()));
 
             return;
         }

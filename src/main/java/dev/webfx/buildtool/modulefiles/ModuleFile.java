@@ -29,10 +29,10 @@ abstract class ModuleFile {
         return getProjectModule().getHomeDirectory().resolve(relativePath);
     }
 
-    abstract Path getModulePath();
+    abstract Path getModuleFilePath();
 
     File getModuleFile() {
-        return getModulePath().toFile();
+        return getModuleFilePath().toFile();
     }
 
     abstract void readFile();

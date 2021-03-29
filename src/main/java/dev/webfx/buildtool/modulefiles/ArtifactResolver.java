@@ -12,6 +12,20 @@ import java.util.Objects;
  */
 final class ArtifactResolver {
 
+    static String getArtifactId(Module module) {
+        if (module instanceof ProjectModule)
+            return getArtifactId(module, ((ProjectModule) module).getBuildInfo());
+        return getArtifactId(module, false, false, false);
+    }
+
+    static String getArtifactId(ProjectModule module) {
+        return getArtifactId(module, module.getBuildInfo());
+    }
+
+    static String getArtifactId(Module module, BuildInfo buildInfo) {
+        return getArtifactId(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.isRegistry);
+    }
+
     static String getArtifactId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
         if (moduleName.equals("java-nio-emul") && isForGwt && isExecutable)
@@ -55,15 +69,27 @@ final class ArtifactResolver {
         return moduleName;
     }
 
-    static String getGroupId(Module module, boolean isForGwt, boolean isRegistry) {
+    static String getGroupId(ProjectModule module) {
+        return getGroupId(module, module.getBuildInfo());
+    }
+
+    static String getGroupId(Module module, BuildInfo buildInfo) {
+        return getGroupId(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.isRegistry);
+    }
+
+    static String getGroupId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
+        if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
+            module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
         if (module instanceof LibraryModule) {
             String groupId = ((LibraryModule) module).getGroupId();
             if (groupId != null)
                 return groupId;
+        } else if (module instanceof ProjectModule) {
+            String groupId = ((ProjectModule) module).getGroupIdOrParent();
+            if (groupId != null)
+                return groupId;
         }
-        if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
-            return "org.openjfx";
         if (moduleName.startsWith("gwt-"))
             return "com.google.gwt";
         if (moduleName.startsWith("webfx-"))
@@ -73,20 +99,36 @@ final class ArtifactResolver {
         return "???";
     }
 
-    static String getVersion(Module module, boolean isForGwt, boolean isRegistry) {
+    static String getVersion(ProjectModule module) {
+        return getVersion(module, module.getBuildInfo());
+    }
+
+    static String getVersion(Module module, BuildInfo buildInfo) {
+        return getVersion(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.isRegistry);
+    }
+
+    static String getVersion(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
+        if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
+            module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
         if (module instanceof LibraryModule) {
             String version = ((LibraryModule) module).getVersion();
             if (version != null)
                 return version;
+        } else if (module instanceof ProjectModule) {
+            String version = ((ProjectModule) module).getVersionOrParent();
+            if (version != null)
+                return version;
         }
-        if (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName))
-            return "${lib.openjfx.version}";
         if (moduleName.startsWith("webfx-"))
             return "${webfx.version}";
         if (moduleName.startsWith("mongoose-"))
             return "${mongoose.version}";
         return null; // Managed by root pom
+    }
+
+    static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, BuildInfo buildInfo) {
+        return getScope(moduleGroup, buildInfo.isForGwt, buildInfo.isForJavaFx, buildInfo.isExecutable, buildInfo.isRegistry);
     }
 
     static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, boolean isForGwt, boolean isForJavaFx, boolean isExecutable, boolean isRegistry) {
@@ -112,6 +154,10 @@ final class ArtifactResolver {
                     return "runtime";
             }
         return null;
+    }
+
+    static String getClassifier(Map.Entry<Module, List<ModuleDependency>> moduleGroup, BuildInfo buildInfo) {
+        return getClassifier(moduleGroup, buildInfo.isForGwt, buildInfo.isExecutable);
     }
 
     static String getClassifier(Map.Entry<Module, List<ModuleDependency>> moduleGroup, boolean isForGwt, boolean isExecutable) {

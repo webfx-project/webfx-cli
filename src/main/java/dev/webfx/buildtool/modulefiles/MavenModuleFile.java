@@ -1,17 +1,15 @@
 package dev.webfx.buildtool.modulefiles;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.*;
+import dev.webfx.buildtool.Module;
+import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
+import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -19,41 +17,88 @@ import java.util.stream.Collectors;
  */
 public final class MavenModuleFile extends XmlModuleFile {
 
-    private static final String newDependenciesIndentedLine = "\n    ";
-    private static final String newDependencyIndentedLine = "\n        ";
-    private static final String newDependencyElementIndentedLine = "\n            ";
+    private Boolean aggregate;
 
     public MavenModuleFile(ProjectModule module) {
         super(module, true);
     }
 
     @Override
-    Path getModulePath() {
+    Path getModuleFilePath() {
         return resolveFromModuleHomeDirectory("pom.xml");
+    }
+
+    public String getGroupId() {
+        Node node = lookupNode("/project/groupId");
+        return node == null ? null : node.getTextContent();
+    }
+
+    public String getArtifactId() {
+        Node node = lookupNode("/project/artifactId");
+        return node == null ? null : node.getTextContent();
+    }
+
+    public String getVersion() {
+        Node node = lookupNode("/project/version");
+        return node == null ? null : node.getTextContent();
+    }
+
+    public String getParentGroupId() {
+        Node node = lookupNode("/project/parent/groupId");
+        return node == null ? null : node.getTextContent();
+    }
+
+    public String getParentVersion() {
+        Node node = lookupNode("/project/parent/version");
+        return node == null ? null : node.getTextContent();
+    }
+
+    public void setAggregate(boolean aggregate) {
+        this.aggregate = aggregate;
+    }
+
+    public boolean isAggregate() {
+        return aggregate != null ? aggregate : lookupNode("/project/modules") != null;
+    }
+
+    public ReusableStream<Path> getChildrenModules() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/modules//module"), node -> resolveFromModuleHomeDirectory(node.getTextContent()));
+    }
+
+    @Override
+    Document createInitialDocument() {
+        ProjectModule projectModule = getProjectModule();
+        boolean isRootModule = projectModule instanceof RootModule;
+        BuildInfo buildInfo = projectModule.getBuildInfo();
+        String templateFileName = isRootModule ? (((RootModule) projectModule).isInlineWebfxParent() ? "pom_root_inline.xml" : "pom_root.xml") : isAggregate() ? "pom_aggregate.xml" :  !buildInfo.isExecutable ? "pom_not_executable.xml" : buildInfo.isForGwt ? "pom_gwt_executable.xml" : buildInfo.isForGluon ? "pom_gluon_executable.xml" : "pom_javafx_executable.xml";
+        String template = ResourceTextFileReader.readTemplate(templateFileName)
+                .replace("${groupId}",    ArtifactResolver.getGroupId(projectModule))
+                .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
+                .replace("${version}",    ArtifactResolver.getVersion(projectModule))
+                ;
+        if (!isRootModule) {
+            ProjectModule parentModule = projectModule.getParentModule();
+            template = template
+                    .replace("${parent.groupId}",    ArtifactResolver.getGroupId(parentModule))
+                    .replace("${parent.artifactId}", ArtifactResolver.getArtifactId(parentModule))
+                    .replace("${parent.version}",    ArtifactResolver.getVersion(parentModule))
+            ;
+        }
+        return XmlUtil.parseXmlString(template);
     }
 
     @Override
     void updateDocument(Document document) {
-        Node dependenciesNode = lookupNode("/project/dependencies");
-        if (dependenciesNode != null)
-            clearNodeChildren(dependenciesNode);
-        else {
-            dependenciesNode = document.createElement("dependencies");
-            Element documentElement = document.getDocumentElement();
-            documentElement.appendChild(document.createTextNode(newDependenciesIndentedLine));
-            documentElement.appendChild(dependenciesNode);
-            documentElement.appendChild(document.createTextNode("\n"));
-        }
-        final Node finalDependenciesNode = dependenciesNode;
+        if (isAggregate())
+            return;
+        Node dependenciesNode = lookupOrCreateNode("/project/dependencies");
+        clearNodeChildren(dependenciesNode);
         dependenciesNode.appendChild(document.createTextNode(" "));
-        dependenciesNode.appendChild(document.createComment(" Generated by WebFx "));
+        dependenciesNode.appendChild(document.createComment(" Dependencies managed by WebFX (DO NOT EDIT MANUALLY) "));
+        dependenciesNode.appendChild(document.createTextNode("\n\n    "));
         ProjectModule module = getProjectModule();
-        boolean isForGwt = module.getTarget().isMonoPlatform(Platform.GWT);
-        boolean isForJavaFx = module.getTarget().isMonoPlatform(Platform.JRE) && (module.getTarget().hasTag(TargetTag.JAVAFX) || module.getTarget().hasTag(TargetTag.GLUON));
-        boolean isExecutable = module.isExecutable();
-        boolean isRegistry = module.getName().contains("-registry-") || module.getName().endsWith("-registry");
-        Set<String> alreadyListedArtifactIds = new HashSet<>(); // Will be used to prevent duplicates (in case 2 different modules have the same artifactId)
-        ReusableStream<ModuleDependency> dependencies = isForGwt && isExecutable ? module.getTransitiveDependencies() :
+        BuildInfo buildInfo = module.getBuildInfo();
+        ReusableStream<ModuleDependency> dependencies = buildInfo.isForGwt && buildInfo.isExecutable ? module.getTransitiveDependencies() :
                 ReusableStream.concat(
                         module.getDirectDependencies(),
                         module.getTransitiveDependencies().filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER)
@@ -62,64 +107,31 @@ public final class MavenModuleFile extends XmlModuleFile {
                 .stream().collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                 .stream().sorted(Map.Entry.comparingByKey())
                 .forEach(moduleGroup -> {
-                    Node moduleDependencyNode = createModuleDependencyNode(moduleGroup, document, isForGwt, isForJavaFx, isExecutable, isRegistry);
-                    if (moduleDependencyNode != null) {
-                        String artifactId = ArtifactResolver.getArtifactId(moduleGroup.getKey(), isForGwt, isExecutable, isRegistry);
-                        if (!alreadyListedArtifactIds.contains(artifactId)) {
-                            finalDependenciesNode.appendChild(document.createTextNode(newDependencyIndentedLine));
-                            finalDependenciesNode.appendChild(document.createTextNode(newDependencyIndentedLine));
-                            finalDependenciesNode.appendChild(moduleDependencyNode);
-                            alreadyListedArtifactIds.add(artifactId);
-                        }
+                    Module destinationModule = moduleGroup.getKey();
+                    String artifactId = ArtifactResolver.getArtifactId(destinationModule, buildInfo);
+                    if (artifactId != null && lookupTextNode(dependenciesNode,"/dependency/artifactId", artifactId) == null) {
+                        String groupId = ArtifactResolver.getGroupId(destinationModule, buildInfo);
+                        Node groupNode = appendTextNode(dependenciesNode, "/dependency/groupId", groupId);
+                        Node dependencyNode = groupNode.getParentNode();
+                        appendTextNode(dependencyNode, "/artifactId", artifactId);
+                        String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
+                        if (version != null)
+                            appendTextNode(dependencyNode, "/version", version);
+                        String scope = ArtifactResolver.getScope(moduleGroup, buildInfo);
+                        if (scope != null)
+                            appendTextNode(dependencyNode, "/scope", scope);
+                        String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
+                        if (classifier != null)
+                            appendTextNode(dependencyNode, "/classifier", classifier);
+                        if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
+                            appendTextNode(dependencyNode, "/optional", "true");
+                        dependenciesNode.appendChild(document.createTextNode("\n    "));
                     }
                 });
-        dependenciesNode.appendChild(document.createTextNode(newDependenciesIndentedLine));
-        dependenciesNode.appendChild(document.createTextNode(newDependenciesIndentedLine));
     }
 
-    private static Node createModuleDependencyNode(Map.Entry<Module, List<ModuleDependency>> moduleGroup, Document document, boolean isForGwt, boolean isForJavaFx, boolean isExecutable, boolean isRegistry) {
-        Module module = moduleGroup.getKey();
-        String artifactId = ArtifactResolver.getArtifactId(module, isForGwt, isExecutable, isRegistry);
-        if (artifactId == null)
-            return null;
-        Element dependencyNode = document.createElement("dependency");
-        Element artifactIdElement = document.createElement("artifactId");
-        artifactIdElement.setTextContent(artifactId);
-        dependencyNode.appendChild(document.createTextNode(newDependencyElementIndentedLine));
-        dependencyNode.appendChild(artifactIdElement);
-        String groupId = ArtifactResolver.getGroupId(module, isForGwt, isRegistry);
-        Element groupIdElement = document.createElement("groupId");
-        groupIdElement.setTextContent(groupId);
-        dependencyNode.appendChild(document.createTextNode(newDependencyElementIndentedLine));
-        dependencyNode.appendChild(groupIdElement);
-        String version = ArtifactResolver.getVersion(module, isForGwt, isRegistry);
-        if (version != null) {
-            Element versionElement = document.createElement("version");
-            versionElement.setTextContent(version);
-            dependencyNode.appendChild(document.createTextNode(newDependencyElementIndentedLine));
-            dependencyNode.appendChild(versionElement);
-        }
-        String scope = ArtifactResolver.getScope(moduleGroup, isForGwt, isForJavaFx, isExecutable, isRegistry);
-        if (scope != null) {
-            Element scopeElement = document.createElement("scope");
-            scopeElement.setTextContent(scope);
-            dependencyNode.appendChild(document.createTextNode(newDependencyElementIndentedLine));
-            dependencyNode.appendChild(scopeElement);
-        }
-        String classifier = ArtifactResolver.getClassifier(moduleGroup, isForGwt, isExecutable);
-        if (classifier != null) {
-            Element classifierElement = document.createElement("classifier");
-            classifierElement.setTextContent(classifier);
-            dependencyNode.appendChild(document.createTextNode(newDependencyElementIndentedLine));
-            dependencyNode.appendChild(classifierElement);
-        }
-        if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional)) {
-            Element optionalElement = document.createElement("optional");
-            optionalElement.setTextContent("true");
-            dependencyNode.appendChild(document.createTextNode(newDependencyElementIndentedLine));
-            dependencyNode.appendChild(optionalElement);
-        }
-        dependencyNode.appendChild(document.createTextNode(newDependencyIndentedLine));
-        return dependencyNode;
+    public void addModule(Module module) {
+        String artifactId = ArtifactResolver.getArtifactId(module);
+        appendTextNodeIfNotAlreadyExists("/project/modules/module", artifactId);
     }
 }

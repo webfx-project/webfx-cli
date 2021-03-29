@@ -1,6 +1,5 @@
 package dev.webfx.buildtool.cli;
 
-import dev.webfx.buildtool.Logger;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
@@ -21,6 +20,6 @@ final class Rename extends CommonSubcommand implements Runnable {
 
     @Override
     public void run() {
-        Logger.log("Renaming " + name + " to " + newName);
+        log("Renaming " + name + " to " + newName);
     }
 }

@@ -1,0 +1,18 @@
+// File managed by WebFX (DO NOT EDIT MANUALLY)
+package java.lang.reflect;
+
+import dev.webfx.platform.shared.services.log.Logger;
+
+public final class Array {
+
+    public static Object newInstance(Class<?> componentType, int length) throws NegativeArraySizeException {
+        switch (componentType.getName()) {
+${generatedCasesCode}
+            // TYPE NOT FOUND
+            default:
+               Logger.log("GWT super source Array.newInstance() has no case for type " + componentType + ", so new Object[] is returned but this may cause a ClassCastException.");
+               return new Object[length];
+        }
+    }
+
+}

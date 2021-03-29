@@ -1,6 +1,5 @@
 package dev.webfx.buildtool.cli;
 
-import dev.webfx.buildtool.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -86,7 +85,7 @@ final class Conf extends CommonSubcommand {
         static class Module extends CommonSubcommand implements Runnable {
             @Override
             public void run() {
-                Logger.log("Module");
+                log("Module");
             }
         }
 
@@ -94,7 +93,7 @@ final class Conf extends CommonSubcommand {
         static class Package extends CommonSubcommand implements Runnable {
             @Override
             public void run() {
-                Logger.log("Package");
+                log("Package");
             }
         }
 
@@ -102,7 +101,7 @@ final class Conf extends CommonSubcommand {
         static class Library extends CommonSubcommand implements Runnable {
             @Override
             public void run() {
-                Logger.log("Library");
+                log("Library");
             }
         }
     }

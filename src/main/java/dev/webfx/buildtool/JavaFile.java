@@ -11,7 +11,7 @@ import java.nio.file.Path;
 /**
  * @author Bruno Salmon
  */
-public final class JavaFile {
+public final class JavaFile implements Comparable<JavaFile> {
 
     private final Path path;
     private final ProjectModule projectModule;
@@ -41,7 +41,7 @@ public final class JavaFile {
     }
 
 
-    JavaCode getJavaCode() {
+    public JavaCode getJavaCode() {
         return javaCode;
     }
 
@@ -67,7 +67,7 @@ public final class JavaFile {
         return packageName;
     }
 
-    String getClassName() {
+    public String getClassName() {
         if (className == null)
             className = path.toString().substring(projectModule.getJavaSourceDirectory().toString().length() + 1, path.toString().length() - 5).replaceAll("[/\\\\]", ".");
         return className;
@@ -78,7 +78,7 @@ public final class JavaFile {
      ***** Analyzing streams  *****
      ******************************/
 
-    ReusableStream<String> getUsedJavaPackages() {
+    public ReusableStream<String> getUsedJavaPackages() {
         return usedJavaPackagesCache;
     }
 
@@ -101,7 +101,11 @@ public final class JavaFile {
 
     @Override
     public String toString() {
-        return getClassName();
+        return getPath().toString();
     }
 
+    @Override
+    public int compareTo(JavaFile o) {
+        return path.compareTo(o.path);
+    }
 }

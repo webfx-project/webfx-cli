@@ -8,6 +8,7 @@ import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -30,7 +31,11 @@ abstract class XmlModuleFile extends ModuleFile {
     Document getDocument() {
         if (document == null & readFileIfExists)
             readFile();
-        if (document == null)
+        return document;
+    }
+
+    Document getOrCreateDocument() {
+        if (getDocument() == null)
             createDocument();
         return document;
     }
@@ -60,6 +65,14 @@ abstract class XmlModuleFile extends ModuleFile {
         clearNodeChildren(document);
     }
 
+    Element getDocumentElement() {
+        return getDocument() == null ? null : document.getDocumentElement();
+    }
+
+    Element getOrCreateDocumentElement() {
+        return getOrCreateDocument().getDocumentElement();
+    }
+
     void clearNodeChildren(Node node) {
         Node firstChild;
         while ((firstChild = node.getFirstChild()) != null)
@@ -72,13 +85,13 @@ abstract class XmlModuleFile extends ModuleFile {
     }
 
     public void updateAndWrite() {
-        updateDocument(getDocument());
+        updateDocument(getOrCreateDocument());
         writeFile();
     }
 
     @Override
     public void writeFile() {
-        TextFileReaderWriter.writeTextFileIfNewOrModified(XmlUtil.formatXmlText(getDocument()), getModulePath());
+        TextFileReaderWriter.writeTextFileIfNewOrModified(XmlUtil.formatXmlText(getOrCreateDocument()), getModuleFilePath());
     }
 
     NodeList lookupNodeList(String xpathExpression) {
@@ -86,7 +99,62 @@ abstract class XmlModuleFile extends ModuleFile {
     }
 
     Node lookupNode(String xpathExpression) {
-        return XmlUtil.lookupNode(getDocument(), xpathExpression);
+        return lookupNode(getDocument(), xpathExpression);
+    }
+
+    static Node lookupNode(Object parent, String xpathExpression) {
+        return XmlUtil.lookupNode(parent, xpathExpression);
+    }
+
+    Node lookupOrCreateNode(String xpath) {
+        return lookupOrCreateNode(getOrCreateDocumentElement(), xpath);
+    }
+
+    static Node lookupOrCreateNode(Node parent, String xpath) {
+        Node node = lookupNode(parent, xpath);
+        if (node == null)
+            node = createNode(parent, xpath);
+        return node;
+    }
+
+    Node createNode(String xpath) {
+        return createNode(getOrCreateDocumentElement(), xpath);
+    }
+
+    static Node createNode(Node parentElement, String xpath) {
+        Document document = parentElement.getOwnerDocument();
+        int p = xpath.lastIndexOf('/');
+        Node parentNode = p <= 1 ? parentElement : lookupOrCreateNode(parentElement, xpath.substring(0, p));
+        Node node = document.createElement(xpath.substring(p + 1));
+        XmlUtil.appendIndentNode(node, parentNode);
+/*
+        if (parentNode == parentElement)
+            parentNode.appendChild(document.createTextNode("\n"));
+*/
+        return node;
+    }
+
+    void appendTextNodeIfNotAlreadyExists(String xpath, String text) {
+        if (lookupTextNode(xpath, text) == null)
+            appendTextNode(xpath, text);
+    }
+
+    Node lookupTextNode(String xpath, String text) {
+        return lookupTextNode(getDocumentElement(), xpath, text);
+    }
+
+    Node lookupTextNode(Object parent, String xpath, String text) {
+        return lookupNode(parent, xpath + "[text() = '" + text + "']");
+    }
+
+    Node appendTextNode(String xpath, String text) {
+        return appendTextNode(getOrCreateDocumentElement(), xpath, text);
+    }
+
+    Node appendTextNode(Node parentNode, String xpath, String text) {
+        Node node = createNode(parentNode, xpath);
+        node.setTextContent(text);
+        return node;
     }
 
     String lookupNodeTextContent(String xpathExpression) {
@@ -105,7 +173,7 @@ abstract class XmlModuleFile extends ModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node ->
                 new ModuleDependency(
                         getModule(),
-                        getProjectModule().getRootModule().findOrCreateModule(node.getTextContent()),
+                        getProjectModule().getRootModule().findModule(node.getTextContent()),
                         type,
                         XmlUtil.getBooleanAttributeValue(node, "optional"),
                         XmlUtil.getAttributeValue(node, "scope"),

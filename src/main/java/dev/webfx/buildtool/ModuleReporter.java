@@ -25,7 +25,7 @@ final class ModuleReporter {
 
     void listJavaClasses() {
         listIterableElements("Listing " + projectModule + " module java classes",
-                projectModule.getDeclaredJavaClasses()
+                projectModule.getDeclaredJavaFiles()
         );
     }
 
@@ -62,7 +62,7 @@ final class ModuleReporter {
 
     void listJavaClassesDependingOn(String destinationModule) {
         listIterableElements("Listing " + projectModule + " module java classes depending on " + destinationModule,
-                projectModule.getJavaClassesDependingOn(destinationModule)
+                projectModule.getJavaFilesDependingOn(destinationModule)
                 , jc -> logJavaClassWithPackagesDependingOn(jc, destinationModule)
         );
     }

@@ -22,12 +22,14 @@ public class TextFileReaderWriter {
 
     public static void writeTextFile(String content, Path path) {
         try {
-            Files.createDirectories(path.getParent()); // Creating all necessary directories
+            boolean exists = Files.exists(path);
+            if (!exists)
+                Files.createDirectories(path.getParent()); // Creating all necessary directories
             BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
             writer.write(content);
             writer.flush();
             writer.close();
-            Logger.log("Updated " + path);
+            Logger.log((exists ? "Updated " :  "Wrote " ) + path);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

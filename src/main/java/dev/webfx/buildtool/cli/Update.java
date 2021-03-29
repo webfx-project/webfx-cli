@@ -3,6 +3,7 @@ package dev.webfx.buildtool.cli;
 import dev.webfx.buildtool.Platform;
 import dev.webfx.buildtool.ProjectModule;
 import dev.webfx.buildtool.TargetTag;
+import dev.webfx.buildtool.UnresolvedException;
 import dev.webfx.buildtool.sourcegenerators.GluonFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.GwtFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.JavaFilesGenerator;
@@ -66,7 +67,7 @@ final class Update extends CommonSubcommand implements Runnable {
                 return;
             }
         if (!processTaskLetters(flag, value))
-            throw new IllegalArgumentException("Unrecognized task " + flag);
+            throw new UnresolvedException("Unrecognized task " + flag);
     }
 
     private boolean processTaskLetters(String flag, boolean value) {
@@ -107,18 +108,6 @@ final class Update extends CommonSubcommand implements Runnable {
             enableTask(i, only == null);
         processTaskFlags(only, true);
         processTaskFlags(skip, false);
-/*
-        System.out.println(
-                "mavenPom = " + mavenPom +
-                "\nmoduleInfoJava = " + moduleInfoJava +
-                "\nmetaInfServices = " + metaInfServices +
-                "\nindexHtml = " + indexHtml +
-                "\ngwtXml = " + gwtXml +
-                "\ngwtSuperSources = " + gwtSuperSources +
-                "\ngwtServiceLoader = " + gwtServiceLoader +
-                "\ngwtResourceBundles = " + gwtResourceBundles
-                );
-*/
 
         ProjectModule rootModule = getWorkingProjectModule();
 

@@ -13,6 +13,7 @@ public final class RootModule extends ProjectModule {
     private final ModuleRegistry moduleRegistry;
     private final ReusableStream<ProjectModule> packageModuleSearchScopeResume;
     private final ReusableStream<Collection<Module>> cyclicDependencyLoopsCache;
+    private boolean inlineWebfxParent;
 
     /***********************
      ***** Constructor *****
@@ -43,6 +44,14 @@ public final class RootModule extends ProjectModule {
                 moduleRegistry.getLibraryProjectModules());
     }
 
+    public boolean isInlineWebfxParent() {
+        return inlineWebfxParent;
+    }
+
+    public void setInlineWebfxParent(boolean inlineWebfxParent) {
+        this.inlineWebfxParent = inlineWebfxParent;
+    }
+
     /********************************
      ***** Registration methods *****
      ********************************/
@@ -63,11 +72,8 @@ public final class RootModule extends ProjectModule {
         return moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, false);
     }
 
-    public Module findOrCreateModule(String name) {
-        Module module = findModule(name, true);
-        if (module == null)
-            module = moduleRegistry.createThirdPartyModule(name);
-        return module;
+    public Module findModule(String name) {
+        return findModule(name, false);
     }
 
     public Module findModule(String name, boolean silent) {
@@ -75,7 +81,7 @@ public final class RootModule extends ProjectModule {
         if (module == null) {
             module = findProjectModule(name, true);
             if (module == null) {
-                module = moduleRegistry.getThirdPartyModule(name);
+                module = moduleRegistry.getLibraryModule(name);
                 if (module == null && !silent)
                     throw new UnresolvedException("Unknown module " + name);
             }

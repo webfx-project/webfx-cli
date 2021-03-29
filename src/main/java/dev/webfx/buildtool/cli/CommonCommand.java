@@ -46,10 +46,10 @@ class CommonCommand {
     protected CommonCommand parentCommand;
 
     @Option(names={"--log"}, description="Change the log level.")
-    private CommonSubcommand.LogLevel logLevel;
+    private LogLevel logLevel;
 
     public LogLevel getLogLevel() {
-        return logLevel != null ? logLevel : parentCommand != null ? parentCommand.getLogLevel() : LogLevel.info;
+        return logLevel != null ? logLevel : parentCommand != null ? parentCommand.getLogLevel() : null;
     }
 
     @Option(names = {"-d", "--directory"}, description = "Directory of the webfx.xml project.")
@@ -83,13 +83,19 @@ class CommonCommand {
                     styles = PACKAGE_STYLES;
                     message = message.substring(8).trim();
                 } else {
-                    CommonSubcommand.LogLevel messageLogLevel =
-                            message.startsWith("ERROR:")   ? CommonSubcommand.LogLevel.error :
-                            message.startsWith("WARNING:") ? CommonSubcommand.LogLevel.warning :
-                            message.startsWith("VERBOSE:") ? CommonSubcommand.LogLevel.verbose :
-                            CommonSubcommand.LogLevel.info;
-                    if (messageLogLevel.ordinal() <= getLogLevel().ordinal())
-                        styles = messageLogLevel.styles;
+                    LogLevel messageLogLevel =
+                            message.startsWith("ERROR:")   ? LogLevel.error :
+                            message.startsWith("WARNING:") ? LogLevel.warning :
+                            message.startsWith("INFO:")    ? LogLevel.info :
+                            message.startsWith("VERBOSE:") ? LogLevel.verbose :
+                            null;
+                    if (messageLogLevel == null)
+                        styles = LogLevel.info.styles;
+                    else {
+                        LogLevel logLevel = getLogLevel();
+                        if (messageLogLevel.ordinal() <= (logLevel == null ? LogLevel.error : logLevel).ordinal())
+                            styles = messageLogLevel.styles;
+                    }
                 }
             }
 
@@ -101,16 +107,37 @@ class CommonCommand {
         });
     }
 
+    protected void log(Object o) {
+        Logger.log(o);
+    }
+
     private ModuleRegistry moduleRegistry;
     private Path projectDirectoryPath;
     private Path topRootDirectoryPath;
+    private Path workspaceDirectoryPath;
     private Module moduleProject;
 
-    protected ModuleRegistry getModuleRegistry() {
-        if (moduleRegistry == null) {
+    public Path getProjectDirectoryPath() {
+        if (projectDirectoryPath == null)
             projectDirectoryPath = Path.of(getProjectDirectory()).toAbsolutePath();
-            topRootDirectoryPath = getTopRootDirectory(projectDirectoryPath);
-            moduleRegistry = new ModuleRegistry(topRootDirectoryPath.getParent(),
+        return projectDirectoryPath;
+    }
+
+    public Path getTopRootDirectoryPath() {
+        if (topRootDirectoryPath == null)
+            topRootDirectoryPath = getTopRootDirectory(getProjectDirectoryPath());
+        return topRootDirectoryPath;
+    }
+
+    public Path getWorkspaceDirectoryPath() {
+        if (workspaceDirectoryPath == null)
+            workspaceDirectoryPath = getTopRootDirectoryPath() == null ? getProjectDirectoryPath() : getTopRootDirectoryPath().getParent();
+        return workspaceDirectoryPath;
+    }
+
+    protected ModuleRegistry getModuleRegistry() {
+        if (moduleRegistry == null)
+            moduleRegistry = new ModuleRegistry(getWorkspaceDirectoryPath(),
                     "webfx",
                     "webfx-platform",
                     "webfx-lib-javacupruntime",
@@ -129,15 +156,23 @@ class CommonCommand {
                     "webfx-stack-platform",
                     "webfx-framework"
             );
-        }
         return moduleRegistry;
     }
 
     private static Path getTopRootDirectory(Path projectDirectory) {
+        if (!hasProjectFile(projectDirectory))
+            return null;
         Path topRootDirectory = projectDirectory;
-        while (Files.exists(topRootDirectory.resolve("../webfx.xml")))
-            topRootDirectory = topRootDirectory.getParent();
-        return topRootDirectory;
+        while (true) {
+            Path parent = topRootDirectory.getParent();
+            if (!hasProjectFile(parent))
+                return topRootDirectory;
+            topRootDirectory = parent;
+        }
+    }
+
+    private static boolean hasProjectFile(Path projectDirectory) {
+        return Files.exists(projectDirectory.resolve("webfx.xml")) || Files.exists(projectDirectory.resolve("pom.xml"));
     }
 
     protected Module getWorkingModule() {
@@ -157,6 +192,6 @@ class CommonCommand {
         Module workingModule = getWorkingModule();
         if (workingModule instanceof ProjectModule)
             return (ProjectModule) workingModule;
-        throw new IllegalArgumentException(workingModule.getName() + " is not a project module.");
+        throw new BuildException(workingModule.getName() + " is not a project module.");
     }
 }

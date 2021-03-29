@@ -18,14 +18,18 @@ public class ProjectModule extends ModuleImpl {
      */
     private final static PathMatcher JAVA_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.java");
 
+    private String groupId;
+    private String artifactId;
+    private String version;
+
     /**
      * Returns the children project modules if any (only first level under this module).
      */
     private final ReusableStream<ProjectModule> childrenModulesCache =
             getChildrenHomePaths()
-                    .filter(path -> !SplitFiles.uncheckedIsSameFile(path, getHomeDirectory()))
-                    .filter(Files::isDirectory)
-                    .filter(path -> Files.exists(path.resolve("webfx.xml")))
+                    //.filter(path -> !SplitFiles.uncheckedIsSameFile(path, getHomeDirectory()))
+                    //.filter(Files::isDirectory)
+                    //.filter(path -> Files.exists(path.resolve("webfx.xml")))
                     .map(path -> getOrCreateProjectModule(path.normalize(), this))
                     //.cache()
             ;
@@ -382,6 +386,7 @@ public class ProjectModule extends ModuleImpl {
     private GwtModuleFile gwtModuleFile;
     private GwtHtmlFile gwtHtmlFile;
     private MavenModuleFile mavenModuleFile;
+    private boolean checkedWebfxModuleFileGAV;
 
     /************************
      ***** Constructors *****
@@ -401,6 +406,58 @@ public class ProjectModule extends ModuleImpl {
         getWebfxModuleFile().getLibraryModules().forEach(rootModule::registerLibraryModule);
     }
 
+    private void checkMavenModuleFileGAV() {
+        if (!checkedWebfxModuleFileGAV) {
+            checkedWebfxModuleFileGAV = true;
+            if (groupId == null) {
+                groupId = getMavenModuleFile().getGroupId();
+                if (groupId == null && parentModule == null)
+                    groupId = getMavenModuleFile().getParentGroupId();
+            }
+            if (artifactId == null)
+                artifactId = getMavenModuleFile().getArtifactId();
+            if (version == null) {
+                version = getMavenModuleFile().getVersion();
+                if (version == null && parentModule == null)
+                    version = getMavenModuleFile().getParentVersion();
+            }
+        }
+    }
+
+    public String getGroupId() {
+        checkMavenModuleFileGAV();
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public String getArtifactId() {
+        checkMavenModuleFileGAV();
+        return artifactId;
+    }
+
+    public void setArtifactId(String artifactId) {
+        this.artifactId = artifactId;
+    }
+
+    public String getVersion() {
+        checkMavenModuleFileGAV();
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public String getGroupIdOrParent() {
+        return getGroupId() != null || parentModule == null ? groupId : parentModule.getGroupIdOrParent();
+    }
+
+    public String getVersionOrParent() {
+        return getVersion() != null || parentModule == null ? version : parentModule.getVersionOrParent();
+    }
 
     /*************************
      ***** Basic getters *****
@@ -509,12 +566,12 @@ public class ProjectModule extends ModuleImpl {
 
     ReusableStream<Path> getChildrenHomePaths() {
         //return ReusableStream.create(() -> SplitFiles.uncheckedWalk(getHomeDirectory(), 1, FileVisitOption.FOLLOW_LINKS));
-        return ReusableStream.create(() -> getWebfxModuleFile().getChildrenModules());
+        return ReusableStream.create(() -> getMavenModuleFile().getChildrenModules());
     }
 
     ///// Java classes
 
-    public ReusableStream<JavaFile> getDeclaredJavaClasses() {
+    public ReusableStream<JavaFile> getDeclaredJavaFiles() {
         return declaredJavaFilesCache;
     }
 
@@ -612,7 +669,7 @@ public class ProjectModule extends ModuleImpl {
     }
 
     public boolean isAggregate() {
-        return getWebfxModuleFile().isAggregate();
+        return getMavenModuleFile().isAggregate();
     }
 
     public boolean isImplementingInterface() {
@@ -670,20 +727,20 @@ public class ProjectModule extends ModuleImpl {
     private ReusableStream<Module> collectExecutableEmulationModules() {
         if (isExecutable(Platform.GWT))
             return ReusableStream.of(
-                    getRootModule().findOrCreateModule("webfx-kit-gwt"),
-                    getRootModule().findOrCreateModule("webfx-platform-gwt-emul-javabase"),
-                    getRootModule().findOrCreateModule("gwt-time")
+                    getRootModule().findModule("webfx-kit-gwt"),
+                    getRootModule().findModule("webfx-platform-gwt-emul-javabase"),
+                    getRootModule().findModule("gwt-time")
             );
         if (isExecutable(Platform.JRE)) {
             if (getTarget().hasTag(TargetTag.JAVAFX) || getTarget().hasTag(TargetTag.GLUON)) {
                 boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().contains("webfx-kit-javafxmedia-emul"));
                 return usesMedia ? ReusableStream.of(
-                        getRootModule().findOrCreateModule("webfx-kit-javafx"),
-                        getRootModule().findOrCreateModule("webfx-kit-javafxmedia-emul"),
-                        getRootModule().findOrCreateModule("webfx-platform-java-appcontainer-impl")
+                        getRootModule().findModule("webfx-kit-javafx"),
+                        getRootModule().findModule("webfx-kit-javafxmedia-emul"),
+                        getRootModule().findModule("webfx-platform-java-appcontainer-impl")
                 ) : ReusableStream.of(
-                        getRootModule().findOrCreateModule("webfx-kit-javafx"),
-                        getRootModule().findOrCreateModule("webfx-platform-java-appcontainer-impl")
+                        getRootModule().findModule("webfx-kit-javafx"),
+                        getRootModule().findModule("webfx-platform-java-appcontainer-impl")
                 );
             }
             return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
@@ -819,9 +876,9 @@ public class ProjectModule extends ModuleImpl {
         return usedJavaPackagesCache;
     }
 
-    ReusableStream<JavaFile> getJavaClassesDependingOn(String destinationModule) {
-        return getDeclaredJavaClasses()
-                .filter(jc -> jc.getUsedJavaPackages().anyMatch(p -> destinationModule.equals(rootModule.getJavaPackageModule(p, this).getName())))
+    ReusableStream<JavaFile> getJavaFilesDependingOn(String destinationModule) {
+        return getDeclaredJavaFiles()
+                .filter(jf -> jf.getUsedJavaPackages().anyMatch(p -> destinationModule.equals(rootModule.getJavaPackageModule(p, this).getName())))
                 ;
     }
 
@@ -912,7 +969,7 @@ public class ProjectModule extends ModuleImpl {
         return modules.anyMatch(m -> {
             if (excludeWebFxKit && m.getName().startsWith("webfx-kit-"))
                 return false;
-            return m.usesJavaPackage(packageName) && m.getDeclaredJavaClasses().anyMatch(jc -> jc.usesJavaClass(javaClass));
+            return m.usesJavaPackage(packageName) && m.getDeclaredJavaFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
         });
     }
 
@@ -926,6 +983,10 @@ public class ProjectModule extends ModuleImpl {
 
     boolean isModuleUnderRootHomeDirectory(Module module) {
         return module instanceof ProjectModule && ((ProjectModule) module).getHomeDirectory().startsWith(getRootModule().getHomeDirectory());
+    }
+
+    public BuildInfo getBuildInfo() {
+        return new BuildInfo(this);
     }
 
 }

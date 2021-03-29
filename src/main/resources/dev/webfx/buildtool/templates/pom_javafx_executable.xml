@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>${parent.groupId}</groupId>
+        <artifactId>${parent.artifactId}</artifactId>
+        <version>${parent.version}</version>
+    </parent>
+
+    <artifactId>${artifactId}</artifactId>
+
+    <dependencies/>
+
+    <properties>
+        <plugin.javapackager.name>${parent.artifactId}</plugin.javapackager.name>
+        <plugin.javapackager.displayName>${parent.artifactId}</plugin.javapackager.displayName>
+        <plugin.javapackager.url></plugin.javapackager.url>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- This plugin is ran only explicitly by invoking mvn javafx:jlink -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- profile to make a fat standalone executable jar with all dependencies included inside -->
+        <profile>
+            <id>javafx-fatjar</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+
+            <build>
+                <plugins>
+
+                    <!-- Calling Shade with the configuration defined in the parent pom -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>javapackager</id>
+
+            <build>
+                <plugins>
+
+                    <plugin>
+                        <groupId>io.github.fvarrui</groupId>
+                        <artifactId>javapackager</artifactId>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
+
+</project>
