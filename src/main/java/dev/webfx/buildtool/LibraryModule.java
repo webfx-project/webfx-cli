@@ -24,16 +24,25 @@ public class LibraryModule extends ModuleImpl {
         return XmlUtil.nodeListToReusableStream(XmlUtil.lookupNodeList(moduleNode, "packages//package"), Node::getTextContent);
     }
 
-    public String getArtifactId() {
-        return getTagContent("artifactId", false);
-    }
-
+    @Override
     public String getGroupId() {
-        return getTagContent("groupId", true);
+        if (groupId == null)
+            groupId = getTagContent("groupId", true);
+        return groupId;
     }
 
+    @Override
+    public String getArtifactId() {
+        if (artifactId == null)
+            artifactId = getTagContent("artifactId", false);
+        return artifactId;
+    }
+
+    @Override
     public String getVersion() {
-        return getTagContent("version", true);
+        if (version == null)
+            version = getTagContent("version", true);
+        return version;
     }
 
     private String getTagContent(String tagName, boolean lookInGroupIfNull) {

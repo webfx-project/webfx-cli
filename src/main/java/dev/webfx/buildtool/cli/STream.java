@@ -1,6 +1,8 @@
 package dev.webfx.buildtool.cli;
 
+import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.*;
+import dev.webfx.buildtool.modulefiles.ArtifactResolver;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -85,12 +87,12 @@ final class STream extends CommonSubcommand {
         @Option(names = {"--implements"}, arity = "1..*", description = "Filter modules implementing specific interface.")
         String[] implementingClasses;
 
-        enum FlatMap {java_files, java_classes, code_lines, declared_packages, used_packages, used_services, implemented_services, service_providers, direct_dependencies, transitive_dependencies}
+        enum FlatMap {java_files, java_classes, code_lines, declared_packages, used_packages, used_services, implemented_services, service_providers, direct_dependencies, transitive_dependencies, libraries}
 
         @Option(names = {"flatmap"}, description = "Flat map the modules into java files, etc...")
         FlatMap flatMap;
 
-        enum Map { to_src, to_dst, to_type }
+        enum Map { to_src, to_dst, to_type, to_gav, to_gv }
 
         @Option(names = "map", description = "Map the objects to something else.")
         Map map;
@@ -99,8 +101,10 @@ final class STream extends CommonSubcommand {
         Stream<?> computeStream() {
             Stream<ProjectModule> projectModuleStream = computeProjectModuleStream();
             Stream<ModuleDependency> moduleDependencyStream = null;
+            Stream<? extends Module> moduleStream = projectModuleStream;
             Stream<?> stream = projectModuleStream;
             if (flatMap != null) {
+                moduleStream = null;
                 switch (flatMap) {
                     case java_files:
                         stream = projectModuleStream.flatMap(m -> m.getDeclaredJavaFiles().stream());
@@ -132,15 +136,33 @@ final class STream extends CommonSubcommand {
                     case transitive_dependencies:
                         stream = moduleDependencyStream = projectModuleStream.flatMap(m -> m.getTransitiveDependencies().stream());
                         break;
+                    case libraries:
+                        stream = moduleStream = projectModuleStream.flatMap(m -> m.getWebfxModuleFile().getLibraryModules().stream());
+                        break;
                 }
             }
-            if (map != null && moduleDependencyStream != null) {
-                stream = moduleDependencyStream.map(dep -> { switch (map) {
-                    case to_src: return dep.getSourceModule();
-                    case to_dst: return dep.getDestinationModule();
-                    case to_type: return dep.getType();
-                    default: return dep;
-                }});
+            if (map != null) {
+                switch (map) {
+                    case to_dst:
+                    case to_src:
+                    case to_type:
+                        if (moduleDependencyStream != null)
+                            stream = moduleDependencyStream.map(dep -> { switch (map) {
+                                case to_src: return dep.getSourceModule();
+                                case to_dst: return dep.getDestinationModule();
+                                case to_type: return dep.getType();
+                                default: return dep;
+                            }});
+                        break;
+                    case to_gav:
+                        if (moduleStream != null)
+                            stream = moduleStream.map(ArtifactResolver::getGAV);
+                        break;
+                    case to_gv:
+                        if (moduleStream != null)
+                            stream = moduleStream.map(ArtifactResolver::getGV);
+                        break;
+                }
             }
             return stream;
         }

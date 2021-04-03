@@ -10,7 +10,15 @@ import java.util.Objects;
 /**
  * @author Bruno Salmon
  */
-final class ArtifactResolver {
+public final class ArtifactResolver {
+
+    public static String getGAV(Module module) {
+        return getGroupId(module) + ":" + getArtifactId(module) + ":" + getVersion(module);
+    }
+
+    public static String getGV(Module module) {
+        return getGroupId(module) + ":" + getVersion(module);
+    }
 
     static String getArtifactId(Module module) {
         if (module instanceof ProjectModule)
@@ -32,11 +40,6 @@ final class ArtifactResolver {
             return "gwt-nio";
         if (moduleName.startsWith("java-") || moduleName.startsWith("jdk-"))
             return null;
-        if (module instanceof LibraryModule) {
-            String artifactId = ((LibraryModule) module).getArtifactId();
-            if (artifactId != null)
-                return artifactId;
-        }
         switch (moduleName) {
             //case "gwt-charts":
             case "jsinterop-base":
@@ -66,7 +69,16 @@ final class ArtifactResolver {
                     return "gwt-dev";
             }
         }
+        String artifactId = module.getArtifactId();
+        if (artifactId != null)
+            return artifactId;
         return moduleName;
+    }
+
+    static String getGroupId(Module module) {
+        if (module instanceof ProjectModule)
+            return getGroupId(module, ((ProjectModule) module).getBuildInfo());
+        return getGroupId(module, false, false, false);
     }
 
     static String getGroupId(ProjectModule module) {
@@ -81,22 +93,16 @@ final class ArtifactResolver {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
             module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
-        if (module instanceof LibraryModule) {
-            String groupId = ((LibraryModule) module).getGroupId();
-            if (groupId != null)
-                return groupId;
-        } else if (module instanceof ProjectModule) {
-            String groupId = ((ProjectModule) module).getGroupIdOrParent();
-            if (groupId != null)
-                return groupId;
-        }
-        if (moduleName.startsWith("gwt-"))
-            return "com.google.gwt";
-        if (moduleName.startsWith("webfx-"))
-            return "${webfx.groupId}";
-        if (moduleName.startsWith("mongoose-"))
-            return "${mongoose.groupId}";
+        String groupId = module.getGroupId();
+        if (groupId != null)
+            return groupId;
         return "???";
+    }
+
+    static String getVersion(Module module) {
+        if (module instanceof ProjectModule)
+            return getVersion(module, ((ProjectModule) module).getBuildInfo());
+        return getVersion(module, false, false, false);
     }
 
     static String getVersion(ProjectModule module) {
@@ -111,19 +117,9 @@ final class ArtifactResolver {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
             module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
-        if (module instanceof LibraryModule) {
-            String version = ((LibraryModule) module).getVersion();
-            if (version != null)
-                return version;
-        } else if (module instanceof ProjectModule) {
-            String version = ((ProjectModule) module).getVersionOrParent();
-            if (version != null)
-                return version;
-        }
-        if (moduleName.startsWith("webfx-"))
-            return "${webfx.version}";
-        if (moduleName.startsWith("mongoose-"))
-            return "${mongoose.version}";
+        String version = module.getVersion();
+        if (version != null)
+            return version;
         return null; // Managed by root pom
     }
 

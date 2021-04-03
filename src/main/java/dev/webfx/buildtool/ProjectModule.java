@@ -18,10 +18,6 @@ public class ProjectModule extends ModuleImpl {
      */
     private final static PathMatcher JAVA_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.java");
 
-    private String groupId;
-    private String artifactId;
-    private String version;
-
     /**
      * Returns the children project modules if any (only first level under this module).
      */
@@ -424,39 +420,22 @@ public class ProjectModule extends ModuleImpl {
         }
     }
 
+    @Override
     public String getGroupId() {
         checkMavenModuleFileGAV();
-        return groupId;
+        return groupId != null || parentModule == null ? groupId : parentModule.getGroupId();
     }
 
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
-    }
-
+    @Override
     public String getArtifactId() {
         checkMavenModuleFileGAV();
         return artifactId;
     }
 
-    public void setArtifactId(String artifactId) {
-        this.artifactId = artifactId;
-    }
-
+    @Override
     public String getVersion() {
         checkMavenModuleFileGAV();
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public String getGroupIdOrParent() {
-        return getGroupId() != null || parentModule == null ? groupId : parentModule.getGroupIdOrParent();
-    }
-
-    public String getVersionOrParent() {
-        return getVersion() != null || parentModule == null ? version : parentModule.getVersionOrParent();
+        return version != null || parentModule == null ? version : parentModule.getVersion();
     }
 
     /*************************

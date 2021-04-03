@@ -7,15 +7,11 @@ public interface Module extends Comparable<Module> {
 
     String getName();
 
-    static Module create(String artifactId) {
-        return new ModuleImpl(artifactId);
-    }
+    String getVersion();
 
-/*
-    static LibraryModule createThirdPartyModule(Path webfxXmlPath) {
-        return new LibraryModule(webfxXmlPath);
-    }
-*/
+    String getArtifactId();
+
+    String getGroupId();
 
     // Comparison function used to sort modules dependencies in the Maven pom files
     @Override
