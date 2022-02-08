@@ -105,7 +105,7 @@ public final class BuildTool {
 */
 
 /*
-        webfxRootModule.getChildModuleInDepth("mongoose-backend-application")
+        webfxRootModule.getChildModuleInDepth("mongoose-backoffice-application")
                 .findModulesProvidingRequiredService(TargetTag.GWT)
                 .forEach(System.out::println);
 
@@ -113,8 +113,8 @@ public final class BuildTool {
         reporter.listChildrenModulesInDepth();
         reporter.listThisAndChildrenModulesInDepthWithTheirDirectDependencies();
         reporter.listOrAndChildrenModulesInDepthDirectlyDependingOn("gwt-user");
-        reporter.listInDepthTransitiveDependencies("mongoose-backend-application");
-        reporter.listDependenciesPathsBetween("mongoose-backend-application", "webfx-kit-gwt");
+        reporter.listInDepthTransitiveDependencies("mongoose-backoffice-application");
+        reporter.listDependenciesPathsBetween("mongoose-backoffice-application", "webfx-kit-gwt");
         reporter.listProjectModuleDirectDependencies("webfx-kit-base-emul");
         reporter.listProjectModuleJavaClasses("webfx-kit-javafxbase-emul");
         reporter.listProjectModuleJavaClassesDependingOn("webfx-kit-extracontrols", "webfx-kit-gwt");

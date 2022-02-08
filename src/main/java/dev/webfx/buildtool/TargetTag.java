@@ -20,7 +20,7 @@ public enum TargetTag {
     SHARED          ("shared", ARCH_PARTITION),
     SERVER          ("server", SHARED), // => JRE
     CLIENT          ("client", SHARED),
-    BACKEND         ("backend", CLIENT),
+    BACKOFFICE      ("backoffice", CLIENT),
     FRONTEND        ("frontend", CLIENT),
 
     VIEWER_PARTITION(), // => CLIENT
