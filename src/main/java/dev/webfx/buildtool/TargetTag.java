@@ -21,7 +21,7 @@ public enum TargetTag {
     SERVER          ("server", SHARED), // => JRE
     CLIENT          ("client", SHARED),
     BACKOFFICE      ("backoffice", CLIENT),
-    FRONTEND        ("frontend", CLIENT),
+    FRONTOFFICE     ("frontoffice", CLIENT),
 
     VIEWER_PARTITION(), // => CLIENT
     DESKTOP         ("desktop", VIEWER_PARTITION), // => JRE
