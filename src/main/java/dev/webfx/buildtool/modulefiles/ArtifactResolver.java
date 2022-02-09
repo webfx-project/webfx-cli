@@ -124,10 +124,10 @@ public final class ArtifactResolver {
     }
 
     static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, BuildInfo buildInfo) {
-        return getScope(moduleGroup, buildInfo.isForGwt, buildInfo.isForJavaFx, buildInfo.isExecutable, buildInfo.isRegistry);
+        return getScope(moduleGroup, buildInfo.isForGwt, buildInfo.isForOpenJfx, buildInfo.isExecutable, buildInfo.isRegistry);
     }
 
-    static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, boolean isForGwt, boolean isForJavaFx, boolean isExecutable, boolean isRegistry) {
+    static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, boolean isForGwt, boolean isForOpenJfx, boolean isExecutable, boolean isRegistry) {
         String scope = moduleGroup.getValue().stream().map(ModuleDependency::getScope).filter(Objects::nonNull).findAny().orElse(null);
         if (scope != null)
             return scope;
@@ -135,7 +135,7 @@ public final class ArtifactResolver {
         // Setting scope to "provided" for interface modules and optional dependencies
         if (module instanceof ProjectModule && ((ProjectModule) module).isInterface() || moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
             return "provided";
-        if (!isForGwt && !isForJavaFx && !isExecutable && !isRegistry)
+        if (!isForGwt && !isForOpenJfx && !isExecutable && !isRegistry)
             switch (module.getName()) {
                 case "javafx-base":
                 case "webfx-kit-javafxbase-emul":

@@ -711,14 +711,14 @@ public class ProjectModule extends ModuleImpl {
                     getRootModule().findModule("gwt-time")
             );
         if (isExecutable(Platform.JRE)) {
-            if (getTarget().hasTag(TargetTag.JAVAFX) || getTarget().hasTag(TargetTag.GLUON)) {
+            if (getTarget().hasTag(TargetTag.OPENJFX) || getTarget().hasTag(TargetTag.GLUON)) {
                 boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().contains("webfx-kit-javafxmedia-emul"));
                 return usesMedia ? ReusableStream.of(
-                        getRootModule().findModule("webfx-kit-javafx"),
+                        getRootModule().findModule("webfx-kit-openjfx"),
                         getRootModule().findModule("webfx-kit-javafxmedia-emul"),
                         getRootModule().findModule("webfx-platform-java-appcontainer-impl")
                 ) : ReusableStream.of(
-                        getRootModule().findModule("webfx-kit-javafx"),
+                        getRootModule().findModule("webfx-kit-openjfx"),
                         getRootModule().findModule("webfx-platform-java-appcontainer-impl")
                 );
             }

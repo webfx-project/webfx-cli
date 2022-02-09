@@ -7,7 +7,7 @@ public class BuildInfo {
 
     public final ProjectModule projectModule;
     public final boolean isForGwt;
-    public final boolean isForJavaFx;
+    public final boolean isForOpenJfx;
     public final boolean isForGluon;
     public final boolean isExecutable;
     public final boolean isRegistry;
@@ -16,7 +16,7 @@ public class BuildInfo {
         this.projectModule = projectModule;
         isForGwt = projectModule.getTarget().isMonoPlatform(Platform.GWT);
         isForGluon = projectModule.getTarget().isMonoPlatform(Platform.JRE) && projectModule.getTarget().hasTag(TargetTag.GLUON);
-        isForJavaFx = projectModule.getTarget().isMonoPlatform(Platform.JRE) && (projectModule.getTarget().hasTag(TargetTag.JAVAFX) || isForGluon);
+        isForOpenJfx = projectModule.getTarget().isMonoPlatform(Platform.JRE) && (projectModule.getTarget().hasTag(TargetTag.OPENJFX) || isForGluon);
         isExecutable = projectModule.isExecutable();
         isRegistry = projectModule.getName().contains("-registry-") || projectModule.getName().endsWith("-registry");
     }

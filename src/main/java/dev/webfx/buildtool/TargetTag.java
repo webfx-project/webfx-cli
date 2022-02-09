@@ -10,8 +10,8 @@ public enum TargetTag {
     PLAT_API_PARTITION(),
     JAVA            ("java", PLAT_API_PARTITION, Platform.JRE /*, Platform.ANDROID*/),
     JRE             ("jre", JAVA, Platform.JRE),
-    JAVAFX          ("javafx", JRE), // => DESKTOP
-    GLUON           ("gluon", JAVAFX), // => native
+    OPENJFX         ("openjfx", JRE), // => DESKTOP
+    GLUON           ("gluon", OPENJFX), // => native
     WEB             ("web", PLAT_API_PARTITION, Platform.GWT, Platform.TEAVM), // => BROWSER
     GWT             ("gwt", WEB, Platform.GWT),
     TEAVM           ("teavm", WEB, Platform.TEAVM),
@@ -41,7 +41,7 @@ public enum TargetTag {
     private static TargetTag directImpliedTag(TargetTag tag) {
         switch (tag) {
             case SERVER: return JRE;
-            case JAVAFX: return DESKTOP;
+            case OPENJFX: return DESKTOP;
             case WEB: return BROWSER;
             case VIEWER_PARTITION: return CLIENT;
             case DESKTOP: return JRE;

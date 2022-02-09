@@ -150,7 +150,7 @@ class Create extends CommonSubcommand {
                     prefix = getModuleRegistry().getOrCreateProjectModule(getProjectDirectoryPath()).getName();
             }
             ProjectModule applicationModule = createTagModule(null);
-            createTagModule(TargetTag.JAVAFX);
+            createTagModule(TargetTag.OPENJFX);
             createTagModule(TargetTag.GWT);
             if (gluon)
                 createTagModule(TargetTag.GLUON);
