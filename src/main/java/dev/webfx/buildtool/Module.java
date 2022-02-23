@@ -13,6 +13,8 @@ public interface Module extends Comparable<Module> {
 
     String getGroupId();
 
+    String getType();
+
     // Comparison function used to sort modules dependencies in the Maven pom files
     @Override
     default int compareTo(Module m) {

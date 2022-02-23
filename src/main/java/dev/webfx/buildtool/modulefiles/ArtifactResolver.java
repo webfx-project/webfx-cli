@@ -123,6 +123,10 @@ public final class ArtifactResolver {
         return null; // Managed by root pom
     }
 
+    static String getType(Module module) {
+        return module.getType();
+    }
+
     static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, BuildInfo buildInfo) {
         return getScope(moduleGroup, buildInfo.isForGwt, buildInfo.isForOpenJfx, buildInfo.isExecutable, buildInfo.isRegistry);
     }

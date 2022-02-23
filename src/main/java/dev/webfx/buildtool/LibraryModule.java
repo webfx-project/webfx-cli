@@ -45,6 +45,13 @@ public class LibraryModule extends ModuleImpl {
         return version;
     }
 
+    @Override
+    public String getType() {
+        if (type == null)
+            type = getTagContent("type", true);
+        return type;
+    }
+
     private String getTagContent(String tagName, boolean lookInGroupIfNull) {
         String tagContent = XmlUtil.lookupNodeTextContent(moduleNode, tagName);
         if (tagContent == null && lookInGroupIfNull)

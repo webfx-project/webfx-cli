@@ -124,6 +124,9 @@ public final class MavenModuleFile extends XmlModuleFile {
                             String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
                             if (version != null)
                                 appendTextNode(dependencyNode, "/version", version);
+                            String type = ArtifactResolver.getType(destinationModule);
+                            if (type != null)
+                                appendTextNode(dependencyNode, "/type", type);
                             String scope = ArtifactResolver.getScope(moduleGroup, buildInfo);
                             if (scope != null)
                                 appendTextNode(dependencyNode, "/scope", scope);

@@ -9,6 +9,7 @@ class ModuleImpl implements Module {
     protected String groupId;
     protected String artifactId;
     protected String version;
+    protected String type;
 
     ModuleImpl(String name) {
         this.name = name;
@@ -44,6 +45,14 @@ class ModuleImpl implements Module {
 
     public void setVersion(String version) {
         this.version = version;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     @Override
