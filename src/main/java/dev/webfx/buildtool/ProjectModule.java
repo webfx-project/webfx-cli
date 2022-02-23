@@ -59,16 +59,6 @@ public class ProjectModule extends ModuleImpl {
                     .distinct();
 
     /**
-     * Returns all packages directly used in this module (or empty if this is not a java source module). These packages
-     * are found through a source code analyze of all java classes.
-     */
-    private final ReusableStream<String> usedJavaPackagesCache =
-            declaredJavaFilesCache
-                    .flatMap(JavaFile::getUsedJavaPackages)
-                    .distinct()
-                    .cache();
-
-    /**
      * Returns all java services directly used by this module and that are required. Each service is returned as the
      * full name of the SPI class.
      */
@@ -115,6 +105,23 @@ public class ProjectModule extends ModuleImpl {
                     .map(ServiceProvider::getSpi)
                     .distinct()
                     .cache();
+
+    /**
+     * Returns all packages directly used in this module (or empty if this is not a java source module). These packages
+     * are found through a source code analyze of all java classes.
+     * The packages of the SPIs are also added here in case they are not found by the java source analyser. This can
+     * happen if the provider extends a class instead of directly implementing the interface. Then the module-info.java
+     * will report an error on the provider declaration because the module of the SPI won't be listed in the required modules.
+     * TODO Remove this addition once the java source analyser will be able to find implicit java packages
+     */
+    private final ReusableStream<String> usedJavaPackagesCache =
+            ReusableStream.concat(
+                        declaredJavaFilesCache.flatMap(JavaFile::getUsedJavaPackages),
+                        providedJavaServicesCache.map(spi -> spi.substring(0, spi.lastIndexOf('.'))) // package of the SPI (ex: javafx.application if SPI = javafx.application.Application)
+                    )
+                    .distinct()
+                    .cache();
+
 
     /**
      * Returns all source module dependencies directly required by the source code of this module and that could be
