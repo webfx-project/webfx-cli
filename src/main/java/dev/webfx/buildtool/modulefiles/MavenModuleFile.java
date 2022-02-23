@@ -1,7 +1,7 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.Module;
+import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
@@ -9,7 +9,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -103,29 +105,35 @@ public final class MavenModuleFile extends XmlModuleFile {
                         module.getDirectDependencies(),
                         module.getTransitiveDependencies().filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER)
                 ).distinct();
+        Set<String> gas = new HashSet<>(); // set of groupId:artifactId listed so far in the pom dependencies - used for duplicate removal below
         dependencies
                 .stream().collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                 .stream().sorted(Map.Entry.comparingByKey())
                 .forEach(moduleGroup -> {
                     Module destinationModule = moduleGroup.getKey();
                     String artifactId = ArtifactResolver.getArtifactId(destinationModule, buildInfo);
-                    if (artifactId != null && lookupTextNode(dependenciesNode,"/dependency/artifactId", artifactId) == null) {
+                    if (artifactId != null) {
                         String groupId = ArtifactResolver.getGroupId(destinationModule, buildInfo);
-                        Node groupNode = appendTextNode(dependenciesNode, "/dependency/groupId", groupId);
-                        Node dependencyNode = groupNode.getParentNode();
-                        appendTextNode(dependencyNode, "/artifactId", artifactId);
-                        String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
-                        if (version != null)
-                            appendTextNode(dependencyNode, "/version", version);
-                        String scope = ArtifactResolver.getScope(moduleGroup, buildInfo);
-                        if (scope != null)
-                            appendTextNode(dependencyNode, "/scope", scope);
-                        String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
-                        if (classifier != null)
-                            appendTextNode(dependencyNode, "/classifier", classifier);
-                        if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
-                            appendTextNode(dependencyNode, "/optional", "true");
-                        dependenciesNode.appendChild(document.createTextNode("\n    "));
+                        // Destination modules are already unique but maybe some are actually resolved to the same groupId:artifactId
+                        String ga = groupId + ":" + artifactId;
+                        if (!gas.contains(ga)) { // Checking uniqueness to avoid malformed pom
+                            gas.add(ga);
+                            Node groupNode = appendTextNode(dependenciesNode, "/dependency/groupId", groupId);
+                            Node dependencyNode = groupNode.getParentNode();
+                            appendTextNode(dependencyNode, "/artifactId", artifactId);
+                            String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
+                            if (version != null)
+                                appendTextNode(dependencyNode, "/version", version);
+                            String scope = ArtifactResolver.getScope(moduleGroup, buildInfo);
+                            if (scope != null)
+                                appendTextNode(dependencyNode, "/scope", scope);
+                            String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
+                            if (classifier != null)
+                                appendTextNode(dependencyNode, "/classifier", classifier);
+                            if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
+                                appendTextNode(dependencyNode, "/optional", "true");
+                            dependenciesNode.appendChild(document.createTextNode("\n    "));
+                        }
                     }
                 });
     }
