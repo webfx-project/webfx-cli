@@ -12,7 +12,7 @@
     <set-property name="jre.checks.checkLevel" value="MINIMAL"/>
 
     <!-- Specify the app entry point class. -->
-    <entry-point class="dev.webfx.platform.gwt.services.appcontainer.spi.impl.GwtApplicationContainerProvider"/>
+    <entry-point class="dev.webfx.platform.gwt.services.boot.spi.impl.GwtApplicationBooterProvider"/>
 
     <super-source path="super"/>
     <super-source path="" includes="java/io/"/>

@@ -74,7 +74,7 @@ public final class BuildTool {
 */
 
 /*
-        webfxRootModule.getChildModuleInDepth("webfx-platform-shared-appcontainer-vertx")
+        webfxRootModule.getChildModuleInDepth("webfx-platform-shared-boot-vertx")
             .getUsedJavaPackages()
                 .forEach(System.out::println);
 */

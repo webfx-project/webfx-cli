@@ -34,12 +34,8 @@
     </modules>
 
     <properties>
-        <!-- WebFX groupId & version -->
-        <webfx.groupId>dev.webfx</webfx.groupId>
-        <webfx.version>0.1.0-SNAPSHOT</webfx.version>
-
-        <webfx.mainClass>dev.webfx.platform.shared.services.appcontainer.ApplicationContainer</webfx.mainClass>
-        <webfx.mainModule>webfx.platform.shared.services.appcontainer</webfx.mainModule>
+        <webfx.mainClass>dev.webfx.platform.shared.services.boot.ApplicationBooter</webfx.mainClass>
+        <webfx.mainModule>webfx.platform.shared.services.boot</webfx.mainModule>
 
         <!-- java version -->
         <java.version>11</java.version>

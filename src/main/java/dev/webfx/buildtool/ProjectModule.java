@@ -723,10 +723,10 @@ public class ProjectModule extends ModuleImpl {
                 return usesMedia ? ReusableStream.of(
                         getRootModule().findModule("webfx-kit-openjfx"),
                         getRootModule().findModule("webfx-kit-javafxmedia-emul"),
-                        getRootModule().findModule("webfx-platform-java-appcontainer-impl")
+                        getRootModule().findModule("webfx-platform-java-boot-impl")
                 ) : ReusableStream.of(
                         getRootModule().findModule("webfx-kit-openjfx"),
-                        getRootModule().findModule("webfx-platform-java-appcontainer-impl")
+                        getRootModule().findModule("webfx-platform-java-boot-impl")
                 );
             }
             return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
