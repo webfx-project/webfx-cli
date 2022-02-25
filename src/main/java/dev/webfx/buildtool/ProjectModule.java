@@ -108,8 +108,8 @@ public class ProjectModule extends ModuleImpl {
 
     /**
      * Returns all packages directly used in this module (or empty if this is not a java source module). These packages
-     * are found through a source code analyze of all java classes.
-     * The packages of the SPIs are also added here in case they are not found by the java source analyser. This can
+     * are discovered through a source code analyze of all java classes.
+     * The packages of the SPIs are also added here in case they are not discovered by the java source analyser. This can
      * happen if the provider extends a class instead of directly implementing the interface. Then the module-info.java
      * will report an error on the provider declaration because the module of the SPI won't be listed in the required modules.
      * TODO Remove this addition once the java source analyser will be able to find implicit java packages
@@ -125,9 +125,9 @@ public class ProjectModule extends ModuleImpl {
 
     /**
      * Returns all source module dependencies directly required by the source code of this module and that could be
-     * found by the source code analyzer.
+     * discovered by the source code analyzer.
      */
-    private final ReusableStream<ModuleDependency> foundByCodeAnalyzerSourceDependenciesCache =
+    private final ReusableStream<ModuleDependency> discoveredByCodeAnalyzerSourceDependenciesCache =
             ReusableStream.create(() -> !getWebfxModuleFile().areSourceModuleDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
                     usedJavaPackagesCache
                             .map(p -> getRootModule().getJavaPackageModule(p, this))
@@ -140,22 +140,22 @@ public class ProjectModule extends ModuleImpl {
 
     /**
      * Returns all source module dependencies directly required by the source code of this module but that couldn't be
-     * found by the source code analyzer (due to limitations of the current source code analyzer which is based on
-     * regular expressions). These source module dependencies not found by the source code analyzer must be listed in
-     * the webfx module file for now.
+     * discovered by the source code analyzer (due to limitations of the current source code analyzer which is based on
+     * regular expressions). These source module dependencies not discovered by the source code analyzer must be listed
+     * in the webfx module file for now.
      */
-    private final ReusableStream<ModuleDependency> notFoundByCodeAnalyzerSourceDependenciesCache =
-            ReusableStream.create(() -> getWebfxModuleFile().getSourceModuleDependencies())
+    private final ReusableStream<ModuleDependency> undiscoveredByCodeAnalyzerSourceDependenciesCache =
+            ReusableStream.create(() -> getWebfxModuleFile().getUndiscoveredSourceModuleDependencies())
                     .cache();
 
     /**
-     * Returns all source module dependencies directly required by the source code of this module (found or not by the
-     * source code analyzer).
+     * Returns all source module dependencies directly required by the source code of this module (discovered or not by
+     * the source code analyzer).
      */
     private final ReusableStream<ModuleDependency> sourceDirectDependenciesCache =
             ReusableStream.concat(
-                    foundByCodeAnalyzerSourceDependenciesCache,
-                    notFoundByCodeAnalyzerSourceDependenciesCache
+                    discoveredByCodeAnalyzerSourceDependenciesCache,
+                    undiscoveredByCodeAnalyzerSourceDependenciesCache
             );
 
     /**
