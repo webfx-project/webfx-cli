@@ -35,20 +35,20 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return lookupNode("/project/auto-conditions") != null;
     }
 
-    public boolean areSourcePackagesAutomaticallyAdded() {
-        return lookupNode("/project/packages/source-packages") != null;
+    public ReusableStream<String> getExplicitExportedPackages() {
+        return lookupNodeListTextContent("/project/exported-packages//package");
     }
 
-    public ReusableStream<String> getExplicitSourcePackages() {
-        return lookupNodeListTextContent("/project/packages//source-package");
+    public boolean areSourcePackagesAutomaticallyExported() {
+        return lookupNode("/project/exported-packages/source-packages") != null;
     }
 
-    public ReusableStream<String> getHiddenPackages() {
-        return lookupNodeListTextContent("/project/packages//hidden-package");
+    public ReusableStream<String> getExcludedPackagesFromSourcePackages() {
+        return lookupNodeListTextContent("/project/exported-packages/source-packages//exclude-package");
     }
 
     public ReusableStream<String> getResourcePackages() {
-        return lookupNodeListTextContent("/project/packages//resource-package");
+        return lookupNodeListTextContent("/project/exported-packages//resource-package");
     }
 
     public ReusableStream<String> implementedInterfaces() {

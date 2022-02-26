@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project>
 
-    <packages>
+    <exported-packages>
         <source-packages/>
         <resource-package>dev.webfx.buildtool.cli</resource-package>
         <resource-package>dev.webfx.buildtool.templates</resource-package>
-    </packages>
+    </exported-packages>
 
     <dependencies>
         <used-by-source-modules/>
@@ -14,7 +14,7 @@
     <libraries>
 
         <library name="java-xml">
-            <packages>
+            <exported-packages>
                 <package>javax.xml</package>
                 <package>javax.xml.parsers</package>
                 <package>javax.xml.transform</package>
@@ -24,16 +24,16 @@
                 <package>javax.xml.xpath</package>
                 <package>org.w3c.dom</package>
                 <package>org.xml.sax</package>
-            </packages>
+            </exported-packages>
         </library>
 
         <library name="info-picocli">
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.6.1</version>
-            <packages>
+            <exported-packages>
                 <package>picocli</package>
-            </packages>
+            </exported-packages>
         </library>
 
     </libraries>

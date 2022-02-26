@@ -13,7 +13,7 @@ final public class ModuleRegistry {
     private final Path workspaceDirectory;
     private final Map<String, LibraryModule> libraryModules = new HashMap<>();
     private final Map<Path, ProjectModule> projectModules = new HashMap<>();
-    private final Map<String /* package name */, List<Module>> javaPackagesModules = new HashMap<>();
+    private final Map<String /* package name */, List<Module>> packagesModules = new HashMap<>();
     private final ReusableStream<ProjectModule> libraryProjectModules;
 
     /***********************
@@ -48,12 +48,12 @@ final public class ModuleRegistry {
 
     public void registerLibraryModule(LibraryModule module) {
         libraryModules.put(module.getName(), module);
-        for (String javaPackage : module.getJavaPackages())
-            registerJavaPackageModule(javaPackage, module);
+        for (String p : module.getExportedPackages())
+            registerPackageModule(p, module);
     }
 
-    private void registerJavaPackageModule(String javaPackage, Module module) {
-        List<Module> lm = javaPackagesModules.get(javaPackage);
+    private void registerPackageModule(String javaPackage, Module module) {
+        List<Module> lm = packagesModules.get(javaPackage);
         if (lm != null && !lm.contains(module)) {
             Module m = lm.get(0);
             String message = module + " and " + m + " share the same package " + javaPackage;
@@ -68,22 +68,22 @@ final public class ModuleRegistry {
             //    return;
         }
         if (lm == null)
-            javaPackagesModules.put(javaPackage, lm = new ArrayList<>(1));
+            packagesModules.put(javaPackage, lm = new ArrayList<>(1));
         lm.add(module);
     }
 
     void registerJavaPackagesProjectModule(ProjectModule module) {
         module.registerLibraryModules();
-        module.getDeclaredJavaPackages().forEach(javaPackage -> registerJavaPackageModule(javaPackage, module));
+        module.getDeclaredJavaPackages().forEach(pm -> registerPackageModule(pm, module));
     }
 
    Module getJavaPackageModuleNow(String packageToSearch, ProjectModule sourceModule, boolean canReturnNull) {
-        List<Module> lm = javaPackagesModules.get(packageToSearch);
+        List<Module> lm = packagesModules.get(packageToSearch);
         Module module = lm == null ? null : lm.stream().filter(m -> isSuitableModule(m, sourceModule))
                 .findFirst()
                 .orElse(null);
         if (module == null) { // Module not found :-(
-            // Last chance: the package was actually in the source package! (ex: webfx-kit-extracontrols-registry-spi
+            // Last chance: the package was actually in the source package! (ex: webfx-kit-extracontrols-registry-spi)
             if (sourceModule.getDeclaredJavaPackages().anyMatch(p -> p.equals(packageToSearch)))
                 module = sourceModule;
             else if (!canReturnNull) // Otherwise raising an exception (unless returning null is permitted)
@@ -116,7 +116,7 @@ final public class ModuleRegistry {
     public Module findModule(String name) {
         Module module = libraryModules.get(name);
         if (module == null)
-            module = javaPackagesModules.values().stream().flatMap(Collection::stream).filter(m -> m.getName().equals(name)).findFirst().orElse(null);
+            module = packagesModules.values().stream().flatMap(Collection::stream).filter(m -> m.getName().equals(name)).findFirst().orElse(null);
         return module;
     }
 

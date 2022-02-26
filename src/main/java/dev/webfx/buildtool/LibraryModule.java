@@ -20,8 +20,8 @@ public class LibraryModule extends ModuleImpl {
         return XmlUtil.getAttributeValue(moduleNode, "name");
     }
 
-    ReusableStream<String> getJavaPackages() {
-        return XmlUtil.nodeListToReusableStream(XmlUtil.lookupNodeList(moduleNode, "packages//package"), Node::getTextContent);
+    ReusableStream<String> getExportedPackages() {
+        return XmlUtil.nodeListToReusableStream(XmlUtil.lookupNodeList(moduleNode, "exported-packages//package"), Node::getTextContent);
     }
 
     @Override

@@ -568,12 +568,12 @@ public class ProjectModule extends ModuleImpl {
     }
 
     public ReusableStream<String> getExportedJavaPackages() {
-        ReusableStream<String> exportedPackages = getWebfxModuleFile().getExplicitSourcePackages();
-        if (getWebfxModuleFile().areSourcePackagesAutomaticallyAdded()) {
+        ReusableStream<String> exportedPackages = getWebfxModuleFile().getExplicitExportedPackages();
+        if (getWebfxModuleFile().areSourcePackagesAutomaticallyExported()) {
             exportedPackages = ReusableStream.concat(getDeclaredJavaPackages(), exportedPackages).distinct();
-            ReusableStream<String> explicitNotExportedPackages = getWebfxModuleFile().getHiddenPackages().cache();
-            if (explicitNotExportedPackages.count() > 0)
-                exportedPackages = exportedPackages.filter(p -> explicitNotExportedPackages.noneMatch(p::equals));
+            ReusableStream<String> excludedPackages = getWebfxModuleFile().getExcludedPackagesFromSourcePackages().cache();
+            if (excludedPackages.count() > 0)
+                exportedPackages = exportedPackages.filter(p -> excludedPackages.noneMatch(p::equals));
         }
         return exportedPackages;
     }
