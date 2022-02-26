@@ -128,7 +128,7 @@ public class ProjectModule extends ModuleImpl {
      * discovered by the source code analyzer.
      */
     private final ReusableStream<ModuleDependency> discoveredByCodeAnalyzerSourceDependenciesCache =
-            ReusableStream.create(() -> !getWebfxModuleFile().areSourceModuleDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
+            ReusableStream.create(() -> !getWebfxModuleFile().areUsedBySourceModulesDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
                     usedJavaPackagesCache
                             .map(p -> getRootModule().getJavaPackageModule(p, this))
                             //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
@@ -145,7 +145,7 @@ public class ProjectModule extends ModuleImpl {
      * in the webfx module file for now.
      */
     private final ReusableStream<ModuleDependency> undiscoveredByCodeAnalyzerSourceDependenciesCache =
-            ReusableStream.create(() -> getWebfxModuleFile().getUndiscoveredSourceModuleDependencies())
+            ReusableStream.create(() -> getWebfxModuleFile().getUndiscoveredUsedBySourceModulesDependencies())
                     .cache();
 
     /**

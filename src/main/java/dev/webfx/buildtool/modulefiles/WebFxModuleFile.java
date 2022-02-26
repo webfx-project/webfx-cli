@@ -59,12 +59,12 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/properties//*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
     }
 
-    public boolean areSourceModuleDependenciesAutomaticallyAdded() {
-        return lookupNode("/project/dependencies/source-modules") != null;
+    public boolean areUsedBySourceModulesDependenciesAutomaticallyAdded() {
+        return lookupNode("/project/dependencies/used-by-source-modules") != null;
     }
 
-    public ReusableStream<ModuleDependency> getUndiscoveredSourceModuleDependencies() {
-        return lookupDependencies("/project/dependencies/source-modules//undiscovered-source-module", ModuleDependency.Type.SOURCE);
+    public ReusableStream<ModuleDependency> getUndiscoveredUsedBySourceModulesDependencies() {
+        return lookupDependencies("/project/dependencies/used-by-source-modules//undiscovered-used-by-source-module", ModuleDependency.Type.SOURCE);
     }
 
     public ReusableStream<ModuleDependency> getPluginModuleDependencies() {
