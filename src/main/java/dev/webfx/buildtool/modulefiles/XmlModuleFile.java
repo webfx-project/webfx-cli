@@ -169,17 +169,21 @@ abstract class XmlModuleFile extends ModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node -> XmlUtil.getAttributeValue(node, attribute));
     }
 
-    ReusableStream<ModuleDependency> lookupDependencies(String xPathExpression, ModuleDependency.Type type) {
+    ReusableStream<ModuleDependency> lookupDependencies(String xPathExpression, ModuleDependency.Type type, String defaultScope) {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node ->
                 new ModuleDependency(
                         getModule(),
                         getProjectModule().getRootModule().findModule(node.getTextContent()),
                         type,
                         XmlUtil.getBooleanAttributeValue(node, "optional"),
-                        XmlUtil.getAttributeValue(node, "scope"),
+                        coalesce(XmlUtil.getAttributeValue(node, "scope"), defaultScope),
                         XmlUtil.getAttributeValue(node, "classifier"),
                         getTargetAttributeValue(node, "executable-target")
                 ));
+    }
+
+    private String coalesce(String s1, String s2) {
+        return s1 != null ? s1 : s2;
     }
 
     private Target getTargetAttributeValue(Node node, String name) {

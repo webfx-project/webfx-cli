@@ -172,7 +172,7 @@ public final class ArtifactResolver {
         return null;
     }
 
-    private static boolean isJdkModule(String moduleName) {
+    static boolean isJdkModule(String moduleName) {
         switch (moduleName.replaceAll("-", ".")) {
             // List returned by java --list-modules
             case "java.base":

@@ -42,6 +42,9 @@ public class JavaModuleInfoFile extends ModuleFile {
         processSection(sb, "Direct dependencies modules", "requires",
                 ReusableStream.fromIterable(
                         module.getDirectDependencies()
+                        // Modules with "runtime" scope must not have a "requires" clause (since they are invisible for the module).
+                        // Exception is made however for JDK modules (since they are always visible) and may be needed (ex: java.sql for Vert.x)
+                        .filter(d -> !"runtime".equals(d.getScope()) || ArtifactResolver.isJdkModule(d.getDestinationModule().getName()))
                         // Grouping by destination module
                         .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                 )
