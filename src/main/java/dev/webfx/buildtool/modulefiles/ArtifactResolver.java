@@ -148,8 +148,6 @@ public final class ArtifactResolver {
                 case "javafx-media":
                 case "webfx-kit-javafxmedia-emul":
                     return "provided";
-                case "slf4j-api":
-                    return "runtime";
             }
         return null;
     }
