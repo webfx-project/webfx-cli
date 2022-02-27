@@ -38,8 +38,8 @@ public final class ArtifactResolver {
         String moduleName = module.getName();
         if (moduleName.equals("java-nio-emul") && isForGwt && isExecutable)
             return "gwt-nio";
-        if (moduleName.startsWith("java-") || moduleName.startsWith("jdk-"))
-            return null;
+        if (isJdkModule(moduleName) || isJdkEmulationModule(moduleName))
+            return null; // No external dependency is required
         switch (moduleName) {
             //case "gwt-charts":
             case "jsinterop-base":
@@ -170,5 +170,92 @@ public final class ArtifactResolver {
                 return moduleName.contains("-gwt-emul-") ? "shaded-sources" : "sources";
         }
         return null;
+    }
+
+    private static boolean isJdkModule(String moduleName) {
+        switch (moduleName.replaceAll("-", ".")) {
+            // List returned by java --list-modules
+            case "java.base":
+            case "java.compiler":
+            case "java.datatransfer":
+            case "java.desktop":
+            case "java.instrument":
+            case "java.logging":
+            case "java.management":
+            case "java.management.rmi":
+            case "java.naming":
+            case "java.net.http":
+            case "java.prefs":
+            case "java.rmi":
+            case "java.scripting":
+            case "java.se":
+            case "java.security.jgss":
+            case "java.security.sasl":
+            case "java.smartcardio":
+            case "java.sql":
+            case "java.sql.rowset":
+            case "java.transaction.xa":
+            case "java.xml":
+            case "java.xml.crypto":
+            case "jdk.accessibility":
+            case "jdk.aot":
+            case "jdk.attach":
+            case "jdk.charsets":
+            case "jdk.compiler":
+            case "jdk.crypto.cryptoki":
+            case "jdk.crypto.ec":
+            case "jdk.dynalink":
+            case "jdk.editpad":
+            case "jdk.hotspot.agent":
+            case "jdk.httpserver":
+            case "jdk.internal.ed":
+            case "jdk.internal.jvmstat":
+            case "jdk.internal.le":
+            case "jdk.internal.opt":
+            case "jdk.internal.vm.ci":
+            case "jdk.internal.vm.compiler":
+            case "jdk.internal.vm.compiler.management":
+            case "jdk.jartool":
+            case "jdk.javadoc":
+            case "jdk.jcmd":
+            case "jdk.jconsole":
+            case "jdk.jdeps":
+            case "jdk.jdi":
+            case "jdk.jdwp.agent":
+            case "jdk.jfr":
+            case "jdk.jlink":
+            case "jdk.jshell":
+            case "jdk.jsobject":
+            case "jdk.jstatd":
+            case "jdk.localedata":
+            case "jdk.management":
+            case "jdk.management.agent":
+            case "jdk.management.jfr":
+            case "jdk.naming.dns":
+            case "jdk.naming.ldap":
+            case "jdk.naming.rmi":
+            case "jdk.net":
+            case "jdk.pack":
+            case "jdk.rmic":
+            case "jdk.scripting.nashorn":
+            case "jdk.scripting.nashorn.shell":
+            case "jdk.sctp":
+            case "jdk.security.auth":
+            case "jdk.security.jgss":
+            case "jdk.unsupported":
+            case "jdk.unsupported.desktop":
+            case "jdk.xml.dom":
+            case "jdk.zipfs":
+                return true;
+        }
+        return false;
+    }
+
+    private static boolean isJdkEmulationModule(String moduleName) {
+        switch (moduleName) {
+            case "java-nio-emul":
+                return true;
+        }
+        return false;
     }
 }
