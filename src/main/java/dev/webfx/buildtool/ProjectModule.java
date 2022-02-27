@@ -177,7 +177,7 @@ public class ProjectModule extends ModuleImpl {
                 ProjectModule applicationModule = null;
                 if (isExecutable()) {
                     String moduleName = getName();
-                    applicationModule = getRootModule().findProjectModule(moduleName.substring(0, moduleName.lastIndexOf('-')), true);
+                    applicationModule = getRootModule().searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(moduleName.substring(0, moduleName.lastIndexOf('-')), true);
                 }
                 return applicationModule != null ? ReusableStream.of(ModuleDependency.createApplicationDependency(this, applicationModule)) : ReusableStream.empty();
             });
@@ -260,8 +260,8 @@ public class ProjectModule extends ModuleImpl {
                     ReusableStream.create(() -> ReusableStream.concat(
                                 ReusableStream.of(
                                     getRootModule(),
-                                    getRootModule().findProjectModule("webfx-platform"),
-                                    getRootModule().findProjectModule("webfx-kit")
+                                    getRootModule().searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages("webfx-platform"),
+                                    getRootModule().searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages("webfx-kit")
                                     ),
                             getRootModule().findProjectModuleStartingWith("webfx-stack"),
                             getRootModule().findProjectModuleStartingWith("webfx-extras"),
@@ -311,7 +311,8 @@ public class ProjectModule extends ModuleImpl {
     private final ReusableStream<ModuleDependency> executableImplicitProvidersDependenciesCache =
             executableImplicitProvidersCache
                     .flatMap(Providers::getProviderModules)
-                    .filter(m -> transitiveDependenciesWithoutImplicitProvidersCache.noneMatch(dep -> dep.getDestinationModule() == m)) // Removing modules already in transitive dependencies (no need to repeat them)
+                    // Removing modules already in transitive dependencies (no need to repeat them)
+                    .filter(m -> m != this && transitiveDependenciesWithoutImplicitProvidersCache.noneMatch(dep -> dep.getDestinationModule() == m))
                     .map(m -> ModuleDependency.createImplicitProviderDependency(this, m))
                     .cache();
 
@@ -350,7 +351,7 @@ public class ProjectModule extends ModuleImpl {
      * kept). For example, if my-app-css is an interface module and my-app-css-javafx & my-app-css-web are the concrete
      * modules, my-app-css will be replaced by my-app-css-javafx in a final javafx application and by my-app-css-web in
      * a final web application). For making this replacement work with the java module system, the concrete modules will
-     * be declared using the same name as the interface module in their module-info.java (See {@link JavaModuleFile} ).
+     * be declared using the same name as the interface module in their module-info.java (See {@link JavaModuleInfoFile} ).
      */
     private final ReusableStream<ModuleDependency> directDependenciesCache =
             ReusableStream.concat(
@@ -385,10 +386,10 @@ public class ProjectModule extends ModuleImpl {
     private Boolean hasJavaSourceDirectory;
     private Boolean hasMetaInfJavaServicesDirectory;
     private WebFxModuleFile webfxModuleFile;
-    private JavaModuleFile javaModuleFile;
+    private JavaModuleInfoFile javaModuleInfoFile;
     private GwtModuleFile gwtModuleFile;
     private GwtHtmlFile gwtHtmlFile;
-    private MavenModuleFile mavenModuleFile;
+    private MavenPomModuleFile mavenPomModuleFile;
     private boolean checkedWebfxModuleFileGAV;
 
     /************************
@@ -521,10 +522,10 @@ public class ProjectModule extends ModuleImpl {
         return webfxModuleFile;
     }
 
-    public JavaModuleFile getJavaModuleFile() {
-        if (javaModuleFile == null)
-            javaModuleFile = new JavaModuleFile(this);
-        return javaModuleFile;
+    public JavaModuleInfoFile getJavaModuleFile() {
+        if (javaModuleInfoFile == null)
+            javaModuleInfoFile = new JavaModuleInfoFile(this);
+        return javaModuleInfoFile;
     }
 
     public GwtModuleFile getGwtModuleFile() {
@@ -539,10 +540,10 @@ public class ProjectModule extends ModuleImpl {
         return gwtHtmlFile;
     }
 
-    public MavenModuleFile getMavenModuleFile() {
-        if (mavenModuleFile == null)
-            mavenModuleFile = new MavenModuleFile(this);
-        return mavenModuleFile;
+    public MavenPomModuleFile getMavenModuleFile() {
+        if (mavenPomModuleFile == null)
+            mavenPomModuleFile = new MavenPomModuleFile(this);
+        return mavenPomModuleFile;
     }
 
 
@@ -597,15 +598,15 @@ public class ProjectModule extends ModuleImpl {
         return ReusableStream.concat(ReusableStream.of(this), getChildrenModulesInDepth());
     }
 
-    ProjectModule findProjectModule(String name) {
-        return findProjectModule(name, false);
+    ProjectModule searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(String name) {
+        return searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(name, false);
     }
 
     ReusableStream<ProjectModule> getProjectModuleSearchScope() {
         return getChildrenModulesInDepth();
     }
 
-    ProjectModule findProjectModule(String name, boolean silent) {
+    ProjectModule searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(String name, boolean silent) {
         Optional<ProjectModule> projectModule;
         projectModule = getProjectModuleSearchScope() // Trying first in the scope of this project
                 .filter(module -> module.getName().equals(name))

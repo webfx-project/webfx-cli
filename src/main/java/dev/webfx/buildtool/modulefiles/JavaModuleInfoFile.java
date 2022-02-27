@@ -16,9 +16,9 @@ import java.util.stream.Collectors;
 /**
  * @author Bruno Salmon
  */
-public class JavaModuleFile extends ModuleFile {
+public class JavaModuleInfoFile extends ModuleFile {
 
-    public JavaModuleFile(ProjectModule module) {
+    public JavaModuleInfoFile(ProjectModule module) {
         super(module);
     }
 
@@ -40,10 +40,14 @@ public class JavaModuleFile extends ModuleFile {
         ProjectModule module = getProjectModule();
         StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n\nmodule ").append(getJavaModuleName()).append(" {\n");
         processSection(sb, "Direct dependencies modules", "requires",
-                ReusableStream.fromIterable(module.getDirectDependencies().collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet())
-                        .map(this::getJavaModuleNameWithStaticPrefixIfApplicable)
-                        .filter(Objects::nonNull)
-                        .distinct()
+                ReusableStream.fromIterable(
+                        module.getDirectDependencies()
+                        // Grouping by destination module
+                        .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
+                )
+                .map(this::getJavaModuleNameWithStaticPrefixIfApplicable)
+                .filter(Objects::nonNull)
+                .distinct()
         );
 
         processSection(sb, "Exported packages", "exports",

@@ -72,9 +72,9 @@ final public class ModuleRegistry {
         lm.add(module);
     }
 
-    void registerJavaPackagesProjectModule(ProjectModule module) {
+    void registerLibrariesAndJavaPackagesOfProjectModule(ProjectModule module) {
         module.registerLibraryModules();
-        module.getDeclaredJavaPackages().forEach(pm -> registerPackageModule(pm, module));
+        module.getDeclaredJavaPackages().forEach(p -> registerPackageModule(p, module));
     }
 
    Module getJavaPackageModuleNow(String packageToSearch, ProjectModule sourceModule, boolean canReturnNull) {
@@ -113,14 +113,14 @@ final public class ModuleRegistry {
         return true;
     }
 
-    public Module findModule(String name) {
-        Module module = libraryModules.get(name);
+    public Module findLibraryOrModuleOrAlreadyRegistered(String name) {
+        Module module = findLibraryAlreadyRegistered(name);
         if (module == null)
             module = packagesModules.values().stream().flatMap(Collection::stream).filter(m -> m.getName().equals(name)).findFirst().orElse(null);
         return module;
     }
 
-    LibraryModule getLibraryModule(String artifactId) {
+    LibraryModule findLibraryAlreadyRegistered(String artifactId) {
         return libraryModules.get(artifactId);
     }
 

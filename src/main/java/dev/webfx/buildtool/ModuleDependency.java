@@ -73,7 +73,7 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
 
     @Override
     public int compareTo(ModuleDependency dep) {
-        // By default we sort the dependencies by ordering the by the destination module name
+        // By default, we sort the dependencies by ordering the by the destination module name
         return destinationModule.getName().compareTo(dep.destinationModule.getName());
     }
 

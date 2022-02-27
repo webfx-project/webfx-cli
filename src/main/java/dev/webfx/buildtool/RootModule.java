@@ -4,6 +4,7 @@ import dev.webfx.tools.util.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * @author Bruno Salmon
@@ -60,15 +61,19 @@ public final class RootModule extends ProjectModule {
         moduleRegistry.registerLibraryModule(module);
     }
 
-    void registerJavaPackagesProjectModule(ProjectModule module) {
-        moduleRegistry.registerJavaPackagesProjectModule(module);
+    void registerLibrariesAndJavaPackagesOfProjectModule(ProjectModule module) {
+        moduleRegistry.registerLibrariesAndJavaPackagesOfProjectModule(module);
+    }
+
+    private Module findLibraryOrModuleOrAlreadyRegistered(String name) {
+        return moduleRegistry.findLibraryOrModuleOrAlreadyRegistered(name);
     }
 
     Module getJavaPackageModule(String packageToSearch, ProjectModule sourceModule) {
         Module module = moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, true);
         if (module != null)
             return module;
-        packageModuleSearchScopeResume.takeWhile(m -> moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, true) == null).forEach(this::registerJavaPackagesProjectModule);
+        searchProjectModuleWithinSearchScopeAndRegisterLibrariesAndPackagesUntil(m -> moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, true) != null);
         return moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, false);
     }
 
@@ -77,16 +82,27 @@ public final class RootModule extends ProjectModule {
     }
 
     public Module findModule(String name, boolean silent) {
-        Module module = moduleRegistry.findModule(name);
-        if (module == null) {
-            module = findProjectModule(name, true);
-            if (module == null) {
-                module = moduleRegistry.getLibraryModule(name);
-                if (module == null && !silent)
+        // Maybe the module is already registered? (the fastest case)
+        Module module = findLibraryOrModuleOrAlreadyRegistered(name);
+        if (module == null) { // If not yet registered,
+            // Let's continue searching it within the search scope but first without registering the declared libraries and packages (first pass - quicker than second pass)
+            module = searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(name, true);
+            if (module == null) { // If not found,
+                // Let's do that search again (quick to redo with cache) but with the registering process (second pass)
+                searchProjectModuleWithinSearchScopeAndRegisterLibrariesAndPackagesUntil(m -> moduleRegistry.findLibraryAlreadyRegistered(name) != null);
+                // Let's finally check if that search was fruitful
+                module = findLibraryOrModuleOrAlreadyRegistered(name);
+                if (module == null && !silent) // If still not found, we just don't know this module!
                     throw new UnresolvedException("Unknown module " + name);
             }
         }
         return module;
+    }
+
+    private void searchProjectModuleWithinSearchScopeAndRegisterLibrariesAndPackagesUntil(Predicate<? super ProjectModule> untilPredicate) {
+        Predicate<? super ProjectModule> whilePredicate = untilPredicate.negate();
+        packageModuleSearchScopeResume.takeWhile(whilePredicate)
+                .forEach(this::registerLibrariesAndJavaPackagesOfProjectModule);
     }
 
     /*****************************

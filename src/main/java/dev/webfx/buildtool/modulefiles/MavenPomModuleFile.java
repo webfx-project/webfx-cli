@@ -17,11 +17,11 @@ import java.util.stream.Collectors;
 /**
  * @author Bruno Salmon
  */
-public final class MavenModuleFile extends XmlModuleFile {
+public final class MavenPomModuleFile extends XmlModuleFile {
 
     private Boolean aggregate;
 
-    public MavenModuleFile(ProjectModule module) {
+    public MavenPomModuleFile(ProjectModule module) {
         super(module, true);
     }
 
