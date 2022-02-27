@@ -36,9 +36,7 @@ public final class ArtifactResolver {
 
     static String getArtifactId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
-        if (moduleName.equals("java-nio-emul") && isForGwt && isExecutable)
-            return "gwt-nio";
-        if (isJdkModule(moduleName) || isJdkEmulationModule(moduleName))
+        if (isJdkModule(moduleName) || isJdkEmulationModule(moduleName) && !(isForGwt && isExecutable))
             return null; // No external dependency is required
         switch (moduleName) {
             //case "gwt-charts":
