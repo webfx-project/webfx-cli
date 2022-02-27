@@ -128,9 +128,10 @@ public final class MavenPomModuleFile extends XmlModuleFile {
                             if (type != null)
                                 appendTextNode(dependencyNode, "/type", type);
                             String scope = ArtifactResolver.getScope(moduleGroup, buildInfo);
-                            if (scope != null)
-                                appendTextNode(dependencyNode, "/scope", scope);
                             String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
+                            // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
+                            if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))
+                                appendTextNode(dependencyNode, "/scope", scope);
                             if (classifier != null)
                                 appendTextNode(dependencyNode, "/classifier", classifier);
                             if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
