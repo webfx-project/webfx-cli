@@ -149,11 +149,19 @@ public class ProjectModule extends ModuleImpl {
                     .cache();
 
     /**
+     * Returns source module dependencies explicitly mentioned in webfx.xml, which can be used to set some special
+     * attribute on those dependencies (ex: optional = "true").
+     */
+    private final ReusableStream<ModuleDependency> explicitSourceDependenciesCache =
+            ReusableStream.create(() -> getWebfxModuleFile().getExplicitSourceModulesDependencies())
+                    .cache();
+    /**
      * Returns all source module dependencies directly required by the source code of this module (discovered or not by
      * the source code analyzer).
      */
     private final ReusableStream<ModuleDependency> sourceDirectDependenciesCache =
             ReusableStream.concat(
+                    explicitSourceDependenciesCache,
                     discoveredByCodeAnalyzerSourceDependenciesCache,
                     undiscoveredByCodeAnalyzerSourceDependenciesCache
             );
