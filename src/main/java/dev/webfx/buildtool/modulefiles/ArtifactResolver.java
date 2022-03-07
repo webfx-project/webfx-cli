@@ -122,7 +122,10 @@ public final class ArtifactResolver {
     }
 
     static String getType(Module module) {
-        return module.getType();
+        String type = module.getType();
+        if (type == null && (module instanceof ProjectModule) && ((ProjectModule) module).isAggregate())
+            type = "pom";
+        return type;
     }
 
     static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, BuildInfo buildInfo) {
