@@ -16,11 +16,15 @@ public class LibraryModule extends ModuleImpl {
         this.moduleNode = moduleNode;
     }
 
+    public Node getModuleNode() {
+        return moduleNode;
+    }
+
     private static String getModuleName(Node moduleNode) {
         return XmlUtil.getAttributeValue(moduleNode, "name");
     }
 
-    ReusableStream<String> getExportedPackages() {
+    public ReusableStream<String> getExportedPackages() {
         return XmlUtil.nodeListToReusableStream(XmlUtil.lookupNodeList(moduleNode, "exported-packages//package"), Node::getTextContent);
     }
 

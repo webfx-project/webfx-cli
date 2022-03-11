@@ -35,7 +35,7 @@ public class GwtHtmlFile extends ModuleFile {
         ReusableStream<ProjectModule> transitiveProjectModules =
                 ProjectModule.filterProjectModules(getProjectModule().getThisAndTransitiveModules()).distinct();
         ReusableStream.concat(
-                transitiveProjectModules.map(m -> m.getWebfxModuleFile().getHtmlNode()),
+                transitiveProjectModules.map(m -> m.getWebFxModuleFile().getHtmlNode()),
                 ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order=\"0\"><script type=\"text/javascript\" src=\"" + getModule().getName().replaceAll("-", "_") + ".nocache.js\" charset=\"utf-8\"/></body></html>"), "/html"))
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
@@ -92,7 +92,7 @@ public class GwtHtmlFile extends ModuleFile {
 
     private static boolean checkNodeConditions(Node headOrBodyNode, ReusableStream<ProjectModule> transitiveProjectModules) {
         String ifModulePropertyTrue = XmlUtil.getAttributeValue(headOrBodyNode, "if-module-property-true");
-        if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> m.getWebfxModuleFile().getModuleProperties().anyMatch(p -> p.getName().equals(ifModulePropertyTrue) && "true".equalsIgnoreCase(p.getValue()))))
+        if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> m.getWebFxModuleFile().getModuleProperties().anyMatch(p -> p.getName().equals(ifModulePropertyTrue) && "true".equalsIgnoreCase(p.getValue()))))
             return false;
         String ifUsesJavaPackage = XmlUtil.getAttributeValue(headOrBodyNode, "if-uses-java-package");
         if (ifUsesJavaPackage != null && !ProjectModule.modulesUsesJavaPackage(transitiveProjectModules, ifUsesJavaPackage))

@@ -24,7 +24,7 @@ public final class GluonFilesGenerator {
         StringBuilder sb = new StringBuilder();
         ProjectModule.filterProjectModules(gluonModule.getTransitiveModules())
                 .forEach(module -> {
-                    String json = module.getWebfxModuleFile().getGraalVmReflectionJson();
+                    String json = module.getWebFxModuleFile().getGraalVmReflectionJson();
                     if (json != null) {
                         json = removeLineFeeds(json, true);
                         if (json.startsWith("["))

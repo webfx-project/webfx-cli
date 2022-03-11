@@ -69,10 +69,10 @@ class Create extends CommonSubcommand {
                 if (!Files.exists(javaFilePath))
                     TextFileReaderWriter.writeTextFile(template, javaFilePath);
                 if (template.contains("javafx.application.Application"))
-                    module.getWebfxModuleFile().addProvider("javafx.application.Application", fullClassName);
+                    module.getWebFxModuleFile().addProvider("javafx.application.Application", fullClassName);
             }
-            module.getWebfxModuleFile().setExecutable(executable);
-            module.getWebfxModuleFile().writeFile();
+            module.getWebFxModuleFile().setExecutable(executable);
+            module.getWebFxModuleFile().writeFile();
             return module;
         }
     }

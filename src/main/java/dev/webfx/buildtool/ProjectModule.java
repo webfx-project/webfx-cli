@@ -101,7 +101,7 @@ public class ProjectModule extends ModuleImpl {
      * Returns all java services provided by this module (returns the list of files under META-INF/services).
      */
     private final ReusableStream<String> providedJavaServicesCache =
-            ReusableStream.create(() -> getWebfxModuleFile().providedServerProviders())
+            ReusableStream.create(() -> getWebFxModuleFile().providedServerProviders())
                     .map(ServiceProvider::getSpi)
                     .distinct()
                     .cache();
@@ -128,7 +128,7 @@ public class ProjectModule extends ModuleImpl {
      * discovered by the source code analyzer.
      */
     private final ReusableStream<ModuleDependency> discoveredByCodeAnalyzerSourceDependenciesCache =
-            ReusableStream.create(() -> !getWebfxModuleFile().areUsedBySourceModulesDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
+            ReusableStream.create(() -> !getWebFxModuleFile().areUsedBySourceModulesDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
                     usedJavaPackagesCache
                             .map(p -> getRootModule().getJavaPackageModule(p, this))
                             //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
@@ -145,7 +145,7 @@ public class ProjectModule extends ModuleImpl {
      * in the webfx module file for now.
      */
     private final ReusableStream<ModuleDependency> undiscoveredByCodeAnalyzerSourceDependenciesCache =
-            ReusableStream.create(() -> getWebfxModuleFile().getUndiscoveredUsedBySourceModulesDependencies())
+            ReusableStream.create(() -> getWebFxModuleFile().getUndiscoveredUsedBySourceModulesDependencies())
                     .cache();
 
     /**
@@ -153,7 +153,7 @@ public class ProjectModule extends ModuleImpl {
      * attribute on those dependencies (ex: optional = "true").
      */
     private final ReusableStream<ModuleDependency> explicitSourceDependenciesCache =
-            ReusableStream.create(() -> getWebfxModuleFile().getExplicitSourceModulesDependencies())
+            ReusableStream.create(() -> getWebFxModuleFile().getExplicitSourceModulesDependencies())
                     .cache();
     /**
      * Returns all source module dependencies directly required by the source code of this module (discovered or not by
@@ -171,7 +171,7 @@ public class ProjectModule extends ModuleImpl {
      * the webfx module file).
      */
     private final ReusableStream<ModuleDependency> resourceDirectDependenciesCache =
-            ReusableStream.create(() -> getWebfxModuleFile().getResourceModuleDependencies())
+            ReusableStream.create(() -> getWebFxModuleFile().getResourceModuleDependencies())
                     .cache();
 
     /**
@@ -195,7 +195,7 @@ public class ProjectModule extends ModuleImpl {
      * file).
      */
     private final ReusableStream<ModuleDependency> pluginDirectDependenciesCache =
-            ReusableStream.create(() -> getWebfxModuleFile().getPluginModuleDependencies())
+            ReusableStream.create(() -> getWebFxModuleFile().getPluginModuleDependencies())
                     .cache();
 
     /**
@@ -392,13 +392,13 @@ public class ProjectModule extends ModuleImpl {
     private Target target;
     private Boolean hasSourceDirectory;
     private Boolean hasJavaSourceDirectory;
-    private Boolean hasMetaInfJavaServicesDirectory;
     private WebFxModuleFile webfxModuleFile;
     private JavaModuleInfoFile javaModuleInfoFile;
     private GwtModuleFile gwtModuleFile;
     private GwtHtmlFile gwtHtmlFile;
     private MavenPomModuleFile mavenPomModuleFile;
-    private boolean checkedWebfxModuleFileGAV;
+    private ExportedWebFxModuleFile exportedWebFxModuleFile;
+    private boolean checkedWebFxModuleFileGAV;
 
     /************************
      ***** Constructors *****
@@ -415,12 +415,12 @@ public class ProjectModule extends ModuleImpl {
     }
 
     void registerLibraryModules() {
-        getWebfxModuleFile().getLibraryModules().forEach(rootModule::registerLibraryModule);
+        getWebFxModuleFile().getLibraryModules().forEach(rootModule::registerLibraryModule);
     }
 
     private void checkMavenModuleFileGAV() {
-        if (!checkedWebfxModuleFileGAV) {
-            checkedWebfxModuleFileGAV = true;
+        if (!checkedWebFxModuleFileGAV) {
+            checkedWebFxModuleFileGAV = true;
             if (groupId == null) {
                 groupId = getMavenModuleFile().getGroupId();
                 if (groupId == null && parentModule == null)
@@ -518,13 +518,7 @@ public class ProjectModule extends ModuleImpl {
         return hasJavaSourceDirectory;
     }
 
-    private boolean hasMetaInfJavaServicesDirectory() {
-        if (hasMetaInfJavaServicesDirectory == null)
-            hasMetaInfJavaServicesDirectory = hasSourceDirectory() && Files.exists(getMetaInfJavaServicesDirectory());
-        return hasMetaInfJavaServicesDirectory;
-    }
-
-    public WebFxModuleFile getWebfxModuleFile() {
+    public WebFxModuleFile getWebFxModuleFile() {
         if (webfxModuleFile == null)
             webfxModuleFile = new WebFxModuleFile(this);
         return webfxModuleFile;
@@ -554,6 +548,12 @@ public class ProjectModule extends ModuleImpl {
         return mavenPomModuleFile;
     }
 
+    public ExportedWebFxModuleFile getExportedWebFxModuleFile() {
+        if (exportedWebFxModuleFile == null)
+            exportedWebFxModuleFile = new ExportedWebFxModuleFile(this);
+        return exportedWebFxModuleFile;
+    }
+
 
     /*************************
      ***** Basic streams *****
@@ -577,10 +577,10 @@ public class ProjectModule extends ModuleImpl {
     }
 
     public ReusableStream<String> getExportedJavaPackages() {
-        ReusableStream<String> exportedPackages = getWebfxModuleFile().getExplicitExportedPackages();
-        if (getWebfxModuleFile().areSourcePackagesAutomaticallyExported()) {
+        ReusableStream<String> exportedPackages = getWebFxModuleFile().getExplicitExportedPackages();
+        if (getWebFxModuleFile().areSourcePackagesAutomaticallyExported()) {
             exportedPackages = ReusableStream.concat(getDeclaredJavaPackages(), exportedPackages).distinct();
-            ReusableStream<String> excludedPackages = getWebfxModuleFile().getExcludedPackagesFromSourcePackages().cache();
+            ReusableStream<String> excludedPackages = getWebFxModuleFile().getExcludedPackagesFromSourcePackages().cache();
             if (excludedPackages.count() > 0)
                 exportedPackages = exportedPackages.filter(p -> excludedPackages.noneMatch(p::equals));
         }
@@ -635,20 +635,20 @@ public class ProjectModule extends ModuleImpl {
     }
 
     public ReusableStream<String> getResourcePackages() {
-        return getWebfxModuleFile().getResourcePackages();
+        return getWebFxModuleFile().getResourcePackages();
     }
 
     public ReusableStream<String> getEmbedResources() {
-        return getWebfxModuleFile().getEmbedResources();
+        return getWebFxModuleFile().getEmbedResources();
     }
 
     public ReusableStream<String> getSystemProperties() {
-        return getWebfxModuleFile().getSystemProperties();
+        return getWebFxModuleFile().getSystemProperties();
     }
 
     public boolean isExecutable() {
         //return getArtifactId().contains("-application-") && getTarget().isMonoPlatform();
-        return getWebfxModuleFile().isExecutable();
+        return getWebFxModuleFile().isExecutable();
     }
 
     public boolean isExecutable(Platform platform) {
@@ -656,11 +656,11 @@ public class ProjectModule extends ModuleImpl {
     }
 
     public boolean isInterface() {
-        return getWebfxModuleFile().isInterface();
+        return getWebFxModuleFile().isInterface();
     }
 
     public boolean isAutomatic() {
-        return getWebfxModuleFile().isAutomatic();
+        return getWebFxModuleFile().isAutomatic();
     }
 
     public boolean isAggregate() {
@@ -672,7 +672,7 @@ public class ProjectModule extends ModuleImpl {
     }
 
     public ReusableStream<String> implementedInterfaces() {
-        return getWebfxModuleFile().implementedInterfaces();
+        return getWebFxModuleFile().implementedInterfaces();
     }
 
     /******************************
@@ -686,6 +686,10 @@ public class ProjectModule extends ModuleImpl {
 
     public ReusableStream<ModuleDependency> getTransitiveDependencies() {
         return transitiveDependenciesCache;
+    }
+
+    public ReusableStream<ModuleDependency> getDiscoveredByCodeAnalyzerSourceDependencies() {
+        return discoveredByCodeAnalyzerSourceDependenciesCache;
     }
 
     ReusableStream<ModuleDependency> getDirectDependenciesWithoutFinalExecutableResolutions() {
@@ -748,7 +752,7 @@ public class ProjectModule extends ModuleImpl {
         if (isExecutable())
             return automaticOrRequiredProvidersModulesSearchScopeCache
                     .filter(ProjectModule::isAutomatic)
-                    .filter(am -> am.getWebfxModuleFile().getPackagesAutoCondition().allMatch(p -> usesJavaPackage(p) || transitiveProjectModulesWithoutImplicitProvidersCache.anyMatch(tm -> tm.usesJavaPackage(p))))
+                    .filter(am -> am.getWebFxModuleFile().getPackagesAutoCondition().allMatch(p -> usesJavaPackage(p) || transitiveProjectModulesWithoutImplicitProvidersCache.anyMatch(tm -> tm.usesJavaPackage(p))))
                     ;
         return ReusableStream.empty();
     }
@@ -850,7 +854,7 @@ public class ProjectModule extends ModuleImpl {
     }
 
     private boolean implementsModule(Module module) {
-        return this != module && (getName().startsWith(module.getName()) || getWebfxModuleFile().implementedInterfaces().anyMatch(m -> module.getName().equals(m)));
+        return this != module && (getName().startsWith(module.getName()) || getWebFxModuleFile().implementedInterfaces().anyMatch(m -> module.getName().equals(m)));
     }
 
     private boolean isCompatibleWithTargetModule(ProjectModule targetModule) {
@@ -918,7 +922,7 @@ public class ProjectModule extends ModuleImpl {
 
     public ReusableStream<String> getProvidedJavaServiceImplementations(String javaService, boolean replaceDollarWithDot) {
         // Providers declared in the webfx module file
-        ReusableStream<String> implementations = getWebfxModuleFile().providedServerProviders()
+        ReusableStream<String> implementations = getWebFxModuleFile().providedServerProviders()
                 .filter(p -> p.getSpi().equals(javaService))
                 .map(ServiceProvider::getImplementation);
         if (replaceDollarWithDot)

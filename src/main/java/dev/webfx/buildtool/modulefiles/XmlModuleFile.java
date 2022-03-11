@@ -28,7 +28,7 @@ abstract class XmlModuleFile extends ModuleFile {
         this.readFileIfExists = readFileIfExists;
     }
 
-    Document getDocument() {
+    public Document getDocument() {
         if (document == null & readFileIfExists)
             readFile();
         return document;
@@ -91,7 +91,11 @@ abstract class XmlModuleFile extends ModuleFile {
 
     @Override
     public void writeFile() {
-        TextFileReaderWriter.writeTextFileIfNewOrModified(XmlUtil.formatXmlText(getOrCreateDocument()), getModuleFilePath());
+        TextFileReaderWriter.writeTextFileIfNewOrModified(getXmlContent(), getModuleFilePath());
+    }
+
+    public String getXmlContent() {
+        return XmlUtil.formatXmlText(getOrCreateDocument());
     }
 
     NodeList lookupNodeList(String xpathExpression) {

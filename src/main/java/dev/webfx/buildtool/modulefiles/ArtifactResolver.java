@@ -20,7 +20,7 @@ public final class ArtifactResolver {
         return getGroupId(module) + ":" + getVersion(module);
     }
 
-    static String getArtifactId(Module module) {
+    public static String getArtifactId(Module module) {
         if (module instanceof ProjectModule)
             return getArtifactId(module, ((ProjectModule) module).getBuildInfo());
         return getArtifactId(module, false, false, false);
@@ -73,7 +73,7 @@ public final class ArtifactResolver {
         return moduleName;
     }
 
-    static String getGroupId(Module module) {
+    public static String getGroupId(Module module) {
         if (module instanceof ProjectModule)
             return getGroupId(module, ((ProjectModule) module).getBuildInfo());
         return getGroupId(module, false, false, false);
@@ -94,10 +94,15 @@ public final class ArtifactResolver {
         String groupId = module.getGroupId();
         if (groupId != null)
             return groupId;
-        return "???";
+        return "null";
     }
 
-    static String getVersion(Module module) {
+    public static String getSafeVersion(Module module) {
+        String version = getVersion(module);
+        return version != null ? version : "null";
+    }
+
+    public static String getVersion(Module module) {
         if (module instanceof ProjectModule)
             return getVersion(module, ((ProjectModule) module).getBuildInfo());
         return getVersion(module, false, false, false);
@@ -115,10 +120,7 @@ public final class ArtifactResolver {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
             module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
-        String version = module.getVersion();
-        if (version != null)
-            return version;
-        return null; // Managed by root pom
+        return module.getVersion();
     }
 
     static String getType(Module module) {

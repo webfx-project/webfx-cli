@@ -13,7 +13,7 @@ final class GwtArraySuperSourceGenerator {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module java.lang.reflect.Array.java super source for GWT");
         StringBuilder sb = new StringBuilder();
         ProjectModule.filterProjectModules(module.getTransitiveModules())
-                .flatMap(m -> m.getWebfxModuleFile().getArrayNewInstanceClasses())
+                .flatMap(m -> m.getWebFxModuleFile().getArrayNewInstanceClasses())
                 .distinct()
                 .stream().sorted()
                 .forEach(className -> sb.append("            case \"").append(className).append("\": return new ").append(className).append("[length];\n"));

@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
                 Update.class,
                 Shell.class,
                 Watch.class,
+                Export.class
         },
         mixinStandardHelpOptions = true,
         version = "2021-04-02")
