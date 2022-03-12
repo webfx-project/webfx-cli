@@ -1,5 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
+import dev.webfx.buildtool.LocalProjectModule;
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ModuleDependency;
 import dev.webfx.buildtool.ProjectModule;
@@ -10,7 +11,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -22,24 +22,19 @@ import java.util.stream.Stream;
 /**
  * @author Bruno Salmon
  */
-public final class GwtModuleFile extends XmlModuleFile {
+public final class LocalGwtModuleFile extends LocalXmlModuleFileImpl {
 
-    public GwtModuleFile(ProjectModule module) {
-        super(module, false);
+    public LocalGwtModuleFile(LocalProjectModule module) {
+        super(module, module.getHomeDirectory().resolve("src/main/module.gwt.xml"), false);
     }
 
     @Override
-    Path getModuleFilePath() {
-        return resolveFromModuleHomeDirectory("src/main/module.gwt.xml");
-    }
-
-    @Override
-    Document createInitialDocument() {
+    public Document createInitialDocument() {
         return XmlUtil.parseXmlString(ResourceTextFileReader.readTemplate("module.gwt.xml"));
     }
 
     @Override
-    void updateDocument(Document document) {
+    public void updateDocument(Document document) {
         document.getDocumentElement().setAttribute("rename-to", getModule().getName().replaceAll("-", "_"));
         Node moduleSourceCommentNode = lookupNode("/module//comment()[2]");
         Node moduleSourceEndNode = moduleSourceCommentNode.getNextSibling();

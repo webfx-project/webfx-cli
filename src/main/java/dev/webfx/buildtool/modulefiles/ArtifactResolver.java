@@ -21,12 +21,12 @@ public final class ArtifactResolver {
     }
 
     public static String getArtifactId(Module module) {
-        if (module instanceof ProjectModule)
-            return getArtifactId(module, ((ProjectModule) module).getBuildInfo());
+        if (module instanceof LocalProjectModule)
+            return getArtifactId((LocalProjectModule) module);
         return getArtifactId(module, false, false, false);
     }
 
-    static String getArtifactId(ProjectModule module) {
+    static String getArtifactId(LocalProjectModule module) {
         return getArtifactId(module, module.getBuildInfo());
     }
 
@@ -74,12 +74,12 @@ public final class ArtifactResolver {
     }
 
     public static String getGroupId(Module module) {
-        if (module instanceof ProjectModule)
-            return getGroupId(module, ((ProjectModule) module).getBuildInfo());
+        if (module instanceof LocalProjectModule)
+            return getGroupId((LocalProjectModule) module);
         return getGroupId(module, false, false, false);
     }
 
-    static String getGroupId(ProjectModule module) {
+    static String getGroupId(LocalProjectModule module) {
         return getGroupId(module, module.getBuildInfo());
     }
 
@@ -103,12 +103,12 @@ public final class ArtifactResolver {
     }
 
     public static String getVersion(Module module) {
-        if (module instanceof ProjectModule)
-            return getVersion(module, ((ProjectModule) module).getBuildInfo());
+        if (module instanceof LocalProjectModule)
+            return getVersion((LocalProjectModule) module);
         return getVersion(module, false, false, false);
     }
 
-    static String getVersion(ProjectModule module) {
+    static String getVersion(LocalProjectModule module) {
         return getVersion(module, module.getBuildInfo());
     }
 

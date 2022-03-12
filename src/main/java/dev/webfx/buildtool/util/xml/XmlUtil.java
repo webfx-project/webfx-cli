@@ -28,6 +28,16 @@ import java.util.function.Function;
  */
 public final class XmlUtil {
 
+    public static Document newDocument() {
+        try {
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            return dBuilder.newDocument();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Document parseXmlFile(File xmlFile) {
         return parseXmlSource(new InputSource(xmlFile.toURI().toASCIIString()));
     }

@@ -8,115 +8,105 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import java.nio.file.Path;
-
 /**
  * @author Bruno Salmon
  */
-public final class WebFxModuleFile extends XmlModuleFile {
+public interface WebFxModuleFile extends XmlModuleFile {
 
-    public WebFxModuleFile(ProjectModule module) {
-        super(module, true);
-    }
-
-    public Path getModuleFilePath() {
-        return resolveFromModuleHomeDirectory("webfx.xml");
-    }
-
-    public boolean isExecutable() {
+    default boolean isExecutable() {
         return getBooleanProjectAttributeValue("executable");
     }
 
-    public boolean isInterface() {
+    default boolean isInterface() {
         return getBooleanProjectAttributeValue("interface");
     }
 
-    public boolean isAutomatic() {
-        return lookupNode("/project/auto-conditions") != null;
+    default boolean isAutomatic() {
+        return lookupNode("auto-conditions") != null;
     }
 
-    public ReusableStream<String> getExplicitExportedPackages() {
-        return lookupNodeListTextContent("/project/exported-packages//package");
+    default ReusableStream<String> getExplicitExportedPackages() {
+        return lookupNodeListTextContent("exported-packages//package");
     }
 
-    public boolean areSourcePackagesAutomaticallyExported() {
-        return lookupNode("/project/exported-packages/source-packages") != null;
+    default boolean areSourcePackagesAutomaticallyExported() {
+        return lookupNode("exported-packages/source-packages") != null;
     }
 
-    public ReusableStream<String> getExcludedPackagesFromSourcePackages() {
-        return lookupNodeListTextContent("/project/exported-packages/source-packages//exclude-package");
+    default ReusableStream<String> getExcludedPackagesFromSourcePackages() {
+        return lookupNodeListTextContent("exported-packages/source-packages//exclude-package");
     }
 
-    public ReusableStream<String> getResourcePackages() {
-        return lookupNodeListTextContent("/project/exported-packages//resource-package");
+    default ReusableStream<String> getResourcePackages() {
+        return lookupNodeListTextContent("exported-packages//resource-package");
     }
 
-    public ReusableStream<String> implementedInterfaces() {
-        return lookupNodeListTextContent("/project/implements//module");
+    default ReusableStream<String> implementedInterfaces() {
+        return lookupNodeListTextContent("implements//module");
     }
 
-    public ReusableStream<ModuleProperty> getModuleProperties() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/properties//*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
+    default ReusableStream<ModuleProperty> getModuleProperties() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("properties//*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
     }
 
-    public boolean areUsedBySourceModulesDependenciesAutomaticallyAdded() {
-        return lookupNode("/project/dependencies/used-by-source-modules") != null;
+    default boolean areUsedBySourceModulesDependenciesAutomaticallyAdded() {
+        return lookupNode("dependencies/used-by-source-modules") != null;
     }
 
-    public ReusableStream<ModuleDependency> getUndiscoveredUsedBySourceModulesDependencies() {
-        return lookupDependencies("/project/dependencies/used-by-source-modules//undiscovered-used-by-source-module", ModuleDependency.Type.SOURCE, null);
+    default ReusableStream<ModuleDependency> getUndiscoveredUsedBySourceModulesDependencies() {
+        return lookupDependencies("dependencies/used-by-source-modules//undiscovered-used-by-source-module", ModuleDependency.Type.SOURCE, null);
     }
 
-    public ReusableStream<ModuleDependency> getExplicitSourceModulesDependencies() {
-        return lookupDependencies("/project/dependencies/used-by-source-modules//source-module", ModuleDependency.Type.SOURCE, null);
+    default ReusableStream<ModuleDependency> getExplicitSourceModulesDependencies() {
+        return lookupDependencies("dependencies/used-by-source-modules//source-module", ModuleDependency.Type.SOURCE, null);
     }
 
-    public ReusableStream<ModuleDependency> getPluginModuleDependencies() {
-        return lookupDependencies("/project/dependencies//plugin-module", ModuleDependency.Type.PLUGIN, "runtime");
+    default ReusableStream<ModuleDependency> getPluginModuleDependencies() {
+        return lookupDependencies("dependencies//plugin-module", ModuleDependency.Type.PLUGIN, "runtime");
     }
 
-    public ReusableStream<ModuleDependency> getResourceModuleDependencies() {
-        return lookupDependencies("/project/dependencies//resource-module", ModuleDependency.Type.RESOURCE, "runtime");
+    default ReusableStream<ModuleDependency> getResourceModuleDependencies() {
+        return lookupDependencies("dependencies//resource-module", ModuleDependency.Type.RESOURCE, "runtime");
     }
 
-    public ReusableStream<LibraryModule> getLibraryModules() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/libraries//library"), LibraryModule::new);
+    default ReusableStream<LibraryModule> getLibraryModules() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("libraries//library"), LibraryModule::new);
     }
 
-    public ReusableStream<String> getPackagesAutoCondition() {
-        return lookupNodeListTextContent("/project/auto-conditions//if-uses-java-package");
+    default ReusableStream<String> getPackagesAutoCondition() {
+        return lookupNodeListTextContent("auto-conditions//if-uses-java-package");
     }
 
-    public ReusableStream<String> getEmbedResources() {
-        return lookupNodeListTextContent("/project/embed-resources//resource");
+    default ReusableStream<String> getEmbedResources() {
+        return lookupNodeListTextContent("embed-resources//resource");
     }
 
-    public ReusableStream<String> getSystemProperties() {
-        return lookupNodeListTextContent("/project/system-properties//property");
+    default ReusableStream<String> getSystemProperties() {
+        return lookupNodeListTextContent("system-properties//property");
     }
 
-    public ReusableStream<String> getArrayNewInstanceClasses() {
-        return lookupNodeListTextContent("/project/reflect/array-new-instance//class");
+    default ReusableStream<String> getArrayNewInstanceClasses() {
+        return lookupNodeListTextContent("reflect/array-new-instance//class");
     }
 
-    public String getGraalVmReflectionJson() {
-        return lookupNodeTextContent("/project/graalvm-reflection-json");
+    default String getGraalVmReflectionJson() {
+        return lookupNodeTextContent("graalvm-reflection-json");
     }
 
-    public ReusableStream<ServiceProvider> providedServerProviders() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("/project/providers//*"), node -> new ServiceProvider(node.getNodeName(), node.getTextContent()));
+    default ReusableStream<ServiceProvider> providedServerProviders() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("providers//*"), node -> new ServiceProvider(node.getNodeName(), node.getTextContent()));
     }
 
-    public Node getHtmlNode() {
-        return lookupNode("/project/html");
+    default Node getHtmlNode() {
+        return lookupNode("html");
     }
 
     private boolean getBooleanProjectAttributeValue(String attribute) {
-        return XmlUtil.getBooleanAttributeValue(getDocumentElement(), attribute);
+        return XmlUtil.getBooleanAttributeValue(getModuleElement(), attribute);
     }
 
     @Override
-    Document createInitialDocument() {
+    default Document createInitialDocument() {
         ProjectModule projectModule = getProjectModule();
         String template = ResourceTextFileReader.readTemplate("webfx.xml")
                 .replace("${groupId}",    ArtifactResolver.getGroupId(projectModule))
@@ -126,19 +116,19 @@ public final class WebFxModuleFile extends XmlModuleFile {
         return XmlUtil.parseXmlString(template);
     }
 
-    public void setExecutable(boolean executable) {
+    default void setExecutable(boolean executable) {
         if (executable != isExecutable()) {
             Attr attribute = getOrCreateDocument().createAttribute("executable");
             attribute.setValue(String.valueOf(executable));
-            getDocumentElement().getAttributes().setNamedItem(attribute);
+            getModuleElement().getAttributes().setNamedItem(attribute);
         }
     }
 
-    public void addProvider(String spiClassName, String providerClassName) {
-        appendTextNodeIfNotAlreadyExists("/project/providers/" + spiClassName, providerClassName);
+    default void addProvider(String spiClassName, String providerClassName) {
+        appendTextNodeIfNotAlreadyExists("providers/" + spiClassName, providerClassName);
     }
 
-    void updateDocument(Document document) {
+    default void updateDocument(Document document) {
         // Nothing to update as this is the source
     }
 }

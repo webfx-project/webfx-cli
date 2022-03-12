@@ -14,7 +14,7 @@ import java.nio.file.Path;
 public final class JavaFile implements Comparable<JavaFile> {
 
     private final Path path;
-    private final ProjectModule projectModule;
+    private final LocalProjectModule projectModule;
     private final JavaCode javaCode = new JavaCode(this::getPath);
     private String packageName;
     private String className;
@@ -35,7 +35,7 @@ public final class JavaFile implements Comparable<JavaFile> {
      ***** Constructor *****
      ***********************/
 
-    JavaFile(Path path, ProjectModule projectModule) {
+    JavaFile(Path path, LocalProjectModule projectModule) {
         this.path = path;
         this.projectModule = projectModule;
     }

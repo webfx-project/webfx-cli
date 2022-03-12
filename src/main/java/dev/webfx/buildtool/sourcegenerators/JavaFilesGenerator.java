@@ -1,13 +1,13 @@
 package dev.webfx.buildtool.sourcegenerators;
 
-import dev.webfx.buildtool.ProjectModule;
+import dev.webfx.buildtool.LocalProjectModule;
 
 /**
  * @author Bruno Salmon
  */
 public class JavaFilesGenerator {
 
-    public static void generateJavaFiles(ProjectModule module) {
+    public static void generateJavaFiles(LocalProjectModule module) {
         // Generating module-info.java for this module
         module.getJavaModuleFile().writeFile();
         // Generating META-INF/services/ files

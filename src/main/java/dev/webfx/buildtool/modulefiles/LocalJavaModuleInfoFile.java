@@ -1,13 +1,12 @@
 package dev.webfx.buildtool.modulefiles;
 
+import dev.webfx.buildtool.LocalProjectModule;
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ModuleDependency;
 import dev.webfx.buildtool.Platform;
-import dev.webfx.buildtool.ProjectModule;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,15 +15,10 @@ import java.util.stream.Collectors;
 /**
  * @author Bruno Salmon
  */
-public class JavaModuleInfoFile extends ModuleFile {
+public final class LocalJavaModuleInfoFile extends LocalModuleFileImpl {
 
-    public JavaModuleInfoFile(ProjectModule module) {
-        super(module);
-    }
-
-    @Override
-    Path getModuleFilePath() {
-        return getProjectModule().getJavaSourceDirectory().resolve("module-info.java");
+    public LocalJavaModuleInfoFile(LocalProjectModule module) {
+        super(module, module.getJavaSourceDirectory().resolve("module-info.java"));
     }
 
     public String getJavaModuleName() {
@@ -32,12 +26,8 @@ public class JavaModuleInfoFile extends ModuleFile {
     }
 
     @Override
-    void readFile() {
-    }
-
-    @Override
     public void writeFile() {
-        ProjectModule module = getProjectModule();
+        LocalProjectModule module = getProjectModule();
         StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n\nmodule ").append(getJavaModuleName()).append(" {\n");
         processSection(sb, "Direct dependencies modules", "requires",
                 ReusableStream.fromIterable(
@@ -108,8 +98,8 @@ public class JavaModuleInfoFile extends ModuleFile {
             case "webfx-kit-javafxmedia-emul":
                 return "javafx.media";
             default:
-                if (module instanceof ProjectModule) {
-                    ProjectModule projectModule = (ProjectModule) module;
+                if (module instanceof LocalProjectModule) {
+                    LocalProjectModule projectModule = (LocalProjectModule) module;
                     String abstractModule = projectModule.implementedInterfaces().findFirst().orElse(null);
                     if (abstractModule != null && !abstractModule.equals(""))
                         moduleName = projectModule.getRootModule().findModule(abstractModule).getName();

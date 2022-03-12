@@ -1,6 +1,10 @@
 package dev.webfx.buildtool;
 
+import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -11,35 +15,97 @@ import java.util.*;
 final public class ModuleRegistry {
 
     private final Path workspaceDirectory;
-    private final Map<String, LibraryModule> libraryModules = new HashMap<>();
-    private final Map<Path, ProjectModule> projectModules = new HashMap<>();
+    private final Map<String /* library name */, LibraryModule> libraryModules = new HashMap<>();
+    private final Map<Path, LocalProjectModule> localProjectModules = new HashMap<>();
     private final Map<String /* package name */, List<Module>> packagesModules = new HashMap<>();
-    private final ReusableStream<ProjectModule> libraryProjectModules;
+    private final ReusableStream<ProjectModule> importedProjectModules;
 
     /***********************
      ***** Constructor *****
      ***********************/
 
-    public ModuleRegistry(String rootDirectory, String... libraryModulesHomePaths) {
-        this(Path.of(rootDirectory), libraryModulesHomePaths);
+    public ModuleRegistry(Path workspaceDirectory, String webFxExportFilePath) {
+        this(workspaceDirectory, webFxExportFilePath == null ? null : Path.of(webFxExportFilePath));
     }
 
-    public ModuleRegistry(Path rootDirectory, String... libraryModulesHomePaths) {
-        this(rootDirectory, Arrays.stream(libraryModulesHomePaths).map(Path::of).toArray(Path[]::new));
-    }
-
-    public ModuleRegistry(Path workspaceDirectory, Path... libraryModulesHomePaths) {
+    public ModuleRegistry(Path workspaceDirectory, Path webFxExportFilePath) {
         this.workspaceDirectory = workspaceDirectory;
-        libraryProjectModules =
-                ReusableStream.of(libraryModulesHomePaths)
-                        .map(p -> getOrCreateProjectModule(workspaceDirectory.resolve(p), null))
-                        .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
-                        //.filter(m -> !m.getHomeDirectory().startsWith(rootDirectory))
-                        .cache();
+        if (webFxExportFilePath == null)
+            importedProjectModules =
+                    ReusableStream.of(
+                                    "webfx",
+                                    "webfx-platform",
+                                    "webfx-lib-javacupruntime",
+                                    "webfx-lib-odometer",
+                                    "webfx-lib-enzo",
+                                    "webfx-lib-medusa",
+                                    "webfx-lib-reusablestream",
+                                    "webfx-extras",
+                                    "webfx-extras-flexbox",
+                                    "webfx-extras-materialdesign",
+                                    "webfx-extras-webtext",
+                                    "webfx-extras-visual",
+                                    "webfx-extras-visual-charts",
+                                    "webfx-extras-visual-grid",
+                                    "webfx-extras-cell",
+                                    "webfx-stack-platform",
+                                    "webfx-framework"
+                            )
+                            .map(p -> getOrCreateLocalProjectModule(workspaceDirectory.resolve(p), null))
+                            .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
+                            //.filter(m -> !m.getHomeDirectory().startsWith(rootDirectory))
+                            .cache();
+        else {
+            Document document = XmlUtil.parseXmlFile(webFxExportFilePath.toFile());
+            XmlUtil.nodeListToReusableStream(XmlUtil.lookupNodeList(document, "//library"), LibraryModule::new)
+                    .forEach(this::registerLibraryModule);
+            NodeList nodeList = XmlUtil.lookupNodeList(document, "exported-modules//project");
+            Map<String, Element> moduleElementsToImport = new HashMap<>();
+            Map<String, ProjectModule> importedModules = new HashMap<>();
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                Element element = (Element) nodeList.item(i);
+                moduleElementsToImport.put(XmlUtil.getAttributeValue(element, "name"), element);
+            }
+            importModules(moduleElementsToImport, importedModules);
+            importedProjectModules = ReusableStream.fromIterable(importedModules.values());
+        }
     }
 
-    ReusableStream<ProjectModule> getLibraryProjectModules() {
-        return libraryProjectModules;
+    private void importModules(Map<String, Element> moduleElementsToImport, Map<String, ProjectModule> importedModules) {
+        List<String> moduleNames = new ArrayList<>(moduleElementsToImport.keySet());
+        for (String moduleName : moduleNames)
+            importModule(moduleName, moduleElementsToImport, importedModules);
+    }
+
+    private ProjectModule importModule(String moduleName, Map<String, Element> moduleElementsToImport, Map<String, ProjectModule> importedModules) {
+        ProjectModule projectModule = importedModules.get(moduleName);
+        if (projectModule == null) {
+            Element moduleElement = moduleElementsToImport.remove(moduleName);
+            if (moduleElement != null) {
+                String parentModuleName = XmlUtil.getAttributeValue(moduleElement, "parent");
+                if (parentModuleName == null)
+                    importedModules.put(moduleName, projectModule = new ImportedRootModule(moduleElement, this));
+                else {
+                    ProjectModule parentModule = importModule(parentModuleName, moduleElementsToImport, importedModules);
+                    if (parentModule == null)
+                        parentModule = new ImportedRootModule(parentModuleName, this);
+                    importedModules.put(moduleName, projectModule = new ImportedProjectModule(moduleElement, parentModule));
+                }
+            }
+        }
+        return projectModule;
+    }
+
+    ReusableStream<ProjectModule> getImportedProjectModules() {
+        return importedProjectModules;
+    }
+
+    ReusableStream<Module> getAllRegisteredModules() {
+        return ReusableStream.<Module>empty().concat(
+                importedProjectModules,
+                localProjectModules.values(),
+                libraryModules.values()
+        ).distinct();
     }
 
     /********************************
@@ -57,8 +123,8 @@ final public class ModuleRegistry {
         if (lm != null && !lm.contains(module)) {
             Module m = lm.get(0);
             String message = module + " and " + m + " share the same package " + javaPackage;
-            ProjectModule projectModule = module instanceof ProjectModule ? (ProjectModule) module : m instanceof ProjectModule ? (ProjectModule) m : null;
-            RootModule workingModule = projectModule != null ? projectModule.getRootModule() : null;
+            LocalProjectModule projectModule = module instanceof LocalProjectModule ? (LocalProjectModule) module : m instanceof LocalProjectModule ? (LocalProjectModule) m : null;
+            LocalRootModule workingModule = projectModule != null ? projectModule.getRootModule() : null;
             if (workingModule != null && (workingModule.isModuleUnderRootHomeDirectory(module) || workingModule.isModuleUnderRootHomeDirectory(m)))
                 Logger.warning(message);
             else // Something happening in a library (not in the developer code)
@@ -75,9 +141,10 @@ final public class ModuleRegistry {
     void registerLibrariesAndJavaPackagesOfProjectModule(ProjectModule module) {
         module.registerLibraryModules();
         module.getDeclaredJavaPackages().forEach(p -> registerPackageModule(p, module));
+        module.getWebFxModuleFile().getExplicitExportedPackages().forEach(p -> registerPackageModule(p, module));
     }
 
-   Module getJavaPackageModuleNow(String packageToSearch, ProjectModule sourceModule, boolean canReturnNull) {
+    Module getJavaPackageModuleNow(String packageToSearch, ProjectModule sourceModule, boolean canReturnNull) {
         List<Module> lm = packagesModules.get(packageToSearch);
         Module module = lm == null ? null : lm.stream().filter(m -> isSuitableModule(m, sourceModule))
                 .findFirst()
@@ -97,10 +164,11 @@ final public class ModuleRegistry {
             return true;
         ProjectModule pm = (ProjectModule) m;
         // First case: only executable source modules should include implementing interface modules (others should include the interface module instead)
-        if (pm.isImplementingInterface() && !sourceModule.isExecutable()) {
+        if (pm.isImplementingInterface() && !sourceModule.isExecutable() && pm instanceof LocalProjectModule) {
+            LocalProjectModule lpm = (LocalProjectModule) pm;
             // Exception is however made for non executable source modules that implements a provider
             // Ex: webfx-kit-extracontrols-registry-javafx can include webfx-kit-extracontrols-registry-spi (which implements webfx-kit-extracontrols-registry)
-            boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> pm.getDeclaredJavaFiles().anyMatch(c -> c.getClassName().equals(s)));
+            boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> lpm.getDeclaredJavaFiles().anyMatch(c -> c.getClassName().equals(s)));
             if (!exception)
                 return false;
         }
@@ -124,35 +192,35 @@ final public class ModuleRegistry {
         return libraryModules.get(artifactId);
     }
 
-    public ProjectModule getOrCreateProjectModule(Path projectDirectory) {
-        ProjectModule module = getProjectModule(projectDirectory);
+    public LocalProjectModule getOrCreateLocalProjectModule(Path projectDirectory) {
+        LocalProjectModule module = getLocalProjectModule(projectDirectory);
         if (module != null)
             return module;
         if (!projectDirectory.equals(workspaceDirectory) && projectDirectory.startsWith(workspaceDirectory)) {
             Path parentDirectory = projectDirectory.getParent();
-            ProjectModule projectModule = parentDirectory.equals(workspaceDirectory) ? null : getOrCreateProjectModule(parentDirectory);
-            return createProjectModule(projectDirectory, projectModule);
+            LocalProjectModule projectModule = parentDirectory.equals(workspaceDirectory) ? null : getOrCreateLocalProjectModule(parentDirectory);
+            return createLocalProjectModule(projectDirectory, projectModule);
         }
         throw new BuildException("projectDirectory (" + projectDirectory + ") must be under workspace directory (" + workspaceDirectory + ")");
     }
 
-    ProjectModule getOrCreateProjectModule(Path projectDirectory, ProjectModule parentModule) {
-        ProjectModule module = getProjectModule(projectDirectory);
+    LocalProjectModule getOrCreateLocalProjectModule(Path projectDirectory, LocalProjectModule parentModule) {
+        LocalProjectModule module = getLocalProjectModule(projectDirectory);
         if (module == null)
-            module = createProjectModule(projectDirectory, parentModule);
+            module = createLocalProjectModule(projectDirectory, parentModule);
         return module;
     }
 
-    ProjectModule getProjectModule(Path projectDirectory) {
-        return projectModules.get(projectDirectory);
+    LocalProjectModule getLocalProjectModule(Path projectDirectory) {
+        return localProjectModules.get(projectDirectory);
     }
 
-    private ProjectModule createProjectModule(Path projectDirectory, ProjectModule parentModule) {
-        ProjectModule module =
+    private LocalProjectModule createLocalProjectModule(Path projectDirectory, LocalProjectModule parentModule) {
+        LocalProjectModule module =
                 parentModule != null && projectDirectory.startsWith(parentModule.getHomeDirectory()) ?
-                        new ProjectModule(projectDirectory, parentModule) :
-                        new RootModule(projectDirectory, this);
-        projectModules.put(projectDirectory, module);
+                        new LocalProjectModule(projectDirectory, parentModule) :
+                        new LocalRootModule(projectDirectory, this);
+        localProjectModules.put(projectDirectory, module);
         return module;
     }
 }

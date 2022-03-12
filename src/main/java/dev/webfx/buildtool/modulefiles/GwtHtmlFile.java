@@ -1,32 +1,23 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
-import org.w3c.dom.Node;
+import dev.webfx.buildtool.LocalProjectModule;
 import dev.webfx.buildtool.ProjectModule;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.buildtool.util.xml.XmlUtil;
+import dev.webfx.tools.util.reusablestream.ReusableStream;
+import org.w3c.dom.Node;
 
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Scanner;
 
 /**
  * @author Bruno Salmon
  */
-public class GwtHtmlFile extends ModuleFile {
+public class GwtHtmlFile extends LocalModuleFileImpl {
 
-    public GwtHtmlFile(ProjectModule module) {
-        super(module);
-    }
-
-    @Override
-    Path getModuleFilePath() {
-        return getProjectModule().getResourcesDirectory().resolve("public/index.html");
-    }
-
-    @Override
-    void readFile() {
+    public GwtHtmlFile(LocalProjectModule module) {
+        super(module, module.getResourcesDirectory().resolve("public/index.html"));
     }
 
     @Override

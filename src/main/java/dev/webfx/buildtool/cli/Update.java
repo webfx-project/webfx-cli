@@ -1,12 +1,10 @@
 package dev.webfx.buildtool.cli;
 
-import dev.webfx.buildtool.Platform;
-import dev.webfx.buildtool.ProjectModule;
-import dev.webfx.buildtool.TargetTag;
-import dev.webfx.buildtool.UnresolvedException;
+import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.sourcegenerators.GluonFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.GwtFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.JavaFilesGenerator;
+import dev.webfx.tools.util.reusablestream.ReusableStream;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -109,39 +107,41 @@ final class Update extends CommonSubcommand implements Runnable {
         processTaskFlags(only, true);
         processTaskFlags(skip, false);
 
-        ProjectModule rootModule = getWorkingProjectModule();
+        LocalProjectModule workingModule = getWorkingProjectModule();
 
         // Updating Maven module files for all source modules (<dependencies> section in pom.xml)
         if (mavenPom)
-            rootModule
-                    .getThisAndChildrenModulesInDepth()
-                    .filter(ProjectModule::hasSourceDirectory)
+            getWorkingAndChildrenModulesInDepth(workingModule)
+                    .filter(LocalProjectModule::hasSourceDirectory)
                     .forEach(m -> m.getMavenModuleFile().updateAndWrite())
             ;
 
         // Generating files for Java modules (module-info.java and META-INF/services)
         if (moduleInfoJava || metaInfServices)
-            rootModule
-                    .getThisAndChildrenModulesInDepth()
-                    .filter(ProjectModule::hasSourceDirectory)
-                    .filter(ProjectModule::hasJavaSourceDirectory)
+            getWorkingAndChildrenModulesInDepth(workingModule)
+                    .filter(LocalProjectModule::hasSourceDirectory)
+                    .filter(LocalProjectModule::hasJavaSourceDirectory)
                     .filter(m -> m.getTarget().isPlatformSupported(Platform.JRE))
                     .forEach(JavaFilesGenerator::generateJavaFiles)
             ;
 
         if (gwtXml || indexHtml || gwtSuperSources || gwtServiceLoader || gwtResourceBundles)
         // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
-            rootModule
-                    .getThisAndChildrenModulesInDepth()
+            getWorkingAndChildrenModulesInDepth(workingModule)
                     .filter(m -> m.isExecutable(Platform.GWT))
                     .forEach(GwtFilesGenerator::generateGwtFiles);
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
-        rootModule
-                .getThisAndChildrenModulesInDepth()
+        getWorkingAndChildrenModulesInDepth(workingModule)
                 .filter(m -> m.isExecutable(Platform.JRE))
                 .filter(m -> m.getTarget().hasTag(TargetTag.GLUON))
                 .forEach(GluonFilesGenerator::generateGraalVmReflectionJson);
+    }
 
+    private static ReusableStream<LocalProjectModule> getWorkingAndChildrenModulesInDepth(LocalProjectModule workingModule) {
+        return workingModule
+                .getThisAndChildrenModulesInDepth()
+                .filter(m -> m instanceof LocalProjectModule)
+                .map(m -> (LocalProjectModule) m);
     }
 }

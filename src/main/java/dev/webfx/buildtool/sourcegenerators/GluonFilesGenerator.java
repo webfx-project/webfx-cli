@@ -1,5 +1,6 @@
 package dev.webfx.buildtool.sourcegenerators;
 
+import dev.webfx.buildtool.LocalProjectModule;
 import dev.webfx.buildtool.ProjectModule;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 
@@ -8,7 +9,7 @@ import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
  */
 public final class GluonFilesGenerator {
 
-    static void generateServiceLoaderSuperSource(ProjectModule module) {
+    static void generateServiceLoaderSuperSource(LocalProjectModule module) {
         module.getProvidedJavaServices()
                 .forEach(service -> {
                     StringBuilder sb = new StringBuilder();
@@ -20,7 +21,7 @@ public final class GluonFilesGenerator {
                 });
     }
 
-    public static void generateGraalVmReflectionJson(ProjectModule gluonModule) {
+    public static void generateGraalVmReflectionJson(LocalProjectModule gluonModule) {
         StringBuilder sb = new StringBuilder();
         ProjectModule.filterProjectModules(gluonModule.getTransitiveModules())
                 .forEach(module -> {
@@ -39,7 +40,7 @@ public final class GluonFilesGenerator {
                         }
                     }
                 });
-        TextFileReaderWriter.writeTextFileIfNewOrModified(sb.length() == 0 ? null : "[\n" +  sb.toString() + "\n]", gluonModule.getHomeDirectory().resolve("src/main/graalvm_conf/reflection.json"));
+        TextFileReaderWriter.writeTextFileIfNewOrModified(sb.length() == 0 ? null : "[\n" + sb + "\n]", gluonModule.getHomeDirectory().resolve("src/main/graalvm_conf/reflection.json"));
     }
 
     private static String removeLineFeeds(String json, boolean includeWhiteSpaces) {

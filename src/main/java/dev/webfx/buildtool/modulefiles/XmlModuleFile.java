@@ -1,10 +1,8 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ModuleDependency;
 import dev.webfx.buildtool.Target;
 import dev.webfx.buildtool.TargetTag;
-import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 import org.w3c.dom.Document;
@@ -12,106 +10,71 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 /**
  * @author Bruno Salmon
  */
-abstract class XmlModuleFile extends ModuleFile {
+public interface XmlModuleFile extends ModuleFile {
 
-    private Document document;
-    private final boolean readFileIfExists;
+    Document getDocument();
 
-    XmlModuleFile(Module module, boolean readFileIfExists) {
-        super(module);
-        this.readFileIfExists = readFileIfExists;
-    }
+    void setDocument(Document document);
 
-    public Document getDocument() {
-        if (document == null & readFileIfExists)
-            readFile();
-        return document;
-    }
-
-    Document getOrCreateDocument() {
+    default Document getOrCreateDocument() {
         if (getDocument() == null)
             createDocument();
-        return document;
+        return getDocument();
     }
 
-    void createDocument() {
-        document = createInitialDocument();
+    default void createDocument() {
+        Document document = createInitialDocument();
+        setDocument(document);
         updateDocument(document);
     }
 
-    Document createInitialDocument() {
-        try {
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            return dBuilder.newDocument();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+    default Document createInitialDocument() {
+        return XmlUtil.newDocument();
     }
 
-    void updateDocument(Document document) {
+    default void updateDocument(Document document) {
         clearDocument(document);
         document.appendChild(document.createElement("module"));
     }
 
-    void clearDocument(Document document) {
+    default void clearDocument(Document document) {
         clearNodeChildren(document);
     }
 
-    Element getDocumentElement() {
-        return getDocument() == null ? null : document.getDocumentElement();
+    Element getModuleElement();
+
+    default Element getOrCreateModuleElement() {
+        Element moduleElement = getModuleElement();
+        return moduleElement != null ? moduleElement : getOrCreateDocument().getDocumentElement();
     }
 
-    Element getOrCreateDocumentElement() {
-        return getOrCreateDocument().getDocumentElement();
-    }
-
-    void clearNodeChildren(Node node) {
+    default void clearNodeChildren(Node node) {
         Node firstChild;
         while ((firstChild = node.getFirstChild()) != null)
             node.removeChild(firstChild);
     }
 
-    @Override
-    public void readFile() {
-        document = XmlUtil.parseXmlFile(getModuleFile());
-    }
-
-    public void updateAndWrite() {
-        updateDocument(getOrCreateDocument());
-        writeFile();
-    }
-
-    @Override
-    public void writeFile() {
-        TextFileReaderWriter.writeTextFileIfNewOrModified(getXmlContent(), getModuleFilePath());
-    }
-
-    public String getXmlContent() {
+    default String getXmlContent() {
         return XmlUtil.formatXmlText(getOrCreateDocument());
     }
 
-    NodeList lookupNodeList(String xpathExpression) {
-        return XmlUtil.lookupNodeList(getDocument(), xpathExpression);
+    default NodeList lookupNodeList(String xpathExpression) {
+        return XmlUtil.lookupNodeList(getModuleElement(), xpathExpression);
     }
 
-    Node lookupNode(String xpathExpression) {
-        return lookupNode(getDocument(), xpathExpression);
+    default Node lookupNode(String xpathExpression) {
+        return lookupNode(getModuleElement(), xpathExpression);
     }
 
     static Node lookupNode(Object parent, String xpathExpression) {
         return XmlUtil.lookupNode(parent, xpathExpression);
     }
 
-    Node lookupOrCreateNode(String xpath) {
-        return lookupOrCreateNode(getOrCreateDocumentElement(), xpath);
+    default Node lookupOrCreateNode(String xpath) {
+        return lookupOrCreateNode(getOrCreateModuleElement(), xpath);
     }
 
     static Node lookupOrCreateNode(Node parent, String xpath) {
@@ -121,8 +84,8 @@ abstract class XmlModuleFile extends ModuleFile {
         return node;
     }
 
-    Node createNode(String xpath) {
-        return createNode(getOrCreateDocumentElement(), xpath);
+    default Node createNode(String xpath) {
+        return createNode(getOrCreateModuleElement(), xpath);
     }
 
     static Node createNode(Node parentElement, String xpath) {
@@ -138,42 +101,42 @@ abstract class XmlModuleFile extends ModuleFile {
         return node;
     }
 
-    void appendTextNodeIfNotAlreadyExists(String xpath, String text) {
+    default void appendTextNodeIfNotAlreadyExists(String xpath, String text) {
         if (lookupTextNode(xpath, text) == null)
             appendTextNode(xpath, text);
     }
 
-    Node lookupTextNode(String xpath, String text) {
-        return lookupTextNode(getDocumentElement(), xpath, text);
+    default Node lookupTextNode(String xpath, String text) {
+        return lookupTextNode(getModuleElement(), xpath, text);
     }
 
-    Node lookupTextNode(Object parent, String xpath, String text) {
+    default Node lookupTextNode(Object parent, String xpath, String text) {
         return lookupNode(parent, xpath + "[text() = '" + text + "']");
     }
 
-    Node appendTextNode(String xpath, String text) {
-        return appendTextNode(getOrCreateDocumentElement(), xpath, text);
+    default Node appendTextNode(String xpath, String text) {
+        return appendTextNode(getOrCreateModuleElement(), xpath, text);
     }
 
-    Node appendTextNode(Node parentNode, String xpath, String text) {
+    default Node appendTextNode(Node parentNode, String xpath, String text) {
         Node node = createNode(parentNode, xpath);
         node.setTextContent(text);
         return node;
     }
 
-    String lookupNodeTextContent(String xpathExpression) {
+    default String lookupNodeTextContent(String xpathExpression) {
         return XmlUtil.lookupNodeTextContent(getDocument(), xpathExpression);
     }
 
-    ReusableStream<String> lookupNodeListTextContent(String xPathExpression) {
+    default ReusableStream<String> lookupNodeListTextContent(String xPathExpression) {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), Node::getTextContent);
     }
 
-    ReusableStream<String> lookupNodeListAttribute(String xPathExpression, String attribute) {
+    default ReusableStream<String> lookupNodeListAttribute(String xPathExpression, String attribute) {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node -> XmlUtil.getAttributeValue(node, attribute));
     }
 
-    ReusableStream<ModuleDependency> lookupDependencies(String xPathExpression, ModuleDependency.Type type, String defaultScope) {
+    default ReusableStream<ModuleDependency> lookupDependencies(String xPathExpression, ModuleDependency.Type type, String defaultScope) {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node ->
                 new ModuleDependency(
                         getModule(),
@@ -194,4 +157,5 @@ abstract class XmlModuleFile extends ModuleFile {
         String stringValue = XmlUtil.getAttributeValue(node, name);
         return stringValue == null ? null : new Target(TargetTag.parseTags(stringValue));
     }
+
 }

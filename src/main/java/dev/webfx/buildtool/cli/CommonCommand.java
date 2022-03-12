@@ -66,6 +66,13 @@ class CommonCommand {
         return moduleName != null || parentCommand == null ? moduleName : parentCommand.getModuleName();
     }
 
+    @Option(names = {"--import"}, description = "Import a webfx-export.xml file.")
+    private String webFxExportFilePath;
+
+    public String getWebFxExportFilePath() {
+        return webFxExportFilePath != null ? webFxExportFilePath : parentCommand != null ? parentCommand.getWebFxExportFilePath() : null;
+    }
+
     protected void setUpLogger() {
         Logger.setLogConsumer(object -> {
             String message = null;
@@ -137,25 +144,7 @@ class CommonCommand {
 
     protected ModuleRegistry getModuleRegistry() {
         if (moduleRegistry == null)
-            moduleRegistry = new ModuleRegistry(getWorkspaceDirectoryPath(),
-                    "webfx",
-                    "webfx-platform",
-                    "webfx-lib-javacupruntime",
-                    "webfx-lib-odometer",
-                    "webfx-lib-enzo",
-                    "webfx-lib-medusa",
-                    "webfx-lib-reusablestream",
-                    "webfx-extras",
-                    "webfx-extras-flexbox",
-                    "webfx-extras-materialdesign",
-                    "webfx-extras-webtext",
-                    "webfx-extras-visual",
-                    "webfx-extras-visual-charts",
-                    "webfx-extras-visual-grid",
-                    "webfx-extras-cell",
-                    "webfx-stack-platform",
-                    "webfx-framework"
-            );
+            moduleRegistry = new ModuleRegistry(getWorkspaceDirectoryPath(), getWebFxExportFilePath());
         return moduleRegistry;
     }
 
@@ -179,8 +168,8 @@ class CommonCommand {
         if (moduleProject == null) {
             String moduleName = getModuleName();
             if (moduleName == null)
-                return getModuleRegistry().getOrCreateProjectModule(projectDirectoryPath);
-            ProjectModule topProjectModule = getModuleRegistry().getOrCreateProjectModule(topRootDirectoryPath);
+                return getModuleRegistry().getOrCreateLocalProjectModule(projectDirectoryPath);
+            ProjectModule topProjectModule = getModuleRegistry().getOrCreateLocalProjectModule(topRootDirectoryPath);
             if (moduleName.equals("top") || moduleName.equals(topProjectModule.getName()) )
                 return topProjectModule;
             moduleProject = ((RootModule) topProjectModule).findModule(moduleName, false);
@@ -188,10 +177,10 @@ class CommonCommand {
         return moduleProject;
     }
 
-    protected ProjectModule getWorkingProjectModule() {
+    protected LocalProjectModule getWorkingProjectModule() {
         Module workingModule = getWorkingModule();
-        if (workingModule instanceof ProjectModule)
-            return (ProjectModule) workingModule;
-        throw new BuildException(workingModule.getName() + " is not a project module.");
+        if (workingModule instanceof LocalProjectModule)
+            return (LocalProjectModule) workingModule;
+        throw new BuildException(workingModule.getName() + " is not a local project module.");
     }
 }

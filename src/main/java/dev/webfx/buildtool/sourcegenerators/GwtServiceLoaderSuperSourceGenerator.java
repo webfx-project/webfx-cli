@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.sourcegenerators;
 
-import dev.webfx.buildtool.ProjectModule;
+import dev.webfx.buildtool.LocalProjectModule;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
@@ -12,7 +12,7 @@ import java.nio.file.Files;
  */
 final class GwtServiceLoaderSuperSourceGenerator {
 
-    static void generateServiceLoaderSuperSource(ProjectModule module) {
+    static void generateServiceLoaderSuperSource(LocalProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module java.util.ServiceLoader.java super source for GWT");
         StringBuilder sb = new StringBuilder();
         module.getExecutableProviders()
