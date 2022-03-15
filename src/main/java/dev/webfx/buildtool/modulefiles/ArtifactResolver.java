@@ -124,7 +124,10 @@ public final class ArtifactResolver {
     }
 
     static String getType(Module module) {
-        return module.getType();
+        String type = module.getType();
+        if (type == null && (module instanceof ProjectModule) && ((ProjectModule) module).isAggregate())
+            type = "pom";
+        return type;
     }
 
     static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, BuildInfo buildInfo) {
@@ -132,8 +135,13 @@ public final class ArtifactResolver {
     }
 
     static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, boolean isForGwt, boolean isForOpenJfx, boolean isExecutable, boolean isRegistry) {
-        String scope = moduleGroup.getValue().stream().map(ModuleDependency::getScope).filter(Objects::nonNull).findAny().orElse(null);
-        if (scope != null)
+        // We take the scope of the first dependency ("default" as temporary value if not present).
+        // Note: if a module has both a source and plugin dependency, it's important that the source dependency goes
+        // first otherwise the compiler won't be able to compile the code if the scope is just set to "runtime".
+        String scope = moduleGroup.getValue().stream().map(ModuleDependency::getScope)
+                .map(s -> s == null ? "default" : s)
+                .findFirst().orElse(null);
+        if (scope != null && !"default".equals(scope)) // Returning the scope only if explicit in the first dependency
             return scope;
         Module module = moduleGroup.getKey();
         // Setting scope to "provided" for interface modules and optional dependencies
