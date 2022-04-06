@@ -66,13 +66,6 @@ class CommonCommand {
         return moduleName != null || parentCommand == null ? moduleName : parentCommand.getModuleName();
     }
 
-    @Option(names = {"--import"}, description = "Import a webfx-export.xml file.")
-    private String webFxExportFilePath;
-
-    public String getWebFxExportFilePath() {
-        return webFxExportFilePath != null ? webFxExportFilePath : parentCommand != null ? parentCommand.getWebFxExportFilePath() : null;
-    }
-
     protected void setUpLogger() {
         Logger.setLogConsumer(object -> {
             String message = null;
@@ -144,7 +137,7 @@ class CommonCommand {
 
     protected ModuleRegistry getModuleRegistry() {
         if (moduleRegistry == null)
-            moduleRegistry = new ModuleRegistry(getWorkspaceDirectoryPath(), getWebFxExportFilePath());
+            moduleRegistry = new ModuleRegistry(getWorkspaceDirectoryPath());
         return moduleRegistry;
     }
 

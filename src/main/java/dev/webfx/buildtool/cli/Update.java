@@ -109,10 +109,9 @@ final class Update extends CommonSubcommand implements Runnable {
 
         LocalProjectModule workingModule = getWorkingProjectModule();
 
-        // Updating Maven module files for all source modules (<dependencies> section in pom.xml)
+        // Generating or updating Maven module files (pom.xml)
         if (mavenPom)
             getWorkingAndChildrenModulesInDepth(workingModule)
-                    .filter(LocalProjectModule::hasSourceDirectory)
                     .forEach(m -> m.getMavenModuleFile().updateAndWrite())
             ;
 

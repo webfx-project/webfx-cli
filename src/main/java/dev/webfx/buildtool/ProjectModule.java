@@ -21,6 +21,8 @@ public interface ProjectModule extends Module {
         return ReusableStream.create(() -> getMavenModuleFile().getChildrenModuleNames());
     }
 
+    ReusableStream<String> getSubdirectoriesChildrenModules();
+
     ReusableStream<ProjectModule> getChildrenModules();
 
     default ReusableStream<ProjectModule> getThisAndChildrenModules() {
@@ -73,7 +75,7 @@ public interface ProjectModule extends Module {
     }
 
     default boolean isAggregate() {
-        return getMavenModuleFile().isAggregate();
+        return getMavenModuleFile().isAggregate() || getWebFxModuleFile().isAggregate();
     }
 
     default boolean isImplementingInterface() {

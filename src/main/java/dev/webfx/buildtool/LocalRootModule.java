@@ -1,11 +1,6 @@
 package dev.webfx.buildtool;
 
-import dev.webfx.buildtool.modulefiles.XmlModuleFile;
-import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -80,6 +75,12 @@ public final class LocalRootModule extends LocalProjectModule implements RootMod
                         }
                         if (maven)
                             projectElement.setAttribute("maven", "true");
+                        else if (XmlUtil.lookupNode(projectElement, "modules") == null) {
+                            Element modulesElement = document.createElement("modules");
+                            projectElement.appendChild(modulesElement);
+                            pm.getMavenModuleFile().getChildrenModuleNames().forEach(name -> XmlUtil.appendTextElement(modulesElement, "/module", name));
+                        }
+/*
                         // Replacing the exported sources package with their actual computed values
                         Node sourcePackagesNode = XmlUtil.lookupNode(projectElement, "exported-packages/source-packages");
                         if (sourcePackagesNode != null) {

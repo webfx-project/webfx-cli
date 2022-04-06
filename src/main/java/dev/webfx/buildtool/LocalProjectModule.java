@@ -323,7 +323,6 @@ public class LocalProjectModule extends ProjectModuleImpl {
 
     private LocalGwtModuleFile gwtModuleFile;
     private GwtHtmlFile gwtHtmlFile;
-    private ExportedWebFxModuleFile exportedWebFxModuleFile;
 
     /************************
      ***** Constructors *****
@@ -383,12 +382,6 @@ public class LocalProjectModule extends ProjectModuleImpl {
         return gwtHtmlFile;
     }
 
-    public ExportedWebFxModuleFile getExportedWebFxModuleFile() {
-        if (exportedWebFxModuleFile == null)
-            exportedWebFxModuleFile = new ExportedWebFxModuleFile(this);
-        return exportedWebFxModuleFile;
-    }
-
     public LocalProjectModule getOrCreateChildProjectModule(String name) {
         return getOrCreateLocalProjectModule(homeDirectory.resolve(name).normalize(), this);
     }
@@ -417,6 +410,16 @@ public class LocalProjectModule extends ProjectModuleImpl {
         if (javaModuleInfoFile == null)
             javaModuleInfoFile = new LocalJavaModuleInfoFile(this);
         return javaModuleInfoFile;
+    }
+
+    @Override
+    public ReusableStream<String> getSubdirectoriesChildrenModules() {
+        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(getHomeDirectory(), 1))
+                .filter(Files::isDirectory)
+                .filter(path -> !path.equals(getHomeDirectory()))
+                .filter(path -> Files.exists(path.resolve("webfx.xml")) || Files.exists(path.resolve("pom.xml")))
+                .map(path -> path.toFile().getName())
+                .cache();
     }
 
     public LocalRootModule getRootModule() {

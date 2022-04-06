@@ -1,9 +1,6 @@
 package dev.webfx.buildtool.util.xml;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.w3c.dom.*;
 import org.xml.sax.InputSource;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
@@ -24,7 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * @author bruno
+ * @author Bruno Salmon
  */
 public final class XmlUtil {
 
@@ -78,11 +75,10 @@ public final class XmlUtil {
         try {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
-            boolean isDocument = node instanceof Document;
-            if (!isDocument)
-                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            if (node instanceof Document)
+                ((Document) node).setXmlStandalone(true);
             else
-                transformer.setOutputProperty(OutputKeys.STANDALONE, "yes"); // This is to fix the missing line feed after xml declaration
+                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
             transformer.setOutputProperty(OutputKeys.METHOD, method);
             //transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
@@ -91,7 +87,14 @@ public final class XmlUtil {
             StringWriter sw = new StringWriter();
             StreamResult result = new StreamResult(sw);
             transformer.transform(source, result);
-            return sw.toString().replace("?><", "?>\n<"); // Adding a line feed if missing after xml declaration
+            String xmlText = sw.toString()
+                    .replace("?><", "?>\n<") // Adding a linefeed if missing after xml declaration
+                    .replace("\" xmlns:xsi=\"", "\"\n         xmlns:xsi=\"") // Adding a linefeed before xmlns:xsi
+                    .replace("\" xsi:schemaLocation=\"", "\"\n         xsi:schemaLocation=\""); // Adding a linefeed before xsi:schemaLocation
+            if (xmlText.contains("?>\n<!--")) // xml declaration followed by a comment
+                xmlText = xmlText.replace("--><", "-->\n<"); // Adding linefeed after the end of comment if missing
+
+            return xmlText;
         } catch (TransformerException e) {
             e.printStackTrace();
             return null;
@@ -109,6 +112,10 @@ public final class XmlUtil {
     public static String lookupNodeTextContent(Object item, String xpathExpression) {
         Node node = lookupNode(item, xpathExpression);
         return node == null ? null : node.getTextContent();
+    }
+
+    public static Node lookupTextNode(Object item, String xpath, String text) {
+        return lookupNode(item, xpath + "[text() = '" + text + "']");
     }
 
     private static <T> T lookup(Object item, String xpathExpression, QName returnType) {
@@ -150,14 +157,224 @@ public final class XmlUtil {
         return "true".equalsIgnoreCase(getAttributeValue(node, name));
     }
 
-    public static void appendIndentNode(Node node, Node parentNode) {
-        StringBuilder sb = new StringBuilder("\n");
-        for (Node p = parentNode.getParentNode().getParentNode(); p != null; p = p.getParentNode())
-            sb.append("    "); // 4 spaces indent per depth level
-        boolean linefeed = !parentNode.hasChildNodes();
+    public static Node lookupOrCreateNode(Node parent, String xpath) {
+        Node node = lookupNode(parent, xpath);
+        if (node == null)
+            node = createElement(parent, xpath);
+        return node;
+    }
+
+    public static Element createElement(Node parent, String tagName) {
+        return createElement(parent.getOwnerDocument(), tagName);
+    }
+
+    public static Element createElement(Document document, String tagName) {
+        return document.createElement(tagName);
+    }
+
+
+    public static Node lookupOrCreateAndAppendNode(Node parent, String xpath, boolean... lineFeeds) {
+        Node node = lookupNode(parent, xpath);
+        if (node == null)
+            node = createAndAppendElement(parent, xpath, lineFeeds);
+        return node;
+    }
+
+    public static Element createAndAppendElement(Node parentElement, String xpath, boolean... lineFeeds) {
+        return createAndAddElement(parentElement, xpath, true, lineFeeds);
+    }
+
+    public static Element createAndAddElement(Node parentElement, String xpath, boolean append, boolean... lineFeeds) {
+        int p = xpath.lastIndexOf('/');
+        Element element = createElement(parentElement, xpath.substring(p + 1));
+        Node parentNode = p <= 1 ? parentElement : lookupOrCreateAndAppendNode(parentElement, xpath.substring(0, p), lineFeeds);
+        int lineFeedIndex = 0;
+        for (Node n = parentNode; n != null && n != parentElement; n = n.getParentNode())
+            lineFeedIndex++;
+        boolean linefeed = lineFeedIndex < lineFeeds.length && lineFeeds[lineFeedIndex];
+        if (append)
+            appendIndentNode(element, parentNode, linefeed);
+        else
+            prependIndentNode(element, parentNode, linefeed);
+        return element;
+    }
+
+    public static Element appendTextElement(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+        Element element = XmlUtil.createAndAppendElement(parentNode, xpath, lineFeeds);
+        element.setTextContent(text);
+        return element;
+    }
+
+    public static Element createAndPrependElement(Node parentElement, String xpath, boolean... lineFeeds) {
+        return createAndAddElement(parentElement, xpath, false, lineFeeds);
+    }
+
+    public static Element prependTextElement(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+        Element element = XmlUtil.createAndPrependElement(parentNode, xpath, lineFeeds);
+        element.setTextContent(text);
+        return element;
+    }
+
+    public static void prependNode(Node node, Node parentNode) {
+        Node firstChild = parentNode.getFirstChild();
+        if (firstChild == null)
+            parentNode.appendChild(node);
+        else
+            parentNode.insertBefore(node, firstChild);
+    }
+
+    public static void removeNode(Node node) {
+        Node parentNode = node == null ? null : node.getParentNode();
+        if (parentNode != null)
+            parentNode.removeChild(node);
+    }
+
+    public static void removeChildren(Node node) {
+        while (node.hasChildNodes())
+            node.removeChild(node.getFirstChild());
+    }
+
+    public static void appendChildren(Node parentSource, Node parentDestination) {
+        while (parentSource.hasChildNodes())
+            parentDestination.appendChild(parentSource.getFirstChild());
+    }
+
+    private final static int INDENT_SPACES = 4; // 4 spaces indent per depth level
+
+    public static void appendIndentNode(Node node, Node parentNode, boolean linefeed) {
+        int existingLineFeedsBefore = countLineFeedsBefore(parentNode.getLastChild());
+        int requiredLineFeedsBefore = linefeed ? 2 : 1;
         Document document = parentNode.getOwnerDocument();
-        parentNode.appendChild(document.createTextNode((linefeed ? sb : "") + "    "));
+        parentNode.appendChild(createIndentText(requiredLineFeedsBefore - existingLineFeedsBefore, document));
         parentNode.appendChild(node);
-        parentNode.appendChild(document.createTextNode(sb.toString()));
+        parentNode.appendChild(createIndentText(requiredLineFeedsBefore, document));
+        indentNode(parentNode, true);
+    }
+
+    public static void prependIndentNode(Node node, Node parentNode, boolean linefeed) {
+        int existingLineFeedsAfter = countLineFeedsAfter(parentNode.getFirstChild());
+        int requiredLineFeedsAfter = linefeed ? 2 : 1;
+        Document document = parentNode.getOwnerDocument();
+        prependNode(createIndentText(requiredLineFeedsAfter - existingLineFeedsAfter, document), parentNode);
+        prependNode(node, parentNode);
+        prependNode(createIndentText(requiredLineFeedsAfter, document), parentNode);
+        indentNode(parentNode, true);
+    }
+
+    public static int getNodeDepthLevel(Node node) {
+        int depthLevel = -1; // level 0 refers to the document element, -1 to the document
+        for (Node p = node.getParentNode(); p != null; p = p.getParentNode())
+            depthLevel++;
+        return depthLevel;
+    }
+
+    public static void indentNode(Node node, boolean recursively) {
+        indentNode(node, getNodeDepthLevel(node), recursively);
+    }
+
+    public static void indentNode(Node node, int level, boolean recursively) {
+        if (level < 0)
+            return;
+        int existingSpacesBefore = countSpacesBefore(node);
+        int requiredSpacesBefore = level * INDENT_SPACES;
+        int deltaSpacesBefore = requiredSpacesBefore - existingSpacesBefore;
+        if (deltaSpacesBefore != 0 || recursively) {
+            addSpacesBefore(node, deltaSpacesBefore);
+            NodeList childNodes = node.getChildNodes();
+            int n = childNodes.getLength();
+            if (n > 0) {
+                for (int i = 0; i < n; i++) {
+                    Node childNode = childNodes.item(i);
+                    if (!recursively)
+                        addSpacesBefore(childNode, deltaSpacesBefore);
+                    else if (!(childNode instanceof Text))
+                        indentNode(childNode, level + 1, true);
+                }
+                if (n > 1) {
+                    Node lastChild = node.getLastChild();
+                    if (lastChild instanceof Text) {
+                        String lastContent = lastChild.getTextContent();
+                        if (!lastContent.contains("\n"))
+                            lastChild.setTextContent(lastContent + "\n");
+                    } else
+                        node.appendChild(lastChild = node.getOwnerDocument().createTextNode("\n"));
+                    indentNode(lastChild, level, false);
+                }
+            }
+        }
+    }
+
+    private static void addSpacesBefore(Node node, int spacesCount) {
+        if (spacesCount != 0) {
+            Text textToAddSpacesTo;
+            Node previousNode = getPreviousSiblingIfNotText(node);
+            if (previousNode instanceof Text)
+                textToAddSpacesTo = (Text) previousNode;
+            else
+                node.getParentNode().insertBefore(textToAddSpacesTo = node.getOwnerDocument().createTextNode(""), node);
+            String textContent = textToAddSpacesTo.getTextContent();
+            if (spacesCount > 0) {
+                String extraSpaces = " ".repeat(spacesCount);
+                textContent = textToAddSpacesTo == node && !textContent.contains("\n") ? extraSpaces + textContent : textContent + extraSpaces;
+            } else
+                while (spacesCount++ < 0 && textContent.endsWith(" "))
+                    textContent = textContent.substring(0, textContent.length() - 2);
+            textToAddSpacesTo.setTextContent(textContent);
+        }
+    }
+
+    private static int countSpacesBefore(Node node) {
+        return countTextWhitespaces(getPreviousSiblingIfNotText(node), false, false);
+    }
+
+    private static int countLineFeedsBefore(Node node) {
+        return countTextWhitespaces(getPreviousSiblingIfNotText(node), true, false);
+    }
+
+    private static int countLineFeedsAfter(Node node) {
+        return countTextWhitespaces(getNextSiblingIfNotText(node), true, true);
+    }
+
+    private static Node getPreviousSiblingIfNotText(Node node) {
+        if (node != null && !(node instanceof Text))
+            node = node.getPreviousSibling();
+        return node;
+    }
+
+    private static Node getNextSiblingIfNotText(Node node) {
+        if (node != null && !(node instanceof Text))
+            node = node.getNextSibling();
+        return node;
+    }
+
+    private static int countTextWhitespaces(Node fromNode, boolean lineFeeds, boolean forward) {
+        int count = 0;
+        loop: while (fromNode instanceof Text) {
+            String textContent = fromNode.getTextContent();
+            for (int j = textContent.length() - 1; j >= 0; j--) {
+                char c = textContent.charAt(j);
+                if (c == (lineFeeds ? '\n' : ' '))
+                    count++;
+                else if (!lineFeeds)
+                    break loop;
+                else if (!Character.isWhitespace(c))
+                    if (forward)
+                        break loop;
+                    else
+                        count = 0;
+            }
+            if (forward)
+                fromNode = fromNode.getNextSibling();
+            else
+                fromNode = fromNode.getPreviousSibling();
+        }
+        return count;
+    }
+
+    private static Text createIndentText(int linefeedBefore, Document document) {
+        StringBuilder sb = new StringBuilder();
+        if (linefeedBefore > 0)
+            sb.append("\n".repeat(linefeedBefore));
+        return document.createTextNode(sb.toString());
     }
 }

@@ -14,8 +14,15 @@ public interface LocalXmlModuleFile extends XmlModuleFile, LocalModuleFile {
     }
 
     default void updateAndWrite() {
-        updateDocument(getOrCreateDocument());
-        writeFile();
+        boolean recreate = recreateOnUpdateAndWrite() || getDocument() == null;
+        if (recreate)
+            createDocument(); // The document is created AND UPDATED (so no need to call updateDocument() a second time)
+        if (recreate || updateDocument(getDocument()))
+            writeFile();
+    }
+
+    default boolean recreateOnUpdateAndWrite() {
+        return false;
     }
 
     default void writeFile() {

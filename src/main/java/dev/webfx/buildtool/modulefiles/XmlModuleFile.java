@@ -35,13 +35,10 @@ public interface XmlModuleFile extends ModuleFile {
         return XmlUtil.newDocument();
     }
 
-    default void updateDocument(Document document) {
-        clearDocument(document);
-        document.appendChild(document.createElement("module"));
-    }
-
-    default void clearDocument(Document document) {
-        clearNodeChildren(document);
+    default boolean updateDocument(Document document) {
+        XmlUtil.removeChildren(document);
+        document.appendChild(document.createElement("project"));
+        return true;
     }
 
     Element getModuleElement();
@@ -49,12 +46,6 @@ public interface XmlModuleFile extends ModuleFile {
     default Element getOrCreateModuleElement() {
         Element moduleElement = getModuleElement();
         return moduleElement != null ? moduleElement : getOrCreateDocument().getDocumentElement();
-    }
-
-    default void clearNodeChildren(Node node) {
-        Node firstChild;
-        while ((firstChild = node.getFirstChild()) != null)
-            node.removeChild(firstChild);
     }
 
     default String getXmlContent() {
@@ -66,66 +57,48 @@ public interface XmlModuleFile extends ModuleFile {
     }
 
     default Node lookupNode(String xpathExpression) {
-        return lookupNode(getModuleElement(), xpathExpression);
-    }
-
-    static Node lookupNode(Object parent, String xpathExpression) {
-        return XmlUtil.lookupNode(parent, xpathExpression);
+        return XmlUtil.lookupNode(getModuleElement(), xpathExpression);
     }
 
     default Node lookupOrCreateNode(String xpath) {
-        return lookupOrCreateNode(getOrCreateModuleElement(), xpath);
+        return XmlUtil.lookupOrCreateNode(getOrCreateModuleElement(), xpath);
     }
 
-    static Node lookupOrCreateNode(Node parent, String xpath) {
-        Node node = lookupNode(parent, xpath);
-        if (node == null)
-            node = createNode(parent, xpath);
-        return node;
+    default Node lookupOrCreateAndAppendNode(String xpath, boolean... linefeeds) {
+        return XmlUtil.lookupOrCreateAndAppendNode(getOrCreateModuleElement(), xpath, linefeeds);
     }
 
-    default Node createNode(String xpath) {
-        return createNode(getOrCreateModuleElement(), xpath);
+    default Element createAndAppendElement(String xpath, boolean... linefeeds) {
+        return XmlUtil.createAndAppendElement(getOrCreateModuleElement(), xpath, linefeeds);
     }
 
-    static Node createNode(Node parentElement, String xpath) {
-        Document document = parentElement.getOwnerDocument();
-        int p = xpath.lastIndexOf('/');
-        Node parentNode = p <= 1 ? parentElement : lookupOrCreateNode(parentElement, xpath.substring(0, p));
-        Node node = document.createElement(xpath.substring(p + 1));
-        XmlUtil.appendIndentNode(node, parentNode);
-/*
-        if (parentNode == parentElement)
-            parentNode.appendChild(document.createTextNode("\n"));
-*/
-        return node;
-    }
-
-    default void appendTextNodeIfNotAlreadyExists(String xpath, String text) {
+    default void appendTextNodeIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
         if (lookupTextNode(xpath, text) == null)
-            appendTextNode(xpath, text);
+            appendTextElement(xpath, text, linefeeds);
     }
 
     default Node lookupTextNode(String xpath, String text) {
-        return lookupTextNode(getModuleElement(), xpath, text);
+        return XmlUtil.lookupTextNode(getModuleElement(), xpath, text);
     }
 
-    default Node lookupTextNode(Object parent, String xpath, String text) {
-        return lookupNode(parent, xpath + "[text() = '" + text + "']");
+    default void appendIndentNode(Node node, boolean linefeed) {
+        XmlUtil.appendIndentNode(node, getOrCreateModuleElement(), linefeed);
     }
 
-    default Node appendTextNode(String xpath, String text) {
-        return appendTextNode(getOrCreateModuleElement(), xpath, text);
+    default Element appendTextElement(String xpath, String text, boolean... linefeeds) {
+        return XmlUtil.appendTextElement(getOrCreateModuleElement(), xpath, text, linefeeds);
     }
 
-    default Node appendTextNode(Node parentNode, String xpath, String text) {
-        Node node = createNode(parentNode, xpath);
-        node.setTextContent(text);
-        return node;
+    default Element prependTextElement(String xpath, String text, boolean... linefeeds) {
+        return XmlUtil.prependTextElement(getOrCreateModuleElement(), xpath, text, linefeeds);
+    }
+
+    default Element createAndPrependElement(String xpath, boolean... linefeeds) {
+        return XmlUtil.createAndPrependElement(getOrCreateModuleElement(), xpath, linefeeds);
     }
 
     default String lookupNodeTextContent(String xpathExpression) {
-        return XmlUtil.lookupNodeTextContent(getDocument(), xpathExpression);
+        return XmlUtil.lookupNodeTextContent(getModuleElement(), xpathExpression);
     }
 
     default ReusableStream<String> lookupNodeListTextContent(String xPathExpression) {

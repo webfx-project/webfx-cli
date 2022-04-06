@@ -36,6 +36,11 @@ public class ImportedProjectModule extends ProjectModuleImpl {
     }
 
     @Override
+    public ReusableStream<String> getSubdirectoriesChildrenModules() {
+        return null;
+    }
+
+    @Override
     public ImportedMavenPomModuleFile getMavenModuleFile() {
         return mavenPomModuleFile;
     }

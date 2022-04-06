@@ -11,7 +11,7 @@ import java.nio.file.Path;
 public abstract class LocalXmlModuleFileImpl extends XmlModuleFileImpl implements LocalXmlModuleFile {
 
     private final Path moduleFilePath;
-    private final boolean readFileIfExists;
+    private boolean readFileIfExists;
 
 
     LocalXmlModuleFileImpl(Module module, Path moduleFilePath, boolean readFileIfExists) {
@@ -25,6 +25,12 @@ public abstract class LocalXmlModuleFileImpl extends XmlModuleFileImpl implement
         if (document == null & readFileIfExists)
             readFile();
         return document;
+    }
+
+    @Override
+    public void setDocument(Document document) {
+        super.setDocument(document);
+        readFileIfExists = false;
     }
 
     @Override

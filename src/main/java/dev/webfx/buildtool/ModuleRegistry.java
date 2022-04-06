@@ -2,9 +2,7 @@ package dev.webfx.buildtool;
 
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -24,51 +22,32 @@ final public class ModuleRegistry {
      ***** Constructor *****
      ***********************/
 
-    public ModuleRegistry(Path workspaceDirectory, String webFxExportFilePath) {
-        this(workspaceDirectory, webFxExportFilePath == null ? null : Path.of(webFxExportFilePath));
-    }
-
-    public ModuleRegistry(Path workspaceDirectory, Path webFxExportFilePath) {
+    public ModuleRegistry(Path workspaceDirectory) {
         this.workspaceDirectory = workspaceDirectory;
-        if (webFxExportFilePath == null)
-            importedProjectModules =
-                    ReusableStream.of(
-                                    "webfx",
-                                    "webfx-platform",
-                                    "webfx-lib-javacupruntime",
-                                    "webfx-lib-odometer",
-                                    "webfx-lib-enzo",
-                                    "webfx-lib-medusa",
-                                    "webfx-lib-reusablestream",
-                                    "webfx-extras",
-                                    "webfx-extras-flexbox",
-                                    "webfx-extras-materialdesign",
-                                    "webfx-extras-webtext",
-                                    "webfx-extras-visual",
-                                    "webfx-extras-visual-charts",
-                                    "webfx-extras-visual-grid",
-                                    "webfx-extras-cell",
-                                    "webfx-stack-platform",
-                                    "webfx-framework"
-                            )
-                            .map(p -> getOrCreateLocalProjectModule(workspaceDirectory.resolve(p), null))
-                            .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
-                            //.filter(m -> !m.getHomeDirectory().startsWith(rootDirectory))
-                            .cache();
-        else {
-            Document document = XmlUtil.parseXmlFile(webFxExportFilePath.toFile());
-            XmlUtil.nodeListToReusableStream(XmlUtil.lookupNodeList(document, "//library"), LibraryModule::new)
-                    .forEach(this::registerLibraryModule);
-            NodeList nodeList = XmlUtil.lookupNodeList(document, "exported-modules//project");
-            Map<String, Element> moduleElementsToImport = new HashMap<>();
-            Map<String, ProjectModule> importedModules = new HashMap<>();
-            for (int i = 0; i < nodeList.getLength(); i++) {
-                Element element = (Element) nodeList.item(i);
-                moduleElementsToImport.put(XmlUtil.getAttributeValue(element, "name"), element);
-            }
-            importModules(moduleElementsToImport, importedModules);
-            importedProjectModules = ReusableStream.fromIterable(importedModules.values());
-        }
+        importedProjectModules =
+                ReusableStream.of(
+                                "webfx",
+                                "webfx-platform",
+                                "webfx-lib-javacupruntime",
+                                "webfx-lib-odometer",
+                                "webfx-lib-enzo",
+                                "webfx-lib-medusa",
+                                "webfx-lib-reusablestream",
+                                "webfx-extras",
+                                "webfx-extras-flexbox",
+                                "webfx-extras-materialdesign",
+                                "webfx-extras-webtext",
+                                "webfx-extras-visual",
+                                "webfx-extras-visual-charts",
+                                "webfx-extras-visual-grid",
+                                "webfx-extras-cell",
+                                "webfx-stack-platform",
+                                "webfx-framework"
+                        )
+                        .map(p -> getOrCreateLocalProjectModule(workspaceDirectory.resolve(p), null))
+                        .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
+                        //.filter(m -> !m.getHomeDirectory().startsWith(rootDirectory))
+                        .cache();
     }
 
     private void importModules(Map<String, Element> moduleElementsToImport, Map<String, ProjectModule> importedModules) {

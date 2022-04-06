@@ -25,6 +25,18 @@ public interface WebFxModuleFile extends XmlModuleFile {
         return lookupNode("auto-conditions") != null;
     }
 
+    default boolean isAggregate() {
+        return lookupNode("modules") != null;
+    }
+
+    default boolean shouldSubdirectoriesChildrenModulesBeAdded() {
+        return lookupNode("modules/subdirectories-modules") != null;
+    }
+
+    default ReusableStream<String> getChildrenModuleNames() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("modules//module"), Node::getTextContent);
+    }
+
     default ReusableStream<String> getExplicitExportedPackages() {
         return lookupNodeListTextContent("exported-packages//package");
     }
@@ -107,13 +119,7 @@ public interface WebFxModuleFile extends XmlModuleFile {
 
     @Override
     default Document createInitialDocument() {
-        ProjectModule projectModule = getProjectModule();
-        String template = ResourceTextFileReader.readTemplate("webfx.xml")
-                .replace("${groupId}",    ArtifactResolver.getGroupId(projectModule))
-                .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
-                .replace("${version}",    ArtifactResolver.getVersion(projectModule))
-                ;
-        return XmlUtil.parseXmlString(template);
+        return XmlUtil.parseXmlString(ResourceTextFileReader.readTemplate("webfx.xml"));
     }
 
     default void setExecutable(boolean executable) {
@@ -125,10 +131,11 @@ public interface WebFxModuleFile extends XmlModuleFile {
     }
 
     default void addProvider(String spiClassName, String providerClassName) {
-        appendTextNodeIfNotAlreadyExists("providers/" + spiClassName, providerClassName);
+        appendTextNodeIfNotAlreadyExists("providers/" + spiClassName, providerClassName, true);
     }
 
-    default void updateDocument(Document document) {
+    default boolean updateDocument(Document document) {
         // Nothing to update as this is the source
+        return false;
     }
 }

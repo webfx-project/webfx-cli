@@ -34,7 +34,7 @@ public final class LocalGwtModuleFile extends LocalXmlModuleFileImpl {
     }
 
     @Override
-    public void updateDocument(Document document) {
+    public boolean updateDocument(Document document) {
         document.getDocumentElement().setAttribute("rename-to", getModule().getName().replaceAll("-", "_"));
         Node moduleSourceCommentNode = lookupNode("/module//comment()[2]");
         Node moduleSourceEndNode = moduleSourceCommentNode.getNextSibling();
@@ -118,6 +118,7 @@ public final class LocalGwtModuleFile extends LocalXmlModuleFileImpl {
                                 });
                     }
                 });
+        return true;
     }
 
     private static String createModuleSectionLine(String title) {
