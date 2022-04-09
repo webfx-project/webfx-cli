@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.LocalProjectModule;
+import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ModuleDependency;
 import dev.webfx.buildtool.ProjectModule;
@@ -22,9 +22,9 @@ import java.util.stream.Stream;
 /**
  * @author Bruno Salmon
  */
-public final class LocalGwtModuleFile extends LocalXmlModuleFileImpl {
+public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
 
-    public LocalGwtModuleFile(LocalProjectModule module) {
+    public DevGwtModuleFile(DevProjectModule module) {
         super(module, module.getHomeDirectory().resolve("src/main/module.gwt.xml"), false);
     }
 

@@ -1,33 +1,44 @@
 package dev.webfx.buildtool;
 
-import dev.webfx.buildtool.modulefiles.ImportedMavenPomModuleFile;
-import dev.webfx.buildtool.modulefiles.ImportedWebFxModuleFile;
-import dev.webfx.buildtool.util.xml.XmlUtil;
+import dev.webfx.buildtool.modulefiles.M2MavenPomModuleFile;
+import dev.webfx.buildtool.modulefiles.M2WebFxModuleFile;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
-import org.w3c.dom.Element;
+
+import java.nio.file.Path;
 
 /**
  * @author Bruno Salmon
  */
-public class ImportedProjectModule extends ProjectModuleImpl {
+public class M2ProjectModule extends ProjectModuleImpl {
 
-    private ImportedMavenPomModuleFile mavenPomModuleFile;
-    private ImportedWebFxModuleFile webFxModuleFile;
+    // TODO replace this with a maven command: mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout
+    private static final Path M2_LOCAL_REPOSITORY = Path.of(System.getProperty("user.dir"), ".m2", "repository");
 
-    public ImportedProjectModule(String name, ProjectModule parentModule) {
-        super(name, parentModule);
+    private final Path m2ProjectHomeDirectory;
+
+    private M2MavenPomModuleFile mavenPomModuleFile;
+    private M2WebFxModuleFile webFxModuleFile;
+
+    public M2ProjectModule(String name, ProjectModule parentModule) {
+        this(name, parentModule.getGroupId(), name, parentModule.getVersion(), parentModule);
     }
 
-    public ImportedProjectModule(Element projectElement, ProjectModule parentModule) {
-        this(projectElement.getAttribute("name"), parentModule);
-        if (XmlUtil.getBooleanAttributeValue(projectElement, "maven"))
-            mavenPomModuleFile = new ImportedMavenPomModuleFile(this, projectElement);
-        else {
-            webFxModuleFile = new ImportedWebFxModuleFile(this, projectElement);
-            groupId = XmlUtil.getAttributeValue(projectElement, "groupId");
-            artifactId = XmlUtil.getAttributeValue(projectElement, "artifactId");
-            version = XmlUtil.getAttributeValue(projectElement, "version");
-        }
+    public M2ProjectModule(Module descriptor, ProjectModule parentModule) {
+        this(descriptor.getName(), descriptor.getGroupId(), descriptor.getArtifactId(), descriptor.getVersion(), parentModule);
+    }
+
+    public M2ProjectModule(String name, String groupId, String artifactId, String version, ProjectModule parentModule) {
+        super(name, parentModule);
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
+        m2ProjectHomeDirectory = M2_LOCAL_REPOSITORY.resolve(groupId.replace('.', '/')).resolve(artifactId).resolve(version);
+        mavenPomModuleFile = new M2MavenPomModuleFile(this);
+        webFxModuleFile = new M2WebFxModuleFile(this);
+    }
+
+    public Path getM2ProjectHomeDirectory() {
+        return m2ProjectHomeDirectory;
     }
 
     public ProjectModule getOrCreateChildProjectModule(String name) {
@@ -41,12 +52,12 @@ public class ImportedProjectModule extends ProjectModuleImpl {
     }
 
     @Override
-    public ImportedMavenPomModuleFile getMavenModuleFile() {
+    public M2MavenPomModuleFile getMavenModuleFile() {
         return mavenPomModuleFile;
     }
 
     @Override
-    public ImportedWebFxModuleFile getWebFxModuleFile() {
+    public M2WebFxModuleFile getWebFxModuleFile() {
         return webFxModuleFile;
     }
 

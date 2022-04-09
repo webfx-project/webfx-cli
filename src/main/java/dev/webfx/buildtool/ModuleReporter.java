@@ -10,12 +10,12 @@ import java.util.stream.Stream;
 final class ModuleReporter {
 
     private final Module module;
-    private final LocalProjectModule projectModule;
-    private final LocalRootModule rootModule;
+    private final DevProjectModule projectModule;
+    private final DevRootModule rootModule;
 
     ModuleReporter(Module module) {
         this.module = module;
-        projectModule = module instanceof LocalProjectModule ? (LocalProjectModule) module : null;
+        projectModule = module instanceof DevProjectModule ? (DevProjectModule) module : null;
         rootModule = projectModule != null ? projectModule.getRootModule() : null;
     }
 

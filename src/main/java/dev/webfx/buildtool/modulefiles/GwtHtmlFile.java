@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.LocalProjectModule;
+import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.ProjectModule;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
@@ -14,9 +14,9 @@ import java.util.Scanner;
 /**
  * @author Bruno Salmon
  */
-public class GwtHtmlFile extends LocalModuleFileImpl {
+public class GwtHtmlFile extends DevModuleFileImpl {
 
-    public GwtHtmlFile(LocalProjectModule module) {
+    public GwtHtmlFile(DevProjectModule module) {
         super(module, module.getResourcesDirectory().resolve("public/index.html"));
     }
 
@@ -83,7 +83,7 @@ public class GwtHtmlFile extends LocalModuleFileImpl {
 
     private static boolean checkNodeConditions(Node headOrBodyNode, ReusableStream<ProjectModule> transitiveProjectModules) {
         String ifModulePropertyTrue = XmlUtil.getAttributeValue(headOrBodyNode, "if-module-property-true");
-        if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> m.getWebFxModuleFile().getModuleProperties().anyMatch(p -> p.getName().equals(ifModulePropertyTrue) && "true".equalsIgnoreCase(p.getValue()))))
+        if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> m.getWebFxModuleFile().getModuleProperties().anyMatch(p -> p.getPropertyName().equals(ifModulePropertyTrue) && "true".equalsIgnoreCase(p.getPropertyValue()))))
             return false;
         String ifUsesJavaPackage = XmlUtil.getAttributeValue(headOrBodyNode, "if-uses-java-package");
         if (ifUsesJavaPackage != null && !ProjectModule.modulesUsesJavaPackage(transitiveProjectModules, ifUsesJavaPackage))

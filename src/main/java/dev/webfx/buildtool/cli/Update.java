@@ -107,7 +107,7 @@ final class Update extends CommonSubcommand implements Runnable {
         processTaskFlags(only, true);
         processTaskFlags(skip, false);
 
-        LocalProjectModule workingModule = getWorkingProjectModule();
+        DevProjectModule workingModule = getWorkingDevProjectModule();
 
         // Generating or updating Maven module files (pom.xml)
         if (mavenPom)
@@ -118,8 +118,8 @@ final class Update extends CommonSubcommand implements Runnable {
         // Generating files for Java modules (module-info.java and META-INF/services)
         if (moduleInfoJava || metaInfServices)
             getWorkingAndChildrenModulesInDepth(workingModule)
-                    .filter(LocalProjectModule::hasSourceDirectory)
-                    .filter(LocalProjectModule::hasJavaSourceDirectory)
+                    .filter(DevProjectModule::hasSourceDirectory)
+                    .filter(DevProjectModule::hasJavaSourceDirectory)
                     .filter(m -> m.getTarget().isPlatformSupported(Platform.JRE))
                     .forEach(JavaFilesGenerator::generateJavaFiles)
             ;
@@ -137,10 +137,10 @@ final class Update extends CommonSubcommand implements Runnable {
                 .forEach(GluonFilesGenerator::generateGraalVmReflectionJson);
     }
 
-    private static ReusableStream<LocalProjectModule> getWorkingAndChildrenModulesInDepth(LocalProjectModule workingModule) {
+    private static ReusableStream<DevProjectModule> getWorkingAndChildrenModulesInDepth(DevProjectModule workingModule) {
         return workingModule
                 .getThisAndChildrenModulesInDepth()
-                .filter(m -> m instanceof LocalProjectModule)
-                .map(m -> (LocalProjectModule) m);
+                .filter(m -> m instanceof DevProjectModule)
+                .map(m -> (DevProjectModule) m);
     }
 }

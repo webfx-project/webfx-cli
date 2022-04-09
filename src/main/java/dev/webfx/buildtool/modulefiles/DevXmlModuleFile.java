@@ -5,7 +5,7 @@ import dev.webfx.buildtool.util.xml.XmlUtil;
 
 import java.io.File;
 
-public interface LocalXmlModuleFile extends XmlModuleFile, LocalModuleFile {
+public interface DevXmlModuleFile extends XmlModuleFile, DevModuleFile {
 
     default void readFile() {
         File moduleFile = getModuleFile();

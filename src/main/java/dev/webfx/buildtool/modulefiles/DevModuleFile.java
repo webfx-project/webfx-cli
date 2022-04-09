@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.LocalProjectModule;
+import dev.webfx.buildtool.DevProjectModule;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -8,11 +8,11 @@ import java.nio.file.Path;
 /**
  * @author Bruno Salmon
  */
-interface LocalModuleFile extends ModuleFile {
+interface DevModuleFile extends ModuleFile {
 
     @Override
-    default LocalProjectModule getProjectModule() {
-        return (LocalProjectModule) getModule();
+    default DevProjectModule getProjectModule() {
+        return (DevProjectModule) getModule();
     }
 
     Path getModuleFilePath();

@@ -10,28 +10,23 @@ import org.w3c.dom.Node;
 public interface MavenPomModuleFile extends XmlModuleFile {
 
     default String getGroupId() {
-        Node node = lookupNode("groupId");
-        return node == null ? null : node.getTextContent();
+        return lookupNodeTextContent("groupId");
     }
 
     default String getArtifactId() {
-        Node node = lookupNode("artifactId");
-        return node == null ? null : node.getTextContent();
+        return lookupNodeTextContent("artifactId");
     }
 
     default String getVersion() {
-        Node node = lookupNode("version");
-        return node == null ? null : node.getTextContent();
+        return lookupNodeTextContent("version");
     }
 
     default String getParentGroupId() {
-        Node node = lookupNode("parent/groupId");
-        return node == null ? null : node.getTextContent();
+        return lookupNodeTextContent("parent/groupId");
     }
 
     default String getParentVersion() {
-        Node node = lookupNode("parent/version");
-        return node == null ? null : node.getTextContent();
+        return lookupNodeTextContent("parent/version");
     }
 
     default boolean isAggregate() {

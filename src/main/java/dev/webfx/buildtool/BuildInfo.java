@@ -5,14 +5,14 @@ package dev.webfx.buildtool;
  */
 public class BuildInfo {
 
-    public final LocalProjectModule projectModule;
+    public final DevProjectModule projectModule;
     public final boolean isForGwt;
     public final boolean isForOpenJfx;
     public final boolean isForGluon;
     public final boolean isExecutable;
     public final boolean isRegistry;
 
-    public BuildInfo(LocalProjectModule projectModule) {
+    public BuildInfo(DevProjectModule projectModule) {
         this.projectModule = projectModule;
         isForGwt = projectModule.getTarget().isMonoPlatform(Platform.GWT);
         isForGluon = projectModule.getTarget().isMonoPlatform(Platform.JRE) && projectModule.getTarget().hasTag(TargetTag.GLUON);

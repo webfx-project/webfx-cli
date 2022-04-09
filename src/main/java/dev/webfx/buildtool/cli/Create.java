@@ -1,7 +1,7 @@
 package dev.webfx.buildtool.cli;
 
 import dev.webfx.buildtool.*;
-import dev.webfx.buildtool.modulefiles.LocalMavenPomModuleFile;
+import dev.webfx.buildtool.modulefiles.DevMavenPomModuleFile;
 import dev.webfx.buildtool.modulefiles.MavenPomModuleFile;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
@@ -30,26 +30,26 @@ class Create extends CommonSubcommand {
         @Option(names = {"-p", "--project"}, arity = "0..1", fallbackValue = "!", description = "Create as a separate new project.")
         String project;
 
-        private LocalProjectModule createModule(String name, boolean aggregate) {
+        private DevProjectModule createModule(String name, boolean aggregate) {
             Path projectDirectoryPath = project != null ? getWorkspaceDirectoryPath().resolve(project) : getProjectDirectoryPath();
             Path modulePath = projectDirectoryPath.resolve(name);
-            LocalProjectModule module = getModuleRegistry().getOrCreateLocalProjectModule(modulePath);
+            DevProjectModule module = getModuleRegistry().getOrCreateDevProjectModule(modulePath);
             module.getMavenModuleFile().setAggregate(aggregate);
-            LocalMavenPomModuleFile parentLocalMavenModuleFile = getParentLocalMavenModuleFile(module);
-            if (parentLocalMavenModuleFile != null)
-                parentLocalMavenModuleFile.addModule(module);
+            DevMavenPomModuleFile parentDevMavenModuleFile = getParentDevMavenModuleFile(module);
+            if (parentDevMavenModuleFile != null)
+                parentDevMavenModuleFile.addModule(module);
             return module;
         }
 
-        LocalProjectModule createAggregateModule(String name, boolean writePom) {
-            LocalProjectModule module = createModule(name, true);
+        DevProjectModule createAggregateModule(String name, boolean writePom) {
+            DevProjectModule module = createModule(name, true);
             if (writePom)
                 module.getMavenModuleFile().writeFile();
             return module;
         }
 
-        LocalProjectModule createSourceModule(String name, String templateFileName, String fullClassName, boolean executable) throws IOException {
-            LocalProjectModule module = createModule(name, false);
+        DevProjectModule createSourceModule(String name, String templateFileName, String fullClassName, boolean executable) throws IOException {
+            DevProjectModule module = createModule(name, false);
             Path modulePath = module.getHomeDirectory();
             Path sourcePath = modulePath.resolve("src/main/java");
             Path resourcesPath = modulePath.resolve("src/main/resources");
@@ -95,7 +95,7 @@ class Create extends CommonSubcommand {
         @Override
         public Void call() {
             project = artifactId;
-            LocalRootModule module = (LocalRootModule) createAggregateModule("", false);
+            DevRootModule module = (DevRootModule) createAggregateModule("", false);
             module.setGroupId(groupId);
             module.setArtifactId(artifactId);
             module.setVersion(version);
@@ -119,23 +119,23 @@ class Create extends CommonSubcommand {
 
         @Override
         public Void call() throws Exception {
-            LocalProjectModule module = aggregate ? createAggregateModule(name, true) : createSourceModule(name, ResourceTextFileReader.readTemplate("Class.java"), moduleClassName, false);
+            DevProjectModule module = aggregate ? createAggregateModule(name, true) : createSourceModule(name, ResourceTextFileReader.readTemplate("Class.java"), moduleClassName, false);
             writeParentMavenModuleFile(module);
             return null;
         }
     }
 
-    private static LocalMavenPomModuleFile getParentLocalMavenModuleFile(LocalProjectModule module) {
+    private static DevMavenPomModuleFile getParentDevMavenModuleFile(DevProjectModule module) {
         MavenPomModuleFile mavenModuleFile = module.getParentModule().getMavenModuleFile();
-        if (mavenModuleFile instanceof LocalMavenPomModuleFile)
-            return (LocalMavenPomModuleFile) mavenModuleFile;
+        if (mavenModuleFile instanceof DevMavenPomModuleFile)
+            return (DevMavenPomModuleFile) mavenModuleFile;
         return null;
     }
 
-    private static void writeParentMavenModuleFile(LocalProjectModule module) {
-        LocalMavenPomModuleFile parentLocalMavenModuleFile = getParentLocalMavenModuleFile(module);
-        if (parentLocalMavenModuleFile != null)
-            parentLocalMavenModuleFile.writeFile();
+    private static void writeParentMavenModuleFile(DevProjectModule module) {
+        DevMavenPomModuleFile parentDevMavenModuleFile = getParentDevMavenModuleFile(module);
+        if (parentDevMavenModuleFile != null)
+            parentDevMavenModuleFile.writeFile();
     }
 
     @Command(name = "application", description = "Create modules for a WebFX application.")
@@ -160,9 +160,9 @@ class Create extends CommonSubcommand {
                 if (project != null)
                     prefix = project;
                 else
-                    prefix = getModuleRegistry().getOrCreateLocalProjectModule(getProjectDirectoryPath()).getName();
+                    prefix = getModuleRegistry().getOrCreateDevProjectModule(getProjectDirectoryPath()).getName();
             }
-            LocalProjectModule applicationModule = createTagModule(null);
+            DevProjectModule applicationModule = createTagModule(null);
             createTagModule(TargetTag.OPENJFX);
             createTagModule(TargetTag.GWT);
             if (gluon)
@@ -171,7 +171,7 @@ class Create extends CommonSubcommand {
             return null;
         }
 
-        private LocalProjectModule createTagModule(TargetTag targetTag) throws IOException {
+        private DevProjectModule createTagModule(TargetTag targetTag) throws IOException {
             if (targetTag == null)
                 return createSourceModule(prefix + "-application", helloWorld ? "JavaFxHelloWorldApplication.java" : "JavaFxApplication.java", javaFxApplication, false);
             return createSourceModule(prefix + "-application-" + targetTag.name().toLowerCase(), null, null, true);

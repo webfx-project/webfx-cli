@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.sourcegenerators;
 
-import dev.webfx.buildtool.LocalProjectModule;
+import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.ProjectModule;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 
@@ -9,7 +9,7 @@ import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
  */
 public final class GluonFilesGenerator {
 
-    static void generateServiceLoaderSuperSource(LocalProjectModule module) {
+    static void generateServiceLoaderSuperSource(DevProjectModule module) {
         module.getProvidedJavaServices()
                 .forEach(service -> {
                     StringBuilder sb = new StringBuilder();
@@ -21,7 +21,7 @@ public final class GluonFilesGenerator {
                 });
     }
 
-    public static void generateGraalVmReflectionJson(LocalProjectModule gluonModule) {
+    public static void generateGraalVmReflectionJson(DevProjectModule gluonModule) {
         StringBuilder sb = new StringBuilder();
         ProjectModule.filterProjectModules(gluonModule.getTransitiveModules())
                 .forEach(module -> {

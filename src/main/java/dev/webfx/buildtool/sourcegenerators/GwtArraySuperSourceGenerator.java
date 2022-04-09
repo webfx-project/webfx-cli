@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.sourcegenerators;
 
-import dev.webfx.buildtool.LocalProjectModule;
+import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 
@@ -9,10 +9,10 @@ import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
  */
 final class GwtArraySuperSourceGenerator {
 
-    static void generateArraySuperSource(LocalProjectModule module) {
+    static void generateArraySuperSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module java.lang.reflect.Array.java super source for GWT");
         StringBuilder sb = new StringBuilder();
-        LocalProjectModule.filterLocalProjectModules(module.getTransitiveModules())
+        DevProjectModule.filterDevProjectModules(module.getTransitiveModules())
                 .flatMap(m -> m.getWebFxModuleFile().getArrayNewInstanceClasses())
                 .distinct()
                 .stream().sorted()

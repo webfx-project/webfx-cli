@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.LocalProjectModule;
+import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ModuleDependency;
 import dev.webfx.buildtool.Platform;
@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
 /**
  * @author Bruno Salmon
  */
-public final class LocalJavaModuleInfoFile extends LocalModuleFileImpl {
+public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
 
-    public LocalJavaModuleInfoFile(LocalProjectModule module) {
+    public DevJavaModuleInfoFile(DevProjectModule module) {
         super(module, module.getJavaSourceDirectory().resolve("module-info.java"));
     }
 
@@ -27,7 +27,7 @@ public final class LocalJavaModuleInfoFile extends LocalModuleFileImpl {
 
     @Override
     public void writeFile() {
-        LocalProjectModule module = getProjectModule();
+        DevProjectModule module = getProjectModule();
         StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n\nmodule ").append(getJavaModuleName()).append(" {\n");
         processSection(sb, "Direct dependencies modules", "requires",
                 ReusableStream.fromIterable(
@@ -98,8 +98,8 @@ public final class LocalJavaModuleInfoFile extends LocalModuleFileImpl {
             case "webfx-kit-javafxmedia-emul":
                 return "javafx.media";
             default:
-                if (module instanceof LocalProjectModule) {
-                    LocalProjectModule projectModule = (LocalProjectModule) module;
+                if (module instanceof DevProjectModule) {
+                    DevProjectModule projectModule = (DevProjectModule) module;
                     String abstractModule = projectModule.implementedInterfaces().findFirst().orElse(null);
                     if (abstractModule != null && !abstractModule.equals(""))
                         moduleName = projectModule.getRootModule().findModule(abstractModule).getName();

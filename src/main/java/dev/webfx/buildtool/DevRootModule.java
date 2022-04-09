@@ -10,13 +10,13 @@ import java.util.List;
 /**
  * @author Bruno Salmon
  */
-public final class LocalRootModule extends LocalProjectModule implements RootModule {
+public final class DevRootModule extends DevProjectModule implements RootModule {
 
     private ModuleRegistry moduleRegistry;
     private boolean inlineWebFxParent;
     private final ReusableStream<ProjectModule> packageModuleSearchScopeResume;
 
-    public LocalRootModule(Path homeDirectory, ModuleRegistry moduleRegistry) {
+    public DevRootModule(Path homeDirectory, ModuleRegistry moduleRegistry) {
         super(homeDirectory, null);
         this.moduleRegistry = moduleRegistry;
         packageModuleSearchScopeResume =
@@ -107,7 +107,7 @@ public final class LocalRootModule extends LocalProjectModule implements RootMod
 
     private final ReusableStream<Collection<Module>> cyclicDependencyLoopsCache =
             ReusableStream.create(this::getThisAndChildrenModulesInDepth) // Using deferred creation because the module registry constructor may not be completed yet
-                    .flatMap(LocalRootModule::analyzeCyclicDependenciesLoops)
+                    .flatMap(DevRootModule::analyzeCyclicDependenciesLoops)
                     .distinct()
                     .cache();
 

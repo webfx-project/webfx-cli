@@ -17,11 +17,11 @@ import java.util.stream.Collectors;
 /**
  * @author Bruno Salmon
  */
-public class LocalMavenPomModuleFile extends LocalXmlModuleFileImpl implements MavenPomModuleFile {
+public class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements MavenPomModuleFile {
 
     private Boolean aggregate;
 
-    public LocalMavenPomModuleFile(LocalProjectModule module) {
+    public DevMavenPomModuleFile(DevProjectModule module) {
         super(module, module.getHomeDirectory().resolve("pom.xml"), true);
     }
 
@@ -50,7 +50,7 @@ public class LocalMavenPomModuleFile extends LocalXmlModuleFileImpl implements M
 
     @Override
     public Document createInitialDocument() {
-        LocalProjectModule projectModule = getProjectModule();
+        DevProjectModule projectModule = getProjectModule();
         boolean isRootModule = projectModule instanceof RootModule;
         BuildInfo buildInfo = projectModule.getBuildInfo();
         String templateFileName =
@@ -73,7 +73,7 @@ public class LocalMavenPomModuleFile extends LocalXmlModuleFileImpl implements M
 
     @Override
     public boolean updateDocument(Document document) {
-        LocalProjectModule module = getProjectModule();
+        DevProjectModule module = getProjectModule();
         if (module.isAggregate()) {
             appendTextNodeIfNotAlreadyExists("packaging", "pom", true);
             if (module.getWebFxModuleFile().isAggregate())

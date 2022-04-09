@@ -161,8 +161,8 @@ class CommonCommand {
         if (moduleProject == null) {
             String moduleName = getModuleName();
             if (moduleName == null)
-                return getModuleRegistry().getOrCreateLocalProjectModule(projectDirectoryPath);
-            ProjectModule topProjectModule = getModuleRegistry().getOrCreateLocalProjectModule(topRootDirectoryPath);
+                return getModuleRegistry().getOrCreateDevProjectModule(projectDirectoryPath);
+            ProjectModule topProjectModule = getModuleRegistry().getOrCreateDevProjectModule(topRootDirectoryPath);
             if (moduleName.equals("top") || moduleName.equals(topProjectModule.getName()) )
                 return topProjectModule;
             moduleProject = ((RootModule) topProjectModule).findModule(moduleName, false);
@@ -170,10 +170,17 @@ class CommonCommand {
         return moduleProject;
     }
 
-    protected LocalProjectModule getWorkingProjectModule() {
+    protected ProjectModule getWorkingProjectModule() {
         Module workingModule = getWorkingModule();
-        if (workingModule instanceof LocalProjectModule)
-            return (LocalProjectModule) workingModule;
-        throw new BuildException(workingModule.getName() + " is not a local project module.");
+        if (workingModule instanceof ProjectModule)
+            return (ProjectModule) workingModule;
+        throw new BuildException(workingModule.getName() + " is not a project module.");
+    }
+
+    protected DevProjectModule getWorkingDevProjectModule() {
+        Module workingModule = getWorkingModule();
+        if (workingModule instanceof DevProjectModule)
+            return (DevProjectModule) workingModule;
+        throw new BuildException(workingModule.getName() + " is not a project module.");
     }
 }

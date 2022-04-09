@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.sourcegenerators;
 
-import dev.webfx.buildtool.LocalProjectModule;
+import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 
@@ -12,13 +12,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class GwtEmbedResourcesBundleSourceGenerator {
 
-    static void generateGwtClientBundleSource(LocalProjectModule module) {
+    static void generateGwtClientBundleSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module EmbedResourcesBundle super source for GWT");
         StringBuilder resourceDeclaration = new StringBuilder();
         StringBuilder resourceRegistration = new StringBuilder();
         AtomicInteger resourceNumber = new AtomicInteger();
-        LocalProjectModule.filterLocalProjectModules(module.getThisAndTransitiveModules())
-                .flatMap(LocalProjectModule::getEmbedResources)
+        DevProjectModule.filterDevProjectModules(module.getThisAndTransitiveModules())
+                .flatMap(DevProjectModule::getEmbedResources)
                 .stream().sorted()
                 .forEach(r -> {
                     String resourceMethodName = "r" + resourceNumber.incrementAndGet();
@@ -37,15 +37,15 @@ final class GwtEmbedResourcesBundleSourceGenerator {
         TextFileReaderWriter.writeTextFileIfNewOrModified(source, getJavaFilePath(module));
     }
 
-    static String getPackageName(LocalProjectModule module) {
+    static String getPackageName(DevProjectModule module) {
         return module.getJavaModuleFile().getJavaModuleName() + ".embed";
     }
 
-    static Path getJavaFilePath(LocalProjectModule module) {
+    static Path getJavaFilePath(DevProjectModule module) {
         return module.getResourcesDirectory().resolve("super").resolve(getPackageName(module).replaceAll("\\.", "/")).resolve("EmbedResourcesBundle.java");
     }
 
-    static String getProviderClassName(LocalProjectModule module) {
+    static String getProviderClassName(DevProjectModule module) {
         return getPackageName(module)+ ".EmbedResourcesBundle$ProvidedGwtResourceBundle";
     }
 }

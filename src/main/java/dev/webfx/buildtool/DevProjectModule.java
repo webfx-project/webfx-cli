@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 /**
  * @author Bruno Salmon
  */
-public class LocalProjectModule extends ProjectModuleImpl {
+public class DevProjectModule extends ProjectModuleImpl {
 
     /**
      * A path matcher for java files (filtering files with .java extension)
@@ -287,7 +287,7 @@ public class LocalProjectModule extends ProjectModuleImpl {
      * kept). For example, if my-app-css is an interface module and my-app-css-javafx & my-app-css-web are the concrete
      * modules, my-app-css will be replaced by my-app-css-javafx in a final javafx application and by my-app-css-web in
      * a final web application). For making this replacement work with the java module system, the concrete modules will
-     * be declared using the same name as the interface module in their module-info.java (See {@link LocalJavaModuleInfoFile} ).
+     * be declared using the same name as the interface module in their module-info.java (See {@link DevJavaModuleInfoFile} ).
      */
     private final ReusableStream<ModuleDependency> directDependenciesCache =
             ReusableStream.concat(
@@ -303,7 +303,7 @@ public class LocalProjectModule extends ProjectModuleImpl {
                     .cache();
 
     /**
-     * Returns the final list of all the transitive module dependencies. @See {@link LocalProjectModule#directDependenciesCache}
+     * Returns the final list of all the transitive module dependencies. @See {@link DevProjectModule#directDependenciesCache}
      * for an explanation of the changes made in this last step.
      */
     private final ReusableStream<ModuleDependency> transitiveDependenciesCache =
@@ -317,18 +317,18 @@ public class LocalProjectModule extends ProjectModuleImpl {
     private final Path homeDirectory;
     private Boolean hasSourceDirectory;
     private Boolean hasJavaSourceDirectory;
-    private LocalJavaModuleInfoFile javaModuleInfoFile;
-    private LocalWebFxModuleFile webFxModuleFile;
-    private LocalMavenPomModuleFile mavenPomModuleFile;
+    private DevJavaModuleInfoFile javaModuleInfoFile;
+    private DevWebFxModuleFile webFxModuleFile;
+    private DevMavenPomModuleFile mavenPomModuleFile;
 
-    private LocalGwtModuleFile gwtModuleFile;
+    private DevGwtModuleFile gwtModuleFile;
     private GwtHtmlFile gwtHtmlFile;
 
     /************************
      ***** Constructors *****
      ************************/
 
-    public LocalProjectModule(Path homeDirectory, ProjectModule parentModule) {
+    public DevProjectModule(Path homeDirectory, ProjectModule parentModule) {
         super(homeDirectory.toAbsolutePath().getFileName().toString(), parentModule);
         this.homeDirectory = homeDirectory;
     }
@@ -337,15 +337,15 @@ public class LocalProjectModule extends ProjectModuleImpl {
      ***** Basic getters *****
      *************************/
 
-    public LocalWebFxModuleFile getWebFxModuleFile() {
+    public DevWebFxModuleFile getWebFxModuleFile() {
         if (webFxModuleFile == null)
-            webFxModuleFile = new LocalWebFxModuleFile(this);
+            webFxModuleFile = new DevWebFxModuleFile(this);
         return webFxModuleFile;
     }
 
-    public LocalMavenPomModuleFile getMavenModuleFile() {
+    public DevMavenPomModuleFile getMavenModuleFile() {
         if (mavenPomModuleFile == null)
-            mavenPomModuleFile = new LocalMavenPomModuleFile(this);
+            mavenPomModuleFile = new DevMavenPomModuleFile(this);
         return mavenPomModuleFile;
     }
 
@@ -370,9 +370,9 @@ public class LocalProjectModule extends ProjectModuleImpl {
         return getResourcesDirectory().resolve("META-INF/services/");
     }
 
-    public LocalGwtModuleFile getGwtModuleFile() {
+    public DevGwtModuleFile getGwtModuleFile() {
         if (gwtModuleFile == null)
-            gwtModuleFile = new LocalGwtModuleFile(this);
+            gwtModuleFile = new DevGwtModuleFile(this);
         return gwtModuleFile;
     }
 
@@ -382,12 +382,12 @@ public class LocalProjectModule extends ProjectModuleImpl {
         return gwtHtmlFile;
     }
 
-    public LocalProjectModule getOrCreateChildProjectModule(String name) {
-        return getOrCreateLocalProjectModule(homeDirectory.resolve(name).normalize(), this);
+    public DevProjectModule getOrCreateChildProjectModule(String name) {
+        return getOrCreateDevProjectModule(homeDirectory.resolve(name).normalize(), this);
     }
 
-    LocalProjectModule getOrCreateLocalProjectModule(Path homeDirectory, LocalProjectModule parentModule) {
-        return getModuleRegistry().getOrCreateLocalProjectModule(homeDirectory, parentModule);
+    DevProjectModule getOrCreateDevProjectModule(Path homeDirectory, DevProjectModule parentModule) {
+        return getModuleRegistry().getOrCreateDevProjectModule(homeDirectory, parentModule);
     }
 
     public boolean hasSourceDirectory() {
@@ -406,9 +406,9 @@ public class LocalProjectModule extends ProjectModuleImpl {
         return hasJavaSourceDirectory;
     }
 
-    public LocalJavaModuleInfoFile getJavaModuleFile() {
+    public DevJavaModuleInfoFile getJavaModuleFile() {
         if (javaModuleInfoFile == null)
-            javaModuleInfoFile = new LocalJavaModuleInfoFile(this);
+            javaModuleInfoFile = new DevJavaModuleInfoFile(this);
         return javaModuleInfoFile;
     }
 
@@ -422,13 +422,13 @@ public class LocalProjectModule extends ProjectModuleImpl {
                 .cache();
     }
 
-    public LocalRootModule getRootModule() {
-        return (LocalRootModule) super.getRootModule();
+    public DevRootModule getRootModule() {
+        return (DevRootModule) super.getRootModule();
     }
 
 
     boolean isModuleUnderRootHomeDirectory(Module module) {
-        Path homeDirectory = module instanceof LocalProjectModule ? ((LocalProjectModule) module).getHomeDirectory() : null;
+        Path homeDirectory = module instanceof DevProjectModule ? ((DevProjectModule) module).getHomeDirectory() : null;
         return homeDirectory != null && homeDirectory.startsWith(getRootModule().getHomeDirectory());
     }
 
@@ -538,7 +538,7 @@ public class LocalProjectModule extends ProjectModuleImpl {
         return collectExecutableModuleProviders(this, this);
     }
 
-    private static ReusableStream<Providers> collectExecutableModuleProviders(LocalProjectModule executableModule, LocalProjectModule collectingModule) {
+    private static ReusableStream<Providers> collectExecutableModuleProviders(DevProjectModule executableModule, DevProjectModule collectingModule) {
         if (!executableModule.isExecutable())
             return ReusableStream.empty();
         Set<ProjectModule> allProviderModules = new HashSet<>();
@@ -596,10 +596,10 @@ public class LocalProjectModule extends ProjectModuleImpl {
                     // In case these dependencies have a SPI, collecting the providers and adding their associated implicit dependencies
                     // Ex: interface = [webfx-extras-visual-controls-]grid-registry, concrete = [...]-grid-registry-spi, provider = [...]-grid-peers-javafx
                     // TODO: See if we can move this up to the generic steps when building dependencies
-                    if (concreteModule instanceof LocalProjectModule) // Added to solve cast problem, is it OK?
+                    if (concreteModule instanceof DevProjectModule) // Added to solve cast problem, is it OK?
                         concreteModuleDependencies = ReusableStream.concat(
                                 concreteModuleDependencies,
-                                collectExecutableModuleProviders(this, (LocalProjectModule) concreteModule)
+                                collectExecutableModuleProviders(this, (DevProjectModule) concreteModule)
                                         .flatMap(Providers::getProviderModules)
                                         //.filter(m -> transitiveDependenciesWithoutImplicitProvidersCache.noneMatch(dep -> dep.getDestinationModule() == m)) // Removing modules already in transitive dependencies (no need to repeat them)
                                         .map(m -> ModuleDependency.createImplicitProviderDependency(this, m))
@@ -619,10 +619,10 @@ public class LocalProjectModule extends ProjectModuleImpl {
         return ReusableStream.of(dependency);
     }
 
-    public static ReusableStream<LocalProjectModule> filterLocalProjectModules(ReusableStream<Module> modules) {
+    public static ReusableStream<DevProjectModule> filterDevProjectModules(ReusableStream<Module> modules) {
         return modules
-                .filter(m -> m instanceof LocalProjectModule)
-                .map(m -> (LocalProjectModule) m);
+                .filter(m -> m instanceof DevProjectModule)
+                .map(m -> (DevProjectModule) m);
     }
 
     private ReusableStream<Module> collectExecutableEmulationModules() {

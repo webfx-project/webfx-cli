@@ -13,11 +13,11 @@ public final class ModuleProperty {
         this.value = value;
     }
 
-    public String getName() {
+    public String getPropertyName() {
         return name;
     }
 
-    public String getValue() {
+    public String getPropertyValue() {
         return value;
     }
 }
