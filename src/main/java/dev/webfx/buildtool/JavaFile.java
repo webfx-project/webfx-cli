@@ -14,7 +14,7 @@ import java.nio.file.Path;
 public final class JavaFile implements Comparable<JavaFile> {
 
     private final Path path;
-    private final DevProjectModule projectModule;
+    private final ProjectModule projectModule;
     private final JavaCode javaCode = new JavaCode(this::getPath);
     private String packageName;
     private String className;
@@ -35,7 +35,7 @@ public final class JavaFile implements Comparable<JavaFile> {
      ***** Constructor *****
      ***********************/
 
-    JavaFile(Path path, DevProjectModule projectModule) {
+    JavaFile(Path path, ProjectModule projectModule) {
         this.path = path;
         this.projectModule = projectModule;
     }
@@ -60,8 +60,7 @@ public final class JavaFile implements Comparable<JavaFile> {
 
     String getPackageName() {
         if (packageName == null) {
-            getClassName();
-            int lastDotIndex = className.lastIndexOf('.');
+            int lastDotIndex = getClassName().lastIndexOf('.');
             packageName = className.substring(0, lastDotIndex);
         }
         return packageName;
@@ -69,7 +68,7 @@ public final class JavaFile implements Comparable<JavaFile> {
 
     public String getClassName() {
         if (className == null)
-            className = path.toString().substring(projectModule.getJavaSourceDirectory().toString().length() + 1, path.toString().length() - 5).replaceAll("[/\\\\]", ".");
+            className = projectModule.getJavaSourceDirectory().relativize(path).toString().replace(".java", "").replaceAll("[/\\\\]", ".");
         return className;
     }
 

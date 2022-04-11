@@ -8,7 +8,7 @@ import java.nio.file.Path;
 /**
  * @author Bruno Salmon
  */
-public abstract class DevXmlModuleFileImpl extends XmlModuleFileImpl implements DevXmlModuleFile {
+public class DevXmlModuleFileImpl extends XmlModuleFileImpl implements DevXmlModuleFile {
 
     private final Path moduleFilePath;
     private boolean readFileIfExists;

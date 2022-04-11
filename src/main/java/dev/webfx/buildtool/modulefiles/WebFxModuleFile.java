@@ -34,7 +34,7 @@ public interface WebFxModuleFile extends XmlModuleFile {
     }
 
     default ReusableStream<String> getChildrenModuleNames() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("modules//module"), Node::getTextContent);
+        return lookupNodeListTextContent(("modules//module"));
     }
 
     default ReusableStream<String> getExplicitExportedPackages() {

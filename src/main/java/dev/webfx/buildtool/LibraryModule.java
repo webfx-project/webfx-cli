@@ -14,6 +14,10 @@ public class LibraryModule extends ModuleImpl {
     public LibraryModule(Node moduleNode) {
         super(getModuleName(moduleNode));
         this.moduleNode = moduleNode;
+        groupId = getTagContent("groupId", true, 0, moduleNode);
+        artifactId = getTagContent("artifactId", false, 1, moduleNode);
+        version = getTagContent("version", true, 2, moduleNode);
+        type = getTagContent("type", true, 3, moduleNode);
     }
 
     public Node getModuleNode() {
@@ -21,45 +25,36 @@ public class LibraryModule extends ModuleImpl {
     }
 
     private static String getModuleName(Node moduleNode) {
-        return XmlUtil.getAttributeValue(moduleNode, "name");
+        return getTagContent("name", false, 1, moduleNode);
+    }
+
+    public boolean isMavenLibrary() {
+        return XmlUtil.getBooleanAttributeValue(moduleNode, "m2");
     }
 
     public ReusableStream<String> getExportedPackages() {
-        return XmlUtil.nodeListToReusableStream(XmlUtil.lookupNodeList(moduleNode, "exported-packages//package"), Node::getTextContent);
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(moduleNode, "exported-packages//package"));
     }
 
-    @Override
-    public String getGroupId() {
-        if (groupId == null)
-            groupId = getTagContent("groupId", true);
-        return groupId;
-    }
-
-    @Override
-    public String getArtifactId() {
-        if (artifactId == null)
-            artifactId = getTagContent("artifactId", false);
-        return artifactId;
-    }
-
-    @Override
-    public String getVersion() {
-        if (version == null)
-            version = getTagContent("version", true);
-        return version;
-    }
-
-    @Override
-    public String getType() {
-        if (type == null)
-            type = getTagContent("type", true);
-        return type;
-    }
-
-    private String getTagContent(String tagName, boolean lookInGroupIfNull) {
-        String tagContent = XmlUtil.lookupNodeTextContent(moduleNode, tagName);
+    private static String getTagContent(String tagName, boolean lookInGroupIfNull, int artifactTokenIndex, Node node) {
+        String tagContent = getNodeOrAttributeTagContent(tagName, node);
+        if (tagContent == null && artifactTokenIndex >= 0) {
+            String artifact = getNodeOrAttributeTagContent("artifact", node);
+            if (artifact != null) {
+                String[] split = artifact.split(":");
+                if (artifactTokenIndex < split.length)
+                    return split[artifactTokenIndex];
+            }
+        }
         if (tagContent == null && lookInGroupIfNull)
-            tagContent = XmlUtil.lookupNodeTextContent(moduleNode.getParentNode(), tagName);
+            tagContent = getNodeOrAttributeTagContent(tagName, node.getParentNode());
+        return tagContent;
+    }
+
+    private static String getNodeOrAttributeTagContent(String tagName, Node node) {
+        String tagContent = XmlUtil.lookupNodeTextContent(node, tagName);
+        if (tagContent == null)
+            tagContent = XmlUtil.getAttributeValue(node, tagName);
         return tagContent;
     }
 

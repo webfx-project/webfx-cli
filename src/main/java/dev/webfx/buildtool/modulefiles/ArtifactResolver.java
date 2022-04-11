@@ -21,12 +21,12 @@ public final class ArtifactResolver {
     }
 
     public static String getArtifactId(Module module) {
-        if (module instanceof DevProjectModule)
+        if (module instanceof ProjectModuleImpl)
             return getArtifactId((DevProjectModule) module);
         return getArtifactId(module, false, false, false);
     }
 
-    static String getArtifactId(DevProjectModule module) {
+    static String getArtifactId(ProjectModuleImpl module) {
         return getArtifactId(module, module.getBuildInfo());
     }
 

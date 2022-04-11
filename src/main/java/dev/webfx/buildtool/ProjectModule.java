@@ -4,6 +4,7 @@ import dev.webfx.buildtool.modulefiles.MavenPomModuleFile;
 import dev.webfx.buildtool.modulefiles.WebFxModuleFile;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -109,6 +110,10 @@ public interface ProjectModule extends Module {
 
 
     RootModule getRootModule();
+
+    boolean hasJavaSourceDirectory();
+
+    Path getJavaSourceDirectory();
 
     ReusableStream<String> getDeclaredJavaPackages();
 
@@ -232,6 +237,11 @@ public interface ProjectModule extends Module {
 
     default ReusableStream<ProjectModule> getProjectModuleSearchScope() {
         return getChildrenModulesInDepth();
+    }
+
+    default ReusableStream<ProjectModule> findProjectModuleStartingWith(String name) {
+        return getProjectModuleSearchScope()
+                .filter(module -> module.getName().startsWith(name));
     }
 
     //// Static utility methods

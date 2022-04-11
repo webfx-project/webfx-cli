@@ -131,6 +131,10 @@ public final class XmlUtil {
         }
     }
 
+    public static ReusableStream<String> nodeListToTextContentReusableStream(NodeList nodeList) {
+        return nodeListToReusableStream(nodeList, Node::getTextContent);
+    }
+
     public static <T> ReusableStream<T> nodeListToReusableStream(NodeList nodeList, Function<Node, ? extends T> transformer) {
         if (nodeList == null)
             return ReusableStream.empty();

@@ -12,6 +12,8 @@ final public class ModuleRegistry {
 
     private final Path workspaceDirectory;
     private final Map<String /* library name */, LibraryModule> libraryModules = new HashMap<>();
+    private final Map<String /* library name */, M2ProjectModule> m2ProjectModules = new HashMap<>();
+    private final List<M2RootModule> m2RootModules = new ArrayList<>();
     private final Map<Path, DevProjectModule> devProjectModules = new HashMap<>();
     private final Map<String /* package name */, List<Module>> packagesModules = new HashMap<>();
     private final ReusableStream<ProjectModule> importedProjectModules;
@@ -23,34 +25,28 @@ final public class ModuleRegistry {
     public ModuleRegistry(Path workspaceDirectory) {
         this.workspaceDirectory = workspaceDirectory;
         importedProjectModules =
-                ReusableStream.of(
-                                "webfx",
-                                "webfx-platform",
-                                "webfx-lib-javacupruntime",
-                                "webfx-lib-odometer",
-                                "webfx-lib-enzo",
-                                "webfx-lib-medusa",
-                                "webfx-lib-reusablestream",
-                                "webfx-extras",
-                                "webfx-stack-platform",
-                                "webfx-framework"
-                        )
-                        .map(p -> getOrCreateDevProjectModule(workspaceDirectory.resolve(p), null))
+                ReusableStream.fromIterable(() -> new Iterator<M2RootModule>() {
+                    int nextIndex = 0;
+                            @Override
+                            public boolean hasNext() {
+                                return nextIndex < m2RootModules.size();
+                            }
+
+                            @Override
+                            public M2RootModule next() {
+                                return m2RootModules.get(nextIndex++);
+                            }
+                        })
                         .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
-                        //.filter(m -> !m.getHomeDirectory().startsWith(rootDirectory))
-                        .cache();
+                        //.flatMap(ProjectModule::getThisAndTransitiveModules)
+                        //.filter(m -> m instanceof ProjectModule)
+                        //.map(m -> (ProjectModule) m)
+                        //.cache()
+        ;
     }
 
     ReusableStream<ProjectModule> getImportedProjectModules() {
         return importedProjectModules;
-    }
-
-    ReusableStream<Module> getAllRegisteredModules() {
-        return ReusableStream.<Module>empty().concat(
-                importedProjectModules,
-                devProjectModules.values(),
-                libraryModules.values()
-        ).distinct();
     }
 
     /********************************
@@ -58,9 +54,14 @@ final public class ModuleRegistry {
      ********************************/
 
     public void registerLibraryModule(LibraryModule module) {
-        libraryModules.put(module.getName(), module);
-        for (String p : module.getExportedPackages())
-            registerPackageModule(p, module);
+        if (module.isMavenLibrary()) {
+            if (findModuleAlreadyRegistered(module.getName()) == null)
+                registerM2ProjectModule(new M2RootModule(module, this));
+        } else {
+            libraryModules.put(module.getName(), module);
+            for (String p : module.getExportedPackages())
+                registerPackageModule(p, module);
+        }
     }
 
     private void registerPackageModule(String javaPackage, Module module) {
@@ -126,7 +127,7 @@ final public class ModuleRegistry {
         return true;
     }
 
-    public Module findLibraryOrModuleOrAlreadyRegistered(String name) {
+    public Module findLibraryOrModuleAlreadyRegistered(String name) {
         Module module = findLibraryAlreadyRegistered(name);
         if (module == null)
             module = packagesModules.values().stream().flatMap(Collection::stream).filter(m -> m.getName().equals(name)).findFirst().orElse(null);
@@ -135,6 +136,17 @@ final public class ModuleRegistry {
 
     LibraryModule findLibraryAlreadyRegistered(String artifactId) {
         return libraryModules.get(artifactId);
+    }
+
+    public Module findModuleAlreadyRegistered(String name) {
+        Module module = getM2ProjectModule(name);
+        if (module == null)
+            module = packagesModules.values().stream().flatMap(Collection::stream).filter(m -> m.getName().equals(name)).findFirst().orElse(null);
+        return module;
+    }
+
+    DevProjectModule getDevProjectModule(Path projectDirectory) {
+        return devProjectModules.get(projectDirectory);
     }
 
     public DevProjectModule getOrCreateDevProjectModule(Path projectDirectory) {
@@ -156,10 +168,6 @@ final public class ModuleRegistry {
         return module;
     }
 
-    DevProjectModule getDevProjectModule(Path projectDirectory) {
-        return devProjectModules.get(projectDirectory);
-    }
-
     private DevProjectModule createDevProjectModule(Path projectDirectory, DevProjectModule parentModule) {
         DevProjectModule module =
                 parentModule != null && projectDirectory.startsWith(parentModule.getHomeDirectory()) ?
@@ -168,4 +176,28 @@ final public class ModuleRegistry {
         devProjectModules.put(projectDirectory, module);
         return module;
     }
+
+    M2ProjectModule getM2ProjectModule(String name) {
+        return m2ProjectModules.get(name);
+    }
+
+    public M2ProjectModule getOrCreateM2ProjectModule(String name, M2ProjectModule parentModule) {
+        M2ProjectModule module = getM2ProjectModule(name);
+        if (module == null)
+            module = createM2ProjectModule(name, parentModule);
+        return module;
+    }
+
+    public M2ProjectModule createM2ProjectModule(String name, M2ProjectModule parentModule) {
+        return registerM2ProjectModule(new M2ProjectModule(name, parentModule));
+    }
+
+    private M2ProjectModule registerM2ProjectModule(M2ProjectModule module) {
+        System.out.println(module.getName());
+        m2ProjectModules.put(module.getName(), module);
+        if (module instanceof M2RootModule)
+            m2RootModules.add((M2RootModule) module);
+        return module;
+    }
+
 }

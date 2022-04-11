@@ -14,11 +14,17 @@ public abstract class XmlModuleFileImpl implements XmlModuleFile {
     protected Element moduleElement;
 
     XmlModuleFileImpl(Module module) {
-        this(module, null);
+        this.module = module;
+    }
+
+    XmlModuleFileImpl(Module module, Document document) {
+        this(module);
+        this.document = document;
+        moduleElement = document == null ? null : document.getDocumentElement();
     }
 
     XmlModuleFileImpl(Module module, Element moduleElement) {
-        this.module = module;
+        this(module);
         this.moduleElement = moduleElement;
         this.document = moduleElement == null ? null : moduleElement.getOwnerDocument();
     }

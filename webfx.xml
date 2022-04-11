@@ -11,29 +11,21 @@
         <used-by-source-modules/>
     </dependencies>
 
+    <properties>
+        <java.version>13</java.version>
+    </properties>
+
     <libraries>
 
-        <library name="java-xml">
-            <exported-packages>
-                <package>javax.xml</package>
-                <package>javax.xml.parsers</package>
-                <package>javax.xml.transform</package>
-                <package>javax.xml.transform.dom</package>
-                <package>javax.xml.transform.stream</package>
-                <package>javax.xml.namespace</package>
-                <package>javax.xml.xpath</package>
-                <package>org.w3c.dom</package>
-                <package>org.xml.sax</package>
-            </exported-packages>
+        <library name="webfx-lib-reusablestream" m2="true">
+            <groupId>dev.webfx</groupId>
+            <version>0.1.0-SNAPSHOT</version>
         </library>
 
-        <library name="info-picocli">
+        <library name="info-picocli" m2="true">
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.6.3</version>
-            <exported-packages>
-                <package>picocli</package>
-            </exported-packages>
         </library>
 
     </libraries>

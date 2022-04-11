@@ -1,8 +1,6 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
-import org.w3c.dom.Node;
 
 /**
  * @author Bruno Salmon

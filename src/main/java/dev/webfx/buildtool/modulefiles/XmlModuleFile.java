@@ -102,7 +102,7 @@ public interface XmlModuleFile extends ModuleFile {
     }
 
     default ReusableStream<String> lookupNodeListTextContent(String xPathExpression) {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), Node::getTextContent);
+        return XmlUtil.nodeListToTextContentReusableStream(lookupNodeList(xPathExpression));
     }
 
     default ReusableStream<String> lookupNodeListAttribute(String xPathExpression, String attribute) {

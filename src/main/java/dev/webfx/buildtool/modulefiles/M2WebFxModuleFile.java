@@ -9,6 +9,11 @@ import dev.webfx.buildtool.util.xml.XmlUtil;
 public final class M2WebFxModuleFile extends XmlModuleFileImpl implements WebFxModuleFile {
 
     public M2WebFxModuleFile(M2ProjectModule module) {
-        super(module, XmlUtil.parseXmlFile(module.getM2ProjectHomeDirectory().resolve(module.getArtifactId() + '-' + module.getVersion() + "-webfx.xml").toFile()).getDocumentElement());
+        super(module, XmlUtil.parseXmlFile(module.getM2ArtifactSubPath("-webfx.xml").toFile()));
+    }
+
+    @Override
+    public boolean isAggregate() {
+        return false;
     }
 }

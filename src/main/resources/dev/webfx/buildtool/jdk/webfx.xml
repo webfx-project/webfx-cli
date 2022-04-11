@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+
+    <libraries>
+
+        <library name="java-base">
+            <exported-packages>
+                <package>java.io</package>
+                <package>java.lang</package>
+                <package>java.lang.annotation</package>
+                <package>java.lang.management</package>
+                <package>java.lang.ref</package>
+                <package>java.lang.reflect</package>
+                <package>java.math</package>
+                <package>java.net</package>
+                <package>java.security</package>
+                <package>java.text</package>
+                <package>java.time</package>
+                <package>java.time.format</package>
+                <package>java.time.temporal</package>
+                <package>java.util</package>
+                <package>java.util.function</package>
+                <package>java.util.regex</package>
+                <package>java.util.stream</package>
+                <package>java.util.concurrent</package>
+                <package>java.util.concurrent.atomic</package>
+            </exported-packages>
+        </library>
+
+        <library name="java-logging">
+            <exported-packages>
+                <package>java.util.logging</package>
+            </exported-packages>
+        </library>
+
+        <library name="java-xml">
+            <exported-packages>
+                <package>javax.xml</package>
+                <package>javax.xml.parsers</package>
+                <package>javax.xml.transform</package>
+                <package>javax.xml.transform.dom</package>
+                <package>javax.xml.transform.stream</package>
+                <package>javax.xml.namespace</package>
+                <package>javax.xml.xpath</package>
+                <package>org.w3c.dom</package>
+                <package>org.xml.sax</package>
+            </exported-packages>
+        </library>
+
+        <library name="java-sql">
+            <exported-packages>
+                <package>java.sql</package>
+                <package>javax.sql</package>
+            </exported-packages>
+        </library>
+
+    </libraries>
+
+</project>

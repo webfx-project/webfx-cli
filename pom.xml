@@ -12,6 +12,10 @@
 
     <artifactId>webfx-buildtool</artifactId>
 
+    <properties>
+        <java.version>13</java.version>
+    </properties>
+
     <repositories>
 
         <!-- For WebFx snapshots download (including webfx-parent) -->

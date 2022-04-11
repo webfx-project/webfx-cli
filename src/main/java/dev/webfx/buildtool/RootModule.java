@@ -37,7 +37,7 @@ public interface RootModule extends ProjectModule {
     }
 
     private Module findLibraryOrModuleOrAlreadyRegistered(String name) {
-        return getModuleRegistry().findLibraryOrModuleOrAlreadyRegistered(name);
+        return getModuleRegistry().findLibraryOrModuleAlreadyRegistered(name);
     }
 
     default Module getJavaPackageModule(String packageToSearch, ProjectModule sourceModule) {
