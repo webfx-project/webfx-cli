@@ -4,6 +4,7 @@
     <exported-packages>
         <source-packages/>
         <resource-package>dev.webfx.buildtool.cli</resource-package>
+        <resource-package>dev.webfx.buildtool.jdk</resource-package>
         <resource-package>dev.webfx.buildtool.templates</resource-package>
     </exported-packages>
 
@@ -22,11 +23,7 @@
             <version>0.1.0-SNAPSHOT</version>
         </library>
 
-        <library name="info-picocli" m2="true">
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.6.3</version>
-        </library>
+        <library name="info.picocli" artifact="info.picocli:picocli:4.6.3" m2="true"/>
 
     </libraries>
 

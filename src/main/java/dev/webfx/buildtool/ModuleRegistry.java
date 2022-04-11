@@ -1,5 +1,6 @@
 package dev.webfx.buildtool;
 
+import dev.webfx.buildtool.modulefiles.ResWebFxModuleFile;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
@@ -10,9 +11,23 @@ import java.util.*;
  */
 final public class ModuleRegistry {
 
+    private final static Map<String /* module name */, LibraryModule> JDK_MODULES = new HashMap<>();
+    static {
+        // Registering JDK modules (packages registration will be done in the non-static constructor)
+        new ResWebFxModuleFile("dev/webfx/buildtool/jdk/webfx.xml").getLibraryModules().forEach(m -> JDK_MODULES.put(m.getName(), m));
+    }
+
+    public static boolean isJdkModule(Module module) {
+        return isJdkModule(module.getName());
+    }
+
+    public static boolean isJdkModule(String name) {
+        return JDK_MODULES.containsKey(name);
+    }
+
     private final Path workspaceDirectory;
-    private final Map<String /* library name */, LibraryModule> libraryModules = new HashMap<>();
-    private final Map<String /* library name */, M2ProjectModule> m2ProjectModules = new HashMap<>();
+    private final Map<String /* module name */, LibraryModule> libraryModules = new HashMap<>();
+    private final Map<String /* module name */, M2ProjectModule> m2ProjectModules = new HashMap<>();
     private final List<M2RootModule> m2RootModules = new ArrayList<>();
     private final Map<Path, DevProjectModule> devProjectModules = new HashMap<>();
     private final Map<String /* package name */, List<Module>> packagesModules = new HashMap<>();
@@ -24,6 +39,9 @@ final public class ModuleRegistry {
 
     public ModuleRegistry(Path workspaceDirectory) {
         this.workspaceDirectory = workspaceDirectory;
+        // Registering JDK packages
+        JDK_MODULES.values().forEach(this::registerLibraryExportedPackages);
+        // Registering imported modules
         importedProjectModules =
                 ReusableStream.fromIterable(() -> new Iterator<M2RootModule>() {
                     int nextIndex = 0;
@@ -59,9 +77,13 @@ final public class ModuleRegistry {
                 registerM2ProjectModule(new M2RootModule(module, this));
         } else {
             libraryModules.put(module.getName(), module);
-            for (String p : module.getExportedPackages())
-                registerPackageModule(p, module);
+            registerLibraryExportedPackages(module);
         }
+    }
+
+    private void registerLibraryExportedPackages(LibraryModule module) {
+        for (String p : module.getExportedPackages())
+            registerPackageModule(p, module);
     }
 
     private void registerPackageModule(String javaPackage, Module module) {
@@ -112,7 +134,7 @@ final public class ModuleRegistry {
         // First case: only executable source modules should include implementing interface modules (others should include the interface module instead)
         if (pm.isImplementingInterface() && !sourceModule.isExecutable() && pm instanceof DevProjectModule) {
             DevProjectModule lpm = (DevProjectModule) pm;
-            // Exception is however made for non executable source modules that implements a provider
+            // Exception is however made for non-executable source modules that implement a provider
             // Ex: webfx-kit-extracontrols-registry-javafx can include webfx-kit-extracontrols-registry-spi (which implements webfx-kit-extracontrols-registry)
             boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> lpm.getDeclaredJavaFiles().anyMatch(c -> c.getClassName().equals(s)));
             if (!exception)
@@ -134,8 +156,11 @@ final public class ModuleRegistry {
         return module;
     }
 
-    LibraryModule findLibraryAlreadyRegistered(String artifactId) {
-        return libraryModules.get(artifactId);
+    LibraryModule findLibraryAlreadyRegistered(String name) {
+        LibraryModule module = JDK_MODULES.get(name);
+        if (module == null)
+            module = libraryModules.get(name);
+        return module;
     }
 
     public Module findModuleAlreadyRegistered(String name) {
@@ -193,7 +218,6 @@ final public class ModuleRegistry {
     }
 
     private M2ProjectModule registerM2ProjectModule(M2ProjectModule module) {
-        System.out.println(module.getName());
         m2ProjectModules.put(module.getName(), module);
         if (module instanceof M2RootModule)
             m2RootModules.add((M2RootModule) module);
