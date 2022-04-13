@@ -20,7 +20,7 @@ public class DevProjectModule extends ProjectModuleImpl {
     private DevMavenPomModuleFile mavenPomModuleFile;
 
     private DevGwtModuleFile gwtModuleFile;
-    private GwtHtmlFile gwtHtmlFile;
+    private DevGwtHtmlFile gwtHtmlFile;
 
     /************************
      ***** Constructors *****
@@ -75,9 +75,9 @@ public class DevProjectModule extends ProjectModuleImpl {
         return gwtModuleFile;
     }
 
-    public GwtHtmlFile getGwtHtmlFile() {
+    public DevGwtHtmlFile getGwtHtmlFile() {
         if (gwtHtmlFile == null)
-            gwtHtmlFile = new GwtHtmlFile(this);
+            gwtHtmlFile = new DevGwtHtmlFile(this);
         return gwtHtmlFile;
     }
 
@@ -119,6 +119,7 @@ public class DevProjectModule extends ProjectModuleImpl {
                 .filter(path -> !path.equals(getHomeDirectory()))
                 .filter(path -> Files.exists(path.resolve("webfx.xml")) || Files.exists(path.resolve("pom.xml")))
                 .map(path -> path.toFile().getName())
+                .sorted()
                 .cache();
     }
 

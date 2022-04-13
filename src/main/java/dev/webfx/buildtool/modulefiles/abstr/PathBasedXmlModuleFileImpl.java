@@ -1,4 +1,4 @@
-package dev.webfx.buildtool.modulefiles;
+package dev.webfx.buildtool.modulefiles.abstr;
 
 import dev.webfx.buildtool.Module;
 import org.w3c.dom.Document;
@@ -8,13 +8,17 @@ import java.nio.file.Path;
 /**
  * @author Bruno Salmon
  */
-public class DevXmlModuleFileImpl extends XmlModuleFileImpl implements DevXmlModuleFile {
+public abstract class PathBasedXmlModuleFileImpl extends XmlModuleFileImpl implements PathBasedXmlModuleFile {
 
     private final Path moduleFilePath;
     private boolean readFileIfExists;
 
 
-    DevXmlModuleFileImpl(Module module, Path moduleFilePath, boolean readFileIfExists) {
+    public PathBasedXmlModuleFileImpl(Module module, Path moduleFilePath) {
+        this(module, moduleFilePath, true);
+    }
+
+    public PathBasedXmlModuleFileImpl(Module module, Path moduleFilePath, boolean readFileIfExists) {
         super(module);
         this.moduleFilePath = moduleFilePath;
         this.readFileIfExists = readFileIfExists;

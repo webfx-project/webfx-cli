@@ -161,6 +161,13 @@ public final class XmlUtil {
         return "true".equalsIgnoreCase(getAttributeValue(node, name));
     }
 
+    public static String getNodeOrAttributeTagContent(Node node, String tagName) {
+        String tagContent = lookupNodeTextContent(node, tagName);
+        if (tagContent == null)
+            tagContent = getAttributeValue(node, tagName);
+        return tagContent;
+    }
+
     public static Node lookupOrCreateNode(Node parent, String xpath) {
         Node node = lookupNode(parent, xpath);
         if (node == null)
@@ -207,6 +214,12 @@ public final class XmlUtil {
         Element element = XmlUtil.createAndAppendElement(parentNode, xpath, lineFeeds);
         element.setTextContent(text);
         return element;
+    }
+
+    public static Element appendTextElementIfNotNull(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+        if (text != null)
+            return appendTextElement(parentNode, xpath, text, lineFeeds);
+        return null;
     }
 
     public static Element createAndPrependElement(Node parentElement, String xpath, boolean... lineFeeds) {

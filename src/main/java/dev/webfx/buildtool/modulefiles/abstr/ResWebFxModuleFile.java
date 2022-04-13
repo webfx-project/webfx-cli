@@ -1,4 +1,4 @@
-package dev.webfx.buildtool.modulefiles;
+package dev.webfx.buildtool.modulefiles.abstr;
 
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.xml.XmlUtil;
@@ -15,4 +15,8 @@ public final class ResWebFxModuleFile extends XmlModuleFileImpl implements WebFx
                 XmlUtil.parseXmlString(ResourceTextFileReader.uncheckedReadResourceTextFile(resourcePath)));
     }
 
+    @Override
+    public boolean fileExists() {
+        return true;
+    }
 }

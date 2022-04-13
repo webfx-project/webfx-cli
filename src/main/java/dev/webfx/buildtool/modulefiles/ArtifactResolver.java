@@ -22,7 +22,7 @@ public final class ArtifactResolver {
 
     public static String getArtifactId(Module module) {
         if (module instanceof ProjectModuleImpl)
-            return getArtifactId((DevProjectModule) module);
+            return getArtifactId((ProjectModuleImpl) module);
         return getArtifactId(module, false, false, false);
     }
 
@@ -74,12 +74,12 @@ public final class ArtifactResolver {
     }
 
     public static String getGroupId(Module module) {
-        if (module instanceof DevProjectModule)
-            return getGroupId((DevProjectModule) module);
+        if (module instanceof ProjectModuleImpl)
+            return getGroupId((ProjectModuleImpl) module);
         return getGroupId(module, false, false, false);
     }
 
-    static String getGroupId(DevProjectModule module) {
+    static String getGroupId(ProjectModuleImpl module) {
         return getGroupId(module, module.getBuildInfo());
     }
 
@@ -90,20 +90,17 @@ public final class ArtifactResolver {
     static String getGroupId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
-            module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
-        String groupId = module.getGroupId();
-        if (groupId != null)
-            return groupId;
-        return "null";
+            module = ((ProjectModule) module).getRootModule().searchModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+        return module.getGroupId();
     }
 
     public static String getVersion(Module module) {
-        if (module instanceof DevProjectModule)
-            return getVersion((DevProjectModule) module);
+        if (module instanceof ProjectModuleImpl)
+            return getVersion((ProjectModuleImpl) module);
         return getVersion(module, false, false, false);
     }
 
-    static String getVersion(DevProjectModule module) {
+    static String getVersion(ProjectModuleImpl module) {
         return getVersion(module, module.getBuildInfo());
     }
 
@@ -114,7 +111,7 @@ public final class ArtifactResolver {
     static String getVersion(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
-            module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+            module = ((ProjectModule) module).getRootModule().searchModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
         return module.getVersion();
     }
 

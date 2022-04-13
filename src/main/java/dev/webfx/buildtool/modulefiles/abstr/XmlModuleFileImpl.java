@@ -1,4 +1,4 @@
-package dev.webfx.buildtool.modulefiles;
+package dev.webfx.buildtool.modulefiles.abstr;
 
 import dev.webfx.buildtool.Module;
 import org.w3c.dom.Document;
@@ -7,14 +7,13 @@ import org.w3c.dom.Element;
 /**
  * @author Bruno Salmon
  */
-public abstract class XmlModuleFileImpl implements XmlModuleFile {
+public abstract class XmlModuleFileImpl extends ModuleFileImpl implements XmlModuleFile {
 
-    private final Module module;
     protected Document document;
     protected Element moduleElement;
 
     XmlModuleFileImpl(Module module) {
-        this.module = module;
+        super(module);
     }
 
     XmlModuleFileImpl(Module module, Document document) {
@@ -29,11 +28,6 @@ public abstract class XmlModuleFileImpl implements XmlModuleFile {
         this.document = moduleElement == null ? null : moduleElement.getOwnerDocument();
     }
 
-    @Override
-    public Module getModule() {
-        return module;
-    }
-
     public Document getDocument() {
         return document;
     }
@@ -43,7 +37,7 @@ public abstract class XmlModuleFileImpl implements XmlModuleFile {
         this.document = document;
     }
 
-    public Element getModuleElement() {
+    public Element getXmlNode() {
         return moduleElement != null ? moduleElement : getDocument() == null ? null : document.getDocumentElement();
     }
 

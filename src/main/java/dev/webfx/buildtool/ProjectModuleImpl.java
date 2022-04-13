@@ -1,6 +1,7 @@
 package dev.webfx.buildtool;
 
 import dev.webfx.buildtool.modulefiles.DevJavaModuleInfoFile;
+import dev.webfx.buildtool.modulefiles.abstr.XmlGavModuleFile;
 import dev.webfx.buildtool.util.splitfiles.SplitFiles;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
@@ -23,7 +24,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Returns all java files declared in this module (or empty if this is not a java source module).
      */
-    protected final ReusableStream<JavaFile> declaredJavaFilesCache =
+    private final ReusableStream<JavaFile> declaredJavaFilesCache =
             ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
                             hasJavaSourceDirectory() ? SplitFiles.uncheckedWalk(getJavaSourceDirectory()) : Spliterators.emptySpliterator())
                     .filter(JAVA_FILE_MATCHER::matches)
@@ -35,7 +36,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * Returns all packages declared in this module (or empty if this is not a java source module). These packages are
      * simply deduced from the declared java classes.
      */
-    protected final ReusableStream<String> declaredJavaPackagesCache =
+    private final ReusableStream<String> declaredJavaPackagesCache =
             declaredJavaFilesCache
                     .map(JavaFile::getPackageName)
                     .distinct();
@@ -43,7 +44,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Returns the children project modules if any (only first level under this module).
      */
-    protected final ReusableStream<ProjectModule> childrenModulesCache =
+    private final ReusableStream<ProjectModule> childrenModulesCache =
             getChildrenModuleNames()
                     .map(this::getOrCreateChildProjectModule)
                     .cache()
@@ -52,7 +53,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Returns the children project modules if any (all levels under this module).
      */
-    protected final ReusableStream<ProjectModule> childrenModulesInDepthCache =
+    private final ReusableStream<ProjectModule> childrenModulesInDepthCache =
             childrenModulesCache
                     .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
             //.cache()
@@ -61,10 +62,11 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Returns all java services provided by this module (returns the list of files under META-INF/services).
      */
-    protected final ReusableStream<String> providedJavaServicesCache =
+    private final ReusableStream<String> providedJavaServicesCache =
             ReusableStream.create(() -> getWebFxModuleFile().providedServerProviders())
                     .map(ServiceProvider::getSpi)
                     .distinct()
+                    .sorted()
                     .cache();
 
 
@@ -74,7 +76,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * regular expressions). These source module dependencies not discovered by the source code analyzer must be listed
      * in the webfx module file for now.
      */
-    protected final ReusableStream<ModuleDependency> undiscoveredByCodeAnalyzerSourceDependenciesCache =
+    private final ReusableStream<ModuleDependency> undiscoveredByCodeAnalyzerSourceDependenciesCache =
             ReusableStream.create(() -> getWebFxModuleFile().getUndiscoveredUsedBySourceModulesDependencies())
                     .cache();
 
@@ -83,7 +85,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * Returns source module dependencies explicitly mentioned in webfx.xml, which can be used to set some special
      * attribute on those dependencies (ex: optional = "true").
      */
-    protected final ReusableStream<ModuleDependency> explicitSourceDependenciesCache =
+    private final ReusableStream<ModuleDependency> explicitSourceDependenciesCache =
             ReusableStream.create(() -> getWebFxModuleFile().getExplicitSourceModulesDependencies())
                     .cache();
 
@@ -91,7 +93,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * Returns all resource module dependencies directly required by the source code of this module (must be listed in
      * the webfx module file).
      */
-    protected final ReusableStream<ModuleDependency> resourceDirectDependenciesCache =
+    private final ReusableStream<ModuleDependency> resourceDirectDependenciesCache =
             ReusableStream.create(() -> getWebFxModuleFile().getResourceModuleDependencies())
                     .cache();
 
@@ -101,12 +103,12 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * my-app-javafx or my-app-gwt, then the application module is my-app).
      */
     // Modules
-    protected final ReusableStream<ModuleDependency> applicationDependencyCache =
+    private final ReusableStream<ModuleDependency> applicationDependencyCache =
             ReusableStream.create(() -> {
                 ProjectModule applicationModule = null;
                 if (isExecutable()) {
                     String moduleName = getName();
-                    applicationModule = getRootModule().searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(moduleName.substring(0, moduleName.lastIndexOf('-')), true);
+                    applicationModule = getRootModule().searchProjectModuleWithoutRegistering(moduleName.substring(0, moduleName.lastIndexOf('-')), true);
                 }
                 return applicationModule != null ? ReusableStream.of(ModuleDependency.createApplicationDependency(this, applicationModule)) : ReusableStream.empty();
             });
@@ -115,7 +117,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * Returns the plugin module dependencies to be directly added to this module (must be listed in the webfx module
      * file).
      */
-    protected final ReusableStream<ModuleDependency> pluginDirectDependenciesCache =
+    private final ReusableStream<ModuleDependency> pluginDirectDependenciesCache =
             ReusableStream.create(() -> getWebFxModuleFile().getPluginModuleDependencies())
                     .cache();
 
@@ -234,7 +236,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Returns the emulation modules required for this executable module (returns nothing if this module is not executable).
      */
-    protected final ReusableStream<ModuleDependency> executableEmulationDependenciesCaches =
+    private final ReusableStream<ModuleDependency> executableEmulationDependenciesCaches =
             ReusableStream.create(this::collectExecutableEmulationModules)
                     .map(m -> ModuleDependency.createEmulationDependency(this, m))
                     .cache();
@@ -275,8 +277,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                             ReusableStream.create(() -> ReusableStream.concat(
                                                     ReusableStream.of(
                                                             getRootModule(),
-                                                            getRootModule().searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages("webfx-platform"),
-                                                            getRootModule().searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages("webfx-kit")
+                                                            getRootModule().searchProjectModuleWithoutRegistering("webfx-platform"),
+                                                            getRootModule().searchProjectModuleWithoutRegistering("webfx-kit")
                                                     ),
                                                     getRootModule().findProjectModuleStartingWith("webfx-stack"),
                                                     getRootModule().findProjectModuleStartingWith("webfx-extras"),
@@ -316,6 +318,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      */
     private final ReusableStream<Providers> executableImplicitProvidersCache =
             ReusableStream.create(this::collectExecutableProviders)
+                    .sorted()
                     .cache();
 
     /**
@@ -391,10 +394,11 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                     .distinct()
                     .cache();
 
-    protected final ProjectModule parentModule;
-    protected final RootModule rootModule;
-    protected Target target;
-    protected boolean checkedWebFxModuleFileGAV;
+    private ProjectModule parentModule;
+    private final RootModule rootModule;
+    private Target target;
+    private boolean checkReadGavFromModuleFiles;
+    private boolean checkParentFromModuleFiles;
 
     public ProjectModuleImpl(String name, ProjectModule parentModule) {
         super(name);
@@ -406,6 +410,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     }
 
     public ProjectModule getParentModule() {
+        checkParentFromModuleFiles();
         return parentModule;
     }
 
@@ -419,39 +424,62 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         return target;
     }
 
-    private void checkMavenModuleFileGAV() {
-        if (!checkedWebFxModuleFileGAV) {
-            checkedWebFxModuleFileGAV = true;
-            if (groupId == null) {
-                groupId = getMavenModuleFile().getGroupId();
-                if (groupId == null && parentModule == null)
-                    groupId = getMavenModuleFile().getParentGroupId();
+    private void checkReadGavFromModuleFiles() {
+        if (!checkReadGavFromModuleFiles) {
+            checkReadGavFromModuleFiles = true;
+            readGavFromModuleFile(getWebFxModuleFile().fileExists() ? getWebFxModuleFile() : getMavenModuleFile());
+        }
+    }
+
+    private void readGavFromModuleFile(XmlGavModuleFile gavModuleFile) {
+        if (groupId == null) {
+            groupId = gavModuleFile.getGroupId();
+            if (groupId == null && parentModule == null) {
+                groupId = gavModuleFile.lookupParentGroupId();
+                if (groupId == null)
+                    checkParentFromModuleFiles();
             }
-            if (artifactId == null)
-                artifactId = getMavenModuleFile().getArtifactId();
-            if (version == null) {
-                version = getMavenModuleFile().getVersion();
-                if (version == null && parentModule == null)
-                    version = getMavenModuleFile().getParentVersion();
-            }
+        }
+        if (artifactId == null)
+            artifactId = gavModuleFile.getArtifactId();
+        if (version == null) {
+            version = gavModuleFile.getVersion();
+            if (version == null && parentModule == null)
+                version = gavModuleFile.lookupParentVersion();
+        }
+    }
+
+    private void checkParentFromModuleFiles() {
+        if (!checkParentFromModuleFiles) {
+            checkParentFromModuleFiles = true;
+            if (parentModule == null)
+                lookupParentFromModuleFile(getWebFxModuleFile().fileExists() ? getWebFxModuleFile() : getMavenModuleFile());
+        }
+    }
+
+    private void lookupParentFromModuleFile(XmlGavModuleFile gavModuleFile) {
+        if (parentModule == null) {
+            String lookupParentName = gavModuleFile.lookupParentName();
+            String parentName = lookupParentName != null ? lookupParentName : "webfx-parent";
+            parentModule = getRootModule().continueSearchingAndRegisteringUntilGetting(() -> (ProjectModule) getRootModule().getModuleRegistry().findModuleAlreadyRegistered(parentName));
         }
     }
 
     @Override
     public String getGroupId() {
-        checkMavenModuleFileGAV();
+        checkReadGavFromModuleFiles();
         return groupId != null || parentModule == null ? groupId : parentModule.getGroupId();
     }
 
     @Override
     public String getArtifactId() {
-        checkMavenModuleFileGAV();
+        checkReadGavFromModuleFiles();
         return artifactId;
     }
 
     @Override
     public String getVersion() {
-        checkMavenModuleFileGAV();
+        checkReadGavFromModuleFiles();
         return version != null || parentModule == null ? version : parentModule.getVersion();
     }
 
@@ -499,6 +527,15 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                 .map(js -> getRootModule().findBestMatchModuleProvidingJavaService(js, serviceTarget))
                 .distinct()
                 ;
+    }
+
+    private ReusableStream<LibraryModule> libraryModulesCache;
+
+    @Override
+    public ReusableStream<LibraryModule> getLibraryModules() {
+        if (libraryModulesCache == null)
+            libraryModulesCache = ProjectModule.super.getLibraryModules().cache();
+        return libraryModulesCache;
     }
 
     ///// Services

@@ -2,6 +2,8 @@ package dev.webfx.buildtool.modulefiles;
 
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.*;
+import dev.webfx.buildtool.modulefiles.abstr.DevXmlModuleFileImpl;
+import dev.webfx.buildtool.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
@@ -17,12 +19,12 @@ import java.util.stream.Collectors;
 /**
  * @author Bruno Salmon
  */
-public class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements MavenPomModuleFile {
+public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements MavenPomModuleFile {
 
     private Boolean aggregate;
 
     public DevMavenPomModuleFile(DevProjectModule module) {
-        super(module, module.getHomeDirectory().resolve("pom.xml"), true);
+        super(module, module.getHomeDirectory().resolve("pom.xml"));
     }
 
     public void setAggregate(boolean aggregate) {
@@ -58,9 +60,23 @@ public class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements Maven
                         : isAggregate() ? "pom_aggregate.xml"
                         : !buildInfo.isExecutable ? "pom_not_executable.xml"
                         : buildInfo.isForGwt ? "pom_gwt_executable.xml"
+                        : buildInfo.isForTeaVm ? "pom_teavm_executable.xml"
                         : buildInfo.isForGluon ? "pom_gluon_executable.xml"
+                        : buildInfo.isForVertx ? "pom_vertx_executable.xml"
                         : "pom_javafx_executable.xml";
-        String template = ResourceTextFileReader.readTemplate(templateFileName);
+        String template = ResourceTextFileReader.readTemplate(templateFileName)
+                .replace("${groupId}",    ArtifactResolver.getGroupId(projectModule))
+                .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
+                .replace("${version}",    ArtifactResolver.getVersion(projectModule))
+                ;
+        if (!isRootModule) {
+            ProjectModule parentModule = projectModule.getParentModule();
+            template = template
+                    .replace("${parent.groupId}", ArtifactResolver.getGroupId(parentModule))
+                    .replace("${parent.artifactId}", ArtifactResolver.getArtifactId(parentModule))
+                    .replace("${parent.version}", ArtifactResolver.getVersion(parentModule))
+            ;
+        }
         Document document = XmlUtil.parseXmlString(template);
         Element documentElement = document.getDocumentElement();
         Node webFxMavenPomProjectNode = getWebFxMavenPomProjectNode();
@@ -132,20 +148,25 @@ public class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements Maven
             if (!gas.isEmpty() && dependenciesNode.getParentNode() == null)
                 appendIndentNode(dependenciesNode, true);
         }
-        Node artifactIdNode = lookupNode("artifactId");
-        if (artifactIdNode == null)
-            prependTextElement("artifactId", ArtifactResolver.getArtifactId(module), true);
-        Node parentNode = lookupNode("parent");
-        if (parentNode == null) {
-            Module parentModule = module.getParentModule();
-            if (parentModule == null && !module.getName().equals("webfx-parent"))
-                parentModule = module.getRootModule().findModule("webfx-parent");
-            if (parentModule != null) {
+        String groupId = ArtifactResolver.getGroupId(module);
+        String version = ArtifactResolver.getVersion(module);
+        Module parentModule = module.getParentModule();
+        String parentGroupId = ArtifactResolver.getGroupId(parentModule);
+        String parentVersion = ArtifactResolver.getVersion(parentModule);
+        if (version != null && !version.equals(parentVersion))
+            prependTextNodeIfNotAlreadyExists("version", version, true);
+        prependTextNodeIfNotAlreadyExists("artifactId", ArtifactResolver.getArtifactId(module), true);
+        if (groupId != null && !groupId.equals(parentGroupId))
+            prependTextNodeIfNotAlreadyExists("groupId", groupId, true);
+        if (parentModule != null && lookupNode("parent/artifactId") == null) {
+            Node parentNode = lookupNode("parent");
+            if (parentNode == null)
                 parentNode = createAndPrependElement("parent", true);
-                XmlUtil.appendTextElement(parentNode, "groupId", ArtifactResolver.getGroupId(parentModule));
-                XmlUtil.appendTextElement(parentNode, "artifactId", ArtifactResolver.getArtifactId(parentModule));
-                XmlUtil.appendTextElement(parentNode, "version", ArtifactResolver.getVersion(parentModule));
-            }
+            else
+                XmlUtil.removeChildren(parentNode);
+            XmlUtil.appendTextElement(parentNode, "groupId", parentGroupId);
+            XmlUtil.appendTextElement(parentNode, "artifactId", ArtifactResolver.getArtifactId(parentModule));
+            XmlUtil.appendTextElement(parentNode, "version", parentVersion);
         }
         Node modelVersionNode = lookupNode("modelVersion");
         if (modelVersionNode == null)

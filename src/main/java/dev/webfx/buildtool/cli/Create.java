@@ -2,7 +2,7 @@ package dev.webfx.buildtool.cli;
 
 import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.modulefiles.DevMavenPomModuleFile;
-import dev.webfx.buildtool.modulefiles.MavenPomModuleFile;
+import dev.webfx.buildtool.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import picocli.CommandLine.Command;

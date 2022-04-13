@@ -2,6 +2,7 @@ package dev.webfx.buildtool.modulefiles;
 
 import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.ProjectModule;
+import dev.webfx.buildtool.modulefiles.abstr.DevModuleFileImpl;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.buildtool.util.xml.XmlUtil;
@@ -14,9 +15,9 @@ import java.util.Scanner;
 /**
  * @author Bruno Salmon
  */
-public class GwtHtmlFile extends DevModuleFileImpl {
+public class DevGwtHtmlFile extends DevModuleFileImpl {
 
-    public GwtHtmlFile(DevProjectModule module) {
+    public DevGwtHtmlFile(DevProjectModule module) {
         super(module, module.getResourcesDirectory().resolve("public/index.html"));
     }
 
@@ -31,7 +32,7 @@ public class GwtHtmlFile extends DevModuleFileImpl {
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
                 .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.getChildNodes(), n -> n))
-                .stream().sorted(Comparator.comparingInt(GwtHtmlFile::getNodeOrder))
+                .stream().sorted(Comparator.comparingInt(DevGwtHtmlFile::getNodeOrder))
                 .filter(headOrBodyNode -> checkNodeConditions(headOrBodyNode, transitiveProjectModules))
                 .forEach(headOrBodyNode -> {
                     String nodeName = headOrBodyNode.getNodeName();

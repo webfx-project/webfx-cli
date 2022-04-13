@@ -75,7 +75,7 @@ final class ModuleReporter {
     //// Listing methods that are just forwarders to the target project module
 
     ModuleReporter newModuleAnalyzer(String moduleArtifactId) {
-        return new ModuleReporter(rootModule.searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(moduleArtifactId));
+        return new ModuleReporter(rootModule.searchProjectModuleWithoutRegistering(moduleArtifactId));
     }
 
     void listProjectModuleJavaClasses(String moduleArtifactId) {
@@ -95,7 +95,7 @@ final class ModuleReporter {
     }
 
     void listDependenciesPathsBetween(String sourceModule, String destinationModule) {
-        listDependenciesPathsBetween(rootModule.searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(sourceModule), rootModule.searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(destinationModule));
+        listDependenciesPathsBetween(rootModule.searchProjectModuleWithoutRegistering(sourceModule), rootModule.searchProjectModuleWithoutRegistering(destinationModule));
     }
 
     void listDependenciesPathsBetween(Module sourceModule, Module destinationModule) {

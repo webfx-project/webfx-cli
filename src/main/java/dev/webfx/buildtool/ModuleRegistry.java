@@ -1,6 +1,6 @@
 package dev.webfx.buildtool;
 
-import dev.webfx.buildtool.modulefiles.ResWebFxModuleFile;
+import dev.webfx.buildtool.modulefiles.abstr.ResWebFxModuleFile;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
@@ -72,11 +72,12 @@ final public class ModuleRegistry {
      ********************************/
 
     public void registerLibraryModule(LibraryModule module) {
+        String moduleName = module.getName();
         if (module.isMavenLibrary()) {
-            if (findModuleAlreadyRegistered(module.getName()) == null)
+            if (findModuleAlreadyRegistered(moduleName) == null)
                 registerM2ProjectModule(new M2RootModule(module, this));
-        } else {
-            libraryModules.put(module.getName(), module);
+        } else if (findLibraryAlreadyRegistered(moduleName) == null) {
+            libraryModules.put(moduleName, module);
             registerLibraryExportedPackages(module);
         }
     }
@@ -152,7 +153,7 @@ final public class ModuleRegistry {
     public Module findLibraryOrModuleAlreadyRegistered(String name) {
         Module module = findLibraryAlreadyRegistered(name);
         if (module == null)
-            module = packagesModules.values().stream().flatMap(Collection::stream).filter(m -> m.getName().equals(name)).findFirst().orElse(null);
+            module = findModuleAlreadyRegistered(name);
         return module;
     }
 

@@ -2,6 +2,7 @@ package dev.webfx.buildtool.modulefiles;
 
 import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.Module;
+import dev.webfx.buildtool.modulefiles.abstr.DevModuleFileImpl;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 

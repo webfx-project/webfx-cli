@@ -16,7 +16,6 @@ final class GwtServiceLoaderSuperSourceGenerator {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module java.util.ServiceLoader.java super source for GWT");
         StringBuilder sb = new StringBuilder();
         module.getExecutableProviders()
-                .stream().sorted()
                 .forEach(providers -> {
                     String spiClassName = providers.getSpiClassName();
                     ReusableStream<String> providerClassNames = providers.getProviderClassNames();

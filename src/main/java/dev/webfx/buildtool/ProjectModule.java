@@ -1,7 +1,7 @@
 package dev.webfx.buildtool;
 
-import dev.webfx.buildtool.modulefiles.MavenPomModuleFile;
-import dev.webfx.buildtool.modulefiles.WebFxModuleFile;
+import dev.webfx.buildtool.modulefiles.abstr.MavenPomModuleFile;
+import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
@@ -19,7 +19,19 @@ public interface ProjectModule extends Module {
          *************************/
 
     default ReusableStream<String> getChildrenModuleNames() {
-        return ReusableStream.create(() -> getMavenModuleFile().getChildrenModuleNames());
+        return ReusableStream.create(() -> {
+            ReusableStream<String> childrenModuleNames;
+            WebFxModuleFile webFxModuleFile = getWebFxModuleFile();
+            if (webFxModuleFile != null && webFxModuleFile.isAggregate()) {
+                childrenModuleNames = webFxModuleFile.getChildrenModuleNames();
+                if (webFxModuleFile.shouldSubdirectoriesChildrenModulesBeAdded())
+                    childrenModuleNames = childrenModuleNames.concat(getSubdirectoriesChildrenModules());
+            } else {
+                MavenPomModuleFile mavenModuleFile = getMavenModuleFile();
+                childrenModuleNames = mavenModuleFile == null ? ReusableStream.empty() : mavenModuleFile.getChildrenModuleNames();
+            }
+            return childrenModuleNames;
+        });
     }
 
     ReusableStream<String> getSubdirectoriesChildrenModules();
@@ -42,8 +54,12 @@ public interface ProjectModule extends Module {
 
     ProjectModule getOrCreateChildProjectModule(String name);
 
+    default ReusableStream<LibraryModule> getLibraryModules() { // Should be overridden to use a cache
+        return getWebFxModuleFile().getLibraryModules();
+    }
+
     default void registerLibraryModules() {
-        getWebFxModuleFile().getLibraryModules().forEach(getRootModule()::registerLibraryModule);
+        getLibraryModules().forEach(getRootModule()::registerLibraryModule);
     }
 
     default ReusableStream<String> getResourcePackages() {
@@ -216,23 +232,23 @@ public interface ProjectModule extends Module {
         return getTarget().gradeTargetMatch(target);
     }
 
-    default ProjectModule searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(String name) {
-        return searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(name, false);
+    default ProjectModule searchProjectModuleWithoutRegistering(String name) {
+        return searchProjectModuleWithoutRegistering(name, false);
     }
 
-    default ProjectModule searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(String name, boolean silent) {
+    default ProjectModule searchProjectModuleWithoutRegistering(String name, boolean silent) {
         Optional<ProjectModule> projectModule;
         projectModule = getProjectModuleSearchScope() // Trying first in the scope of this project
                 .filter(module -> module.getName().equals(name))
                 .findFirst()
-                .or(() -> getRootModule().getProjectModuleSearchScope() // Otherwise in the widest scope
+                .or(() -> getRootModule().getProjectModuleSearchScope() // Otherwise, in the widest scope
                         .filter(module -> module.getName().equals(name))
                         .findFirst());
         if (projectModule.isPresent())
             return projectModule.get();
         if (silent)
             return null;
-        throw new UnresolvedException("Unable to find " + name + " module under " + getName() + " module");
+        throw new UnresolvedException("Unable to find " + name + " module required by " + getName() + " module");
     }
 
     default ReusableStream<ProjectModule> getProjectModuleSearchScope() {

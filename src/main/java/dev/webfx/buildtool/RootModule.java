@@ -5,6 +5,7 @@ import dev.webfx.tools.util.reusablestream.ReusableStream;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public interface RootModule extends ProjectModule {
 
@@ -19,9 +20,12 @@ public interface RootModule extends ProjectModule {
     }
 
     default ReusableStream<ProjectModule> getProjectModuleSearchScope() {
+        // It's important that the search scope is 1) complete and 2) ordered (giving priority to children, etc...)
+        ReusableStream<ProjectModule> scope1 = getThisAndChildrenModulesInDepth(); // already cached
+        ReusableStream<ProjectModule> scope2 = getModuleRegistry().getImportedProjectModules();
         return ReusableStream.concat(
-                getThisAndChildrenModulesInDepth(),
-                getModuleRegistry().getImportedProjectModules());
+                scope1,
+                scope2);
     }
 
     /********************************
@@ -43,10 +47,11 @@ public interface RootModule extends ProjectModule {
     default Module getJavaPackageModule(String packageToSearch, ProjectModule sourceModule) {
         ModuleRegistry moduleRegistry = getModuleRegistry();
         Module module = moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, true);
-        if (module != null)
-            return module;
-        searchProjectModuleWithinSearchScopeAndRegisterLibrariesAndPackagesUntil(m -> moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, true) != null);
-        return moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, false);
+        if (module == null)
+            module = continueSearchingAndRegisteringUntilGetting(() -> moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, true));
+        if (module == null) // Fruitless search but silent so far, now raising an exception by doing a non-silent search
+            module = moduleRegistry.getJavaPackageModuleNow(packageToSearch, sourceModule, false);
+        return module;
     }
 
     default Module findModule(String name, boolean silent) {
@@ -54,26 +59,34 @@ public interface RootModule extends ProjectModule {
         Module module = findLibraryOrModuleOrAlreadyRegistered(name);
         if (module == null) { // If not yet registered,
             // Let's continue searching it within the search scope but first without registering the declared libraries and packages (first pass - quicker than second pass)
-            module = searchProjectModuleWithinSearchScopeWithoutRegisteringLibrariesAndPackages(name, true);
+            module = searchProjectModuleWithoutRegistering(name, true);
             if (module == null) { // If not found,
                 // Let's do that search again (quick to redo with cache) but with the registering process (second pass)
-                searchProjectModuleWithinSearchScopeAndRegisterLibrariesAndPackagesUntil(m -> getModuleRegistry().findLibraryAlreadyRegistered(name) != null);
-                // Let's finally check if that search was fruitful
-                module = findLibraryOrModuleOrAlreadyRegistered(name);
-                if (module == null && !silent) // If still not found, we just don't know this module!
+                module = continueSearchingAndRegisteringUntilGetting(() -> getModuleRegistry().findLibraryAlreadyRegistered(name));
+                if (module == null && !silent) // If the search is still fruitless, we just don't know this module!
                     throw new UnresolvedException("Unknown module " + name);
             }
         }
         return module;
     }
 
-    default void searchProjectModuleWithinSearchScopeAndRegisterLibrariesAndPackagesUntil(Predicate<? super ProjectModule> untilPredicate) {
+    default void continueSearchingAndRegisteringUntil(Predicate<? super ProjectModule> untilPredicate) {
         Predicate<? super ProjectModule> whilePredicate = untilPredicate.negate();
-        getPackageModuleSearchScopeResume().takeWhile(whilePredicate)
+        getProjectModuleSearchScopeResume().takeWhile(whilePredicate)
                 .forEach(this::registerLibrariesAndJavaPackagesOfProjectModule);
     }
 
-    ReusableStream<ProjectModule> getPackageModuleSearchScopeResume();
+    default <T> T continueSearchingAndRegisteringUntilGetting(Supplier<T> getter) {
+        T result = getter.get();
+        if (result == null) {
+            Object[] resultHolder = new Object[1];
+            continueSearchingAndRegisteringUntil(p -> (resultHolder[0] = getter.get()) != null);
+            result = (T) resultHolder[0];
+        }
+        return result;
+    }
+
+    ReusableStream<ProjectModule> getProjectModuleSearchScopeResume();
 
     default ProjectModule findModuleDeclaringJavaService(String javaService) {
         return getThisAndChildrenModulesInDepth()

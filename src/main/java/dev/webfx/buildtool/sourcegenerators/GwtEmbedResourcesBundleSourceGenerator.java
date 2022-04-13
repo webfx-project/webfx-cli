@@ -1,6 +1,7 @@
 package dev.webfx.buildtool.sourcegenerators;
 
 import dev.webfx.buildtool.DevProjectModule;
+import dev.webfx.buildtool.ProjectModule;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 
@@ -17,9 +18,9 @@ final class GwtEmbedResourcesBundleSourceGenerator {
         StringBuilder resourceDeclaration = new StringBuilder();
         StringBuilder resourceRegistration = new StringBuilder();
         AtomicInteger resourceNumber = new AtomicInteger();
-        DevProjectModule.filterDevProjectModules(module.getThisAndTransitiveModules())
-                .flatMap(DevProjectModule::getEmbedResources)
-                .stream().sorted()
+        ProjectModule.filterProjectModules(module.getThisAndTransitiveModules())
+                .flatMap(ProjectModule::getEmbedResources)
+                .sorted()
                 .forEach(r -> {
                     String resourceMethodName = "r" + resourceNumber.incrementAndGet();
                     resourceDeclaration

@@ -4,16 +4,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <packaging>gwt-app</packaging>
-
     <dependencies/>
-
-    <!-- Redefining the GWT profile here, so it can be activated locally when invoking this pom directly. -->
-    <!-- Activating a local profile here will trigger the properties defined in the root pom. -->
-    <profiles>
-        <profile>
-            <id>gwt-compile</id>
-        </profile>
-    </profiles>
 
 </project>

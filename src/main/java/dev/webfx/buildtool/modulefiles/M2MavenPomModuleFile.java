@@ -1,14 +1,16 @@
 package dev.webfx.buildtool.modulefiles;
 
 import dev.webfx.buildtool.M2ProjectModule;
-import dev.webfx.buildtool.util.xml.XmlUtil;
+import dev.webfx.buildtool.modulefiles.abstr.MavenPomModuleFile;
+import dev.webfx.buildtool.modulefiles.abstr.PathBasedXmlModuleFileImpl;
 
 /**
  * @author Bruno Salmon
  */
-public class M2MavenPomModuleFile extends XmlModuleFileImpl implements MavenPomModuleFile {
+public final class M2MavenPomModuleFile extends PathBasedXmlModuleFileImpl implements MavenPomModuleFile {
 
     public M2MavenPomModuleFile(M2ProjectModule module) {
-        super(module, XmlUtil.parseXmlFile(module.getM2ArtifactSubPath(".pom").toFile()));
+        super(module, module.getM2ArtifactSubPath(".pom"));
     }
+
 }

@@ -1,4 +1,4 @@
-package dev.webfx.buildtool.modulefiles;
+package dev.webfx.buildtool.modulefiles.abstr;
 
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ProjectModule;
@@ -6,7 +6,9 @@ import dev.webfx.buildtool.ProjectModule;
 /**
  * @author Bruno Salmon
  */
-interface ModuleFile {
+public interface ModuleFile {
+
+    boolean fileExists();
 
     Module getModule();
 

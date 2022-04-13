@@ -14,7 +14,7 @@
 
     <build>
         <plugins>
-            <!-- This plugin is ran only explicitly by invoking mvn javafx:jlink -->
+            <!-- This plugin is run only explicitly by invoking mvn javafx:jlink -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -25,7 +25,7 @@
     <profiles>
         <!-- profile to make a fat standalone executable jar with all dependencies included inside -->
         <profile>
-            <id>javafx-fatjar</id>
+            <id>openjfx-fatjar</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>

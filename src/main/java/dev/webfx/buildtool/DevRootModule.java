@@ -14,12 +14,12 @@ public final class DevRootModule extends DevProjectModule implements RootModule 
 
     private ModuleRegistry moduleRegistry;
     private boolean inlineWebFxParent;
-    private final ReusableStream<ProjectModule> packageModuleSearchScopeResume;
+    private final ReusableStream<ProjectModule> projectModuleSearchScopeResume;
 
     public DevRootModule(Path homeDirectory, ModuleRegistry moduleRegistry) {
         super(homeDirectory, null);
         this.moduleRegistry = moduleRegistry;
-        packageModuleSearchScopeResume =
+        projectModuleSearchScopeResume =
                 ReusableStream.create(this::getProjectModuleSearchScope) // Using deferred creation because the module registry constructor may not be completed yet
                         .resume();
     }
@@ -40,66 +40,9 @@ public final class DevRootModule extends DevProjectModule implements RootModule 
     }
 
     @Override
-    public ReusableStream<ProjectModule> getPackageModuleSearchScopeResume() {
-        return packageModuleSearchScopeResume;
+    public ReusableStream<ProjectModule> getProjectModuleSearchScopeResume() {
+        return projectModuleSearchScopeResume;
     }
-
-    public void exportModules(Document document) {
-        // Making sure all project modules and libraries are registered
-        searchProjectModuleWithinSearchScopeAndRegisterLibrariesAndPackagesUntil(pm -> false);
-        Element rootElement = document.createElement("exported-modules");
-        document.appendChild(rootElement);
-        getModuleRegistry().getAllRegisteredModules()
-                .forEach(m -> {
-                    if (m instanceof ProjectModule) {
-                        // Getting the WebFx module file (that manages the webfx.xml file)
-                        ProjectModule pm = (ProjectModule) m;
-                        // If it's an aggregate module and that the webfx.xml file doesn't exist, we take the maven module file instead
-                        LocalProjectModule lpm = pm instanceof LocalProjectModule ? (LocalProjectModule) pm : null;
-                        boolean maven = lpm != null && lpm.isAggregate() && !lpm.getWebFxModuleFile().getModuleFile().exists();
-                        XmlModuleFile xmlModuleFile = maven ? pm.getMavenModuleFile() : pm.getWebFxModuleFile();
-                        // Creating a xml copy of the project element (which is the document element)
-                        Element projectElement = (Element) document.importNode(xmlModuleFile.getOrCreateModuleElement(), true);
-                        projectElement.removeAttribute("xsi");
-                        projectElement.removeAttribute("xsi:schemaLocation");
-                        projectElement.removeAttribute("xmlns:xsi");
-                        projectElement.removeAttribute("xmlns");
-                        // Setting the module name as xml "name" attribute
-                        projectElement.setAttribute("name", pm.getName());
-                        if (pm.getParentModule() != null)
-                            projectElement.setAttribute("parent", pm.getParentModule().getName());
-                        else {
-                            projectElement.setAttribute("groupId", pm.getGroupId());
-                            projectElement.setAttribute("artifactId", pm.getArtifactId());
-                            projectElement.setAttribute("version", pm.getVersion());
-                        }
-                        if (maven)
-                            projectElement.setAttribute("maven", "true");
-                        else if (XmlUtil.lookupNode(projectElement, "modules") == null) {
-                            Element modulesElement = document.createElement("modules");
-                            projectElement.appendChild(modulesElement);
-                            pm.getMavenModuleFile().getChildrenModuleNames().forEach(name -> XmlUtil.appendTextElement(modulesElement, "/module", name));
-                        }
-/*
-                        // Replacing the exported sources package with their actual computed values
-                        Node sourcePackagesNode = XmlUtil.lookupNode(projectElement, "exported-packages/source-packages");
-                        if (sourcePackagesNode != null) {
-                            Node parentNode = sourcePackagesNode.getParentNode();
-                            parentNode.removeChild(sourcePackagesNode);
-                            pm.getExportedJavaPackages().forEach(p -> xmlModuleFile.appendTextNode(parentNode, "/package", p));
-                        }
-                        // Replacing the used by source modules with their actual computed values
-                        Node usedBySourceModulesNode = XmlUtil.lookupNode(projectElement, "dependencies/used-by-source-modules");
-                        if (usedBySourceModulesNode != null)
-                            pm.getDiscoveredByCodeAnalyzerSourceDependencies().forEach(d -> xmlModuleFile.appendTextNode(usedBySourceModulesNode, "/source-module", d.getDestinationModule().getName()));
-                        // Appending the result into the group node
-                        rootElement.appendChild(projectElement);
-                    } else if (m instanceof LibraryModule) {
-                        rootElement.appendChild(document.importNode(((LibraryModule) m).getModuleNode(), true));
-                    }
-                });
-    }
-
 
     /*****************************
      ***** Analyzing streams *****

@@ -4,6 +4,7 @@ import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.ModuleDependency;
 import dev.webfx.buildtool.ProjectModule;
+import dev.webfx.buildtool.modulefiles.abstr.DevXmlModuleFileImpl;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import org.w3c.dom.Comment;

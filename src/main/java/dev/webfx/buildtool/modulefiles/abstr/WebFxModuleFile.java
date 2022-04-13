@@ -1,4 +1,4 @@
-package dev.webfx.buildtool.modulefiles;
+package dev.webfx.buildtool.modulefiles.abstr;
 
 import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
@@ -11,7 +11,7 @@ import org.w3c.dom.Node;
 /**
  * @author Bruno Salmon
  */
-public interface WebFxModuleFile extends XmlModuleFile {
+public interface WebFxModuleFile extends XmlGavModuleFile {
 
     default boolean isExecutable() {
         return getBooleanProjectAttributeValue("executable");
@@ -114,7 +114,7 @@ public interface WebFxModuleFile extends XmlModuleFile {
     }
 
     private boolean getBooleanProjectAttributeValue(String attribute) {
-        return XmlUtil.getBooleanAttributeValue(getModuleElement(), attribute);
+        return XmlUtil.getBooleanAttributeValue(getXmlNode(), attribute);
     }
 
     @Override
@@ -126,7 +126,7 @@ public interface WebFxModuleFile extends XmlModuleFile {
         if (executable != isExecutable()) {
             Attr attribute = getOrCreateDocument().createAttribute("executable");
             attribute.setValue(String.valueOf(executable));
-            getModuleElement().getAttributes().setNamedItem(attribute);
+            getXmlNode().getAttributes().setNamedItem(attribute);
         }
     }
 
