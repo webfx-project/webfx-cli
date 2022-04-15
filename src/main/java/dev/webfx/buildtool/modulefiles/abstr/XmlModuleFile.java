@@ -24,7 +24,7 @@ public interface XmlModuleFile extends ModuleFile, XmlDocumentApi {
         return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node ->
                 new ModuleDependency(
                         getModule(),
-                        getProjectModule().getRootModule().findModule(node.getTextContent()),
+                        getProjectModule().getRootModule().searchModule(node.getTextContent()),
                         type,
                         XmlUtil.getBooleanAttributeValue(node, "optional"),
                         coalesce(XmlUtil.getAttributeValue(node, "scope"), defaultScope),

@@ -5,7 +5,7 @@ import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
-import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * @author Bruno Salmon
@@ -14,9 +14,9 @@ public interface ProjectModule extends Module {
 
     ProjectModule getParentModule();
 
-        /*************************
-         ***** Basic streams *****
-         *************************/
+    /*************************
+     ***** Basic streams *****
+     *************************/
 
     default ReusableStream<String> getChildrenModuleNames() {
         return ReusableStream.create(() -> {
@@ -54,12 +54,8 @@ public interface ProjectModule extends Module {
 
     ProjectModule getOrCreateChildProjectModule(String name);
 
-    default ReusableStream<LibraryModule> getLibraryModules() { // Should be overridden to use a cache
-        return getWebFxModuleFile().getLibraryModules();
-    }
-
-    default void registerLibraryModules() {
-        getLibraryModules().forEach(getRootModule()::registerLibraryModule);
+    default ReusableStream<LibraryModule> getRequiredLibraryModules() { // Should be overridden to use a cache
+        return getWebFxModuleFile().getRequiredLibraryModules();
     }
 
     default ReusableStream<String> getResourcePackages() {
@@ -232,40 +228,108 @@ public interface ProjectModule extends Module {
         return getTarget().gradeTargetMatch(target);
     }
 
-    default ProjectModule searchProjectModuleWithoutRegistering(String name) {
-        return searchProjectModuleWithoutRegistering(name, false);
+    private ReusableStream<ProjectModule> getRegisteredProjectModuleSearchScope(boolean resume) {
+        return getProjectModuleSearchScope(resume ? getModuleRegistry().getProjectModuleRegistrationResume() : getModuleRegistry().getProjectModuleRegistrationStream());
     }
 
-    default ProjectModule searchProjectModuleWithoutRegistering(String name, boolean silent) {
-        Optional<ProjectModule> projectModule;
-        projectModule = getProjectModuleSearchScope() // Trying first in the scope of this project
-                .filter(module -> module.getName().equals(name))
-                .findFirst()
-                .or(() -> getRootModule().getProjectModuleSearchScope() // Otherwise, in the widest scope
-                        .filter(module -> module.getName().equals(name))
-                        .findFirst());
-        if (projectModule.isPresent())
-            return projectModule.get();
-        if (silent)
-            return null;
-        throw new UnresolvedException("Unable to find " + name + " module required by " + getName() + " module");
+    private ReusableStream<Module> getRegisteredModuleSearchScope(boolean resume) {
+        return getModuleSearchScope(resume ? getModuleRegistry().getModuleRegistrationResume() : getModuleRegistry().getModuleRegistrationStream());
     }
 
-    default ReusableStream<ProjectModule> getProjectModuleSearchScope() {
-        return getChildrenModulesInDepth();
+    private ReusableStream<ProjectModule> getDeclaredProjectModuleSearchScope(boolean resume) {
+        return getProjectModuleSearchScope(resume ? getModuleRegistry().getProjectModuleDeclarationResume() : getModuleRegistry().getProjectModuleDeclarationStream());
     }
 
-    default ReusableStream<ProjectModule> findProjectModuleStartingWith(String name) {
-        return getProjectModuleSearchScope()
-                .filter(module -> module.getName().startsWith(name));
+    private ReusableStream<Module> getDeclaredModuleSearchScope(boolean resume) {
+        return getModuleSearchScope(resume ? getModuleRegistry().getModuleDeclarationResume() : getModuleRegistry().getModuleDeclarationStream());
     }
+
+    private ReusableStream<ProjectModule> getProjectModuleSearchScope(ReusableStream<ProjectModule> globalProjectModuleSearchScope) {
+        return getThisAndChildrenModulesInDepth()
+                .concat(globalProjectModuleSearchScope)
+                .distinct();
+    }
+
+    private ReusableStream<Module> getModuleSearchScope(ReusableStream<Module> globalModuleSearchScope) {
+        return getThisAndChildrenModulesInDepth().map(Module.class::cast)
+                .concat(globalModuleSearchScope)
+                .distinct();
+    }
+
+    default ReusableStream<ProjectModule> searchRegisteredProjectModules(Predicate<? super Module> predicate, boolean resume) {
+        return getRegisteredProjectModuleSearchScope(resume).filter(predicate);
+    }
+
+    default ProjectModule searchRegisteredProjectModule(Predicate<? super Module> predicate, boolean resume) {
+        return searchRegisteredProjectModules(predicate, resume).findFirst().orElse(null);
+    }
+
+    default ReusableStream<ProjectModule> searchDeclaredProjectModules(Predicate<? super Module> predicate, boolean resume) {
+        return getDeclaredProjectModuleSearchScope(resume).filter(predicate);
+    }
+
+    default ProjectModule searchDeclaredProjectModule(Predicate<? super Module> predicate, boolean resume) {
+        return searchDeclaredProjectModules(predicate, resume).findFirst().orElse(null);
+    }
+
+    default ReusableStream<Module> searchRegisteredModules(Predicate<? super Module> predicate, boolean resume) {
+        return getRegisteredModuleSearchScope(resume).filter(predicate);
+    }
+
+    default Module searchRegisteredModule(Predicate<? super Module> predicate, boolean resume) {
+        return searchRegisteredModules(predicate, resume).findFirst().orElse(null);
+    }
+
+    default ReusableStream<Module> searchDeclaredModules(Predicate<? super Module> predicate, boolean resume) {
+        return getDeclaredModuleSearchScope(resume).filter(predicate);
+    }
+
+    default Module searchDeclaredModule(Predicate<? super Module> predicate, boolean resume) {
+        return searchDeclaredModules(predicate, resume).findFirst().orElse(null);
+    }
+
+    default Module searchModule(String name) {
+        return searchModule(name, false);
+    }
+
+    default Module searchModule(String name, boolean silent) {
+        // Trying first a quick get() which will work only if the module is already registered
+        Module module = getModuleRegistry().getRegisteredModuleOrLibrary(name);
+        // Otherwise, continuing polling the registration stream until we find it
+        if (module == null)
+            module = searchRegisteredModule(m -> m.getName().equals(name), true);
+        if (module == null && !silent)
+            throw new UnresolvedException("Unknown module " + name);
+        return module;
+    }
+
+    default ProjectModule searchProjectModule(String name) {
+        return searchProjectModule(name, false);
+    }
+
+    default ProjectModule searchProjectModule(String name, boolean silent) {
+        // Trying first a quick get() which will work only if the module is already registered
+        ProjectModule module = getModuleRegistry().getRegisteredProjectModule(name);
+        // Otherwise, continuing polling the registration stream until we find it
+        if (module == null)
+            module = searchRegisteredProjectModule(m -> m.getName().equals(name), true);
+        if (module == null && !silent)
+            throw new UnresolvedException("Unknown project module " + name);
+        return module;
+    }
+
+    default ReusableStream<ProjectModule> searchProjectModuleStartingWith(String name) {
+        // searching along the whole registration stream (already registered + not yet registered) until we find it
+        return searchRegisteredProjectModules(module -> module.getName().startsWith(name), false);
+    }
+
 
     //// Static utility methods
 
     static ReusableStream<ProjectModule> filterProjectModules(ReusableStream<Module> modules) {
         return modules
                 .filter(m -> m instanceof ProjectModule)
-                .map(m -> (ProjectModule) m);
+                .map(ProjectModule.class::cast);
     }
 
     static boolean modulesUsesJavaPackage(ReusableStream<ProjectModule> modules, String javaPackage) {

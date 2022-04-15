@@ -81,8 +81,8 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupDependencies("dependencies//resource-module", ModuleDependency.Type.RESOURCE, "runtime");
     }
 
-    default ReusableStream<LibraryModule> getLibraryModules() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("libraries//library"), LibraryModule::new);
+    default ReusableStream<LibraryModule> getRequiredLibraryModules() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("required-libraries//library"), LibraryModule::new);
     }
 
     default ReusableStream<String> getPackagesAutoCondition() {
@@ -111,6 +111,14 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
 
     default Node getHtmlNode() {
         return lookupNode("html");
+    }
+
+    default Node getMavenManualNode() {
+        return lookupNode("maven-pom-manual");
+    }
+
+    default boolean skipMavenPomBuild() {
+        return !fileExists() || lookupNode("build-options/skip-maven-pom") != null;
     }
 
     private boolean getBooleanProjectAttributeValue(String attribute) {

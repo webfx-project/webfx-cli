@@ -37,17 +37,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
 
     @Override
     public boolean recreateOnUpdateAndWrite() {
-        return getWebFxMavenPomProjectNode() != null || getProjectModule().getWebFxModuleFile().isAggregate();
-    }
-
-    private Node getWebFxMavenPomProjectNode() {
-        Node projectNode = null;
-        Document webFxDocument = getProjectModule().getWebFxModuleFile().getDocument();
-        if (webFxDocument != null) {
-            Element webFxDocumentElement = webFxDocument.getDocumentElement();
-            projectNode = XmlUtil.lookupNode(webFxDocumentElement, "maven-pom-project");
-        }
-        return projectNode;
+        return !getProjectModule().getWebFxModuleFile().skipMavenPomBuild();
     }
 
     @Override
@@ -79,7 +69,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         }
         Document document = XmlUtil.parseXmlString(template);
         Element documentElement = document.getDocumentElement();
-        Node webFxMavenPomProjectNode = getWebFxMavenPomProjectNode();
+        Node webFxMavenPomProjectNode = projectModule.getWebFxModuleFile().getMavenManualNode();
         if (webFxMavenPomProjectNode != null) {
             XmlUtil.appendChildren(document.importNode(webFxMavenPomProjectNode, true), documentElement);
             XmlUtil.indentNode(documentElement, true);

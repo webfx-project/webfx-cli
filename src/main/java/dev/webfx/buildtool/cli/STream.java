@@ -137,7 +137,7 @@ final class STream extends CommonSubcommand {
                         stream = moduleDependencyStream = projectModuleStream.flatMap(m -> m.getTransitiveDependencies().stream());
                         break;
                     case libraries:
-                        stream = moduleStream = projectModuleStream.flatMap(m -> m.getLibraryModules().stream());
+                        stream = moduleStream = projectModuleStream.flatMap(m -> m.getRequiredLibraryModules().stream());
                         break;
                 }
             }

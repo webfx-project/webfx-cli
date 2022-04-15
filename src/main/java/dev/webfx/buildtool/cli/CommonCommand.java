@@ -165,7 +165,7 @@ class CommonCommand {
             ProjectModule topProjectModule = getModuleRegistry().getOrCreateDevProjectModule(topRootDirectoryPath);
             if (moduleName.equals("top") || moduleName.equals(topProjectModule.getName()) )
                 return topProjectModule;
-            moduleProject = ((RootModule) topProjectModule).findModule(moduleName, false);
+            moduleProject = topProjectModule.searchModule(moduleName, false);
         }
         return moduleProject;
     }

@@ -12,16 +12,12 @@ import java.util.List;
  */
 public final class DevRootModule extends DevProjectModule implements RootModule {
 
-    private ModuleRegistry moduleRegistry;
+    private final ModuleRegistry moduleRegistry;
     private boolean inlineWebFxParent;
-    private final ReusableStream<ProjectModule> projectModuleSearchScopeResume;
 
     public DevRootModule(Path homeDirectory, ModuleRegistry moduleRegistry) {
         super(homeDirectory, null);
         this.moduleRegistry = moduleRegistry;
-        projectModuleSearchScopeResume =
-                ReusableStream.create(this::getProjectModuleSearchScope) // Using deferred creation because the module registry constructor may not be completed yet
-                        .resume();
     }
 
     @Override
@@ -37,11 +33,6 @@ public final class DevRootModule extends DevProjectModule implements RootModule 
     @Override
     public ModuleRegistry getModuleRegistry() {
         return moduleRegistry;
-    }
-
-    @Override
-    public ReusableStream<ProjectModule> getProjectModuleSearchScopeResume() {
-        return projectModuleSearchScopeResume;
     }
 
     /*****************************

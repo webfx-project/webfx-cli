@@ -75,7 +75,7 @@ final class ModuleReporter {
     //// Listing methods that are just forwarders to the target project module
 
     ModuleReporter newModuleAnalyzer(String moduleArtifactId) {
-        return new ModuleReporter(rootModule.searchProjectModuleWithoutRegistering(moduleArtifactId));
+        return new ModuleReporter(rootModule.searchModule(moduleArtifactId));
     }
 
     void listProjectModuleJavaClasses(String moduleArtifactId) {
@@ -95,7 +95,7 @@ final class ModuleReporter {
     }
 
     void listDependenciesPathsBetween(String sourceModule, String destinationModule) {
-        listDependenciesPathsBetween(rootModule.searchProjectModuleWithoutRegistering(sourceModule), rootModule.searchProjectModuleWithoutRegistering(destinationModule));
+        listDependenciesPathsBetween(rootModule.searchModule(sourceModule), rootModule.searchModule(destinationModule));
     }
 
     void listDependenciesPathsBetween(Module sourceModule, Module destinationModule) {
@@ -123,7 +123,7 @@ final class ModuleReporter {
         RootModule rootModule = jc.getProjectModule().getRootModule();
         log(jc + " through packages " +
                 jc.getUsedJavaPackages()
-                        .filter(p -> destinationModule.equals(rootModule.getJavaPackageModule(p, jc.getProjectModule()).getName()))
+                        .filter(p -> destinationModule.equals(rootModule.searchJavaPackageModule(p, jc.getProjectModule()).getName()))
                         .distinct()
                         .collect(Collectors.toList()));
     }

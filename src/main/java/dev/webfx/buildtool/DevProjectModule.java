@@ -133,10 +133,4 @@ public class DevProjectModule extends ProjectModuleImpl {
         return homeDirectory != null && homeDirectory.startsWith(getRootModule().getHomeDirectory());
     }
 
-    public static ReusableStream<DevProjectModule> filterDevProjectModules(ReusableStream<Module> modules) {
-        return modules
-                .filter(m -> m instanceof DevProjectModule)
-                .map(m -> (DevProjectModule) m);
-    }
-
 }

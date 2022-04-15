@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
 
-    <libraries>
+    <required-libraries>
 
         <library name="java.base">
             <exported-packages>
@@ -15,6 +15,7 @@
                 <package>java.math</package>
                 <package>java.net</package>
                 <package>java.net.spi</package>
+                <!-- Not supported by GWT so not considered as part of the JDK
                 <package>java.nio</package>
                 <package>java.nio.channels</package>
                 <package>java.nio.channels.spi</package>
@@ -23,6 +24,7 @@
                 <package>java.nio.file</package>
                 <package>java.nio.file.attribute</package>
                 <package>java.nio.file.spi</package>
+                -->
                 <package>java.security</package>
                 <package>java.security.acl</package>
                 <package>java.security.cert</package>
@@ -130,10 +132,23 @@
         <library name="jdk.jlink"/>
         <library name="jdk.jpackage"/>
         <library name="jdk.jshell"/>
-        <library name="jdk.jsobject"/>
+
+        <library name="jdk.jsobject">
+            <exported-packages>
+                <package>netscape.javascript</package>
+            </exported-packages>
+        </library>
+
         <library name="jdk.jstatd"/>
         <library name="jdk.localedata"/>
-        <library name="jdk.management"/>
+
+        <library name="jdk.management">
+            <exported-packages>
+                <package>com.sun.management</package>
+                <package>java.lang.management</package>
+            </exported-packages>
+        </library>
+
         <library name="jdk.management.agent"/>
         <library name="jdk.management.jfr"/>
         <library name="jdk.naming.dns"/>
@@ -146,6 +161,6 @@
         <library name="jdk.xml.dom"/>
         <library name="jdk.zipfs"/>
 
-    </libraries>
+    </required-libraries>
 
 </project>

@@ -27,10 +27,6 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
         return moduleNode;
     }
 
-    public boolean isMavenLibrary() {
-        return getBooleanAttributeValue("m2");
-    }
-
     public ReusableStream<String> getExportedPackages() {
         return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(moduleNode, "exported-packages//package"));
     }

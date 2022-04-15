@@ -108,7 +108,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                 ProjectModule applicationModule = null;
                 if (isExecutable()) {
                     String moduleName = getName();
-                    applicationModule = getRootModule().searchProjectModuleWithoutRegistering(moduleName.substring(0, moduleName.lastIndexOf('-')), true);
+                    applicationModule = getRootModule().getModuleRegistry().getRegisteredProjectModule(moduleName.substring(0, moduleName.lastIndexOf('-')));
                 }
                 return applicationModule != null ? ReusableStream.of(ModuleDependency.createApplicationDependency(this, applicationModule)) : ReusableStream.empty();
             });
@@ -186,7 +186,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private final ReusableStream<ModuleDependency> discoveredByCodeAnalyzerSourceDependenciesCache =
             ReusableStream.create(() -> !getWebFxModuleFile().areUsedBySourceModulesDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
                     usedJavaPackagesCache
-                            .map(p -> getRootModule().getJavaPackageModule(p, this))
+                            .map(p -> getRootModule().searchJavaPackageModule(p, this))
                             //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
                             .filter(module -> module != this && !module.getName().equals(getName()))
                             .distinct()
@@ -277,12 +277,12 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                             ReusableStream.create(() -> ReusableStream.concat(
                                                     ReusableStream.of(
                                                             getRootModule(),
-                                                            getRootModule().searchProjectModuleWithoutRegistering("webfx-platform"),
-                                                            getRootModule().searchProjectModuleWithoutRegistering("webfx-kit")
+                                                            getRootModule().searchProjectModule("webfx-platform"),
+                                                            getRootModule().searchProjectModule("webfx-kit")
                                                     ),
-                                                    getRootModule().findProjectModuleStartingWith("webfx-stack"),
-                                                    getRootModule().findProjectModuleStartingWith("webfx-extras"),
-                                                    getRootModule().findProjectModuleStartingWith("webfx-framework")
+                                                    getRootModule().searchProjectModuleStartingWith("webfx-stack"),
+                                                    getRootModule().searchProjectModuleStartingWith("webfx-extras"),
+                                                    getRootModule().searchProjectModuleStartingWith("webfx-framework")
                                             )
                                     )
                                     .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
@@ -461,7 +461,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         if (parentModule == null) {
             String lookupParentName = gavModuleFile.lookupParentName();
             String parentName = lookupParentName != null ? lookupParentName : "webfx-parent";
-            parentModule = getRootModule().continueSearchingAndRegisteringUntilGetting(() -> (ProjectModule) getRootModule().getModuleRegistry().findModuleAlreadyRegistered(parentName));
+            parentModule = getRootModule().searchProjectModule(parentName);
         }
     }
 
@@ -529,13 +529,13 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                 ;
     }
 
-    private ReusableStream<LibraryModule> libraryModulesCache;
+    private ReusableStream<LibraryModule> requiredLibraryModulesCache;
 
     @Override
-    public ReusableStream<LibraryModule> getLibraryModules() {
-        if (libraryModulesCache == null)
-            libraryModulesCache = ProjectModule.super.getLibraryModules().cache();
-        return libraryModulesCache;
+    public ReusableStream<LibraryModule> getRequiredLibraryModules() {
+        if (requiredLibraryModulesCache == null)
+            requiredLibraryModulesCache = ProjectModule.super.getRequiredLibraryModules().cache();
+        return requiredLibraryModulesCache;
     }
 
     ///// Services
@@ -594,7 +594,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     public ReusableStream<JavaFile> getJavaFilesDependingOn(String destinationModule) {
         return getDeclaredJavaFiles()
-                .filter(jf -> jf.getUsedJavaPackages().anyMatch(p -> destinationModule.equals(rootModule.getJavaPackageModule(p, this).getName())))
+                .filter(jf -> jf.getUsedJavaPackages().anyMatch(p -> destinationModule.equals(rootModule.searchJavaPackageModule(p, this).getName())))
                 ;
     }
 
@@ -711,20 +711,20 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private ReusableStream<Module> collectExecutableEmulationModules() {
         if (isExecutable(Platform.GWT))
             return ReusableStream.of(
-                    getRootModule().findModule("webfx-kit-gwt"),
-                    getRootModule().findModule("webfx-platform-gwt-emul-javabase"),
-                    getRootModule().findModule("gwt-time")
+                    getRootModule().searchModule("webfx-kit-gwt"),
+                    getRootModule().searchModule("webfx-platform-gwt-emul-javabase"),
+                    getRootModule().searchModule("gwt-time")
             );
         if (isExecutable(Platform.JRE)) {
             if (getTarget().hasTag(TargetTag.OPENJFX) || getTarget().hasTag(TargetTag.GLUON)) {
                 boolean usesMedia = ProjectModule.mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().contains("webfx-kit-javafxmedia-emul"));
                 return usesMedia ? ReusableStream.of(
-                        getRootModule().findModule("webfx-kit-openjfx"),
-                        getRootModule().findModule("webfx-kit-javafxmedia-emul"),
-                        getRootModule().findModule("webfx-platform-java-boot-impl")
+                        getRootModule().searchModule("webfx-kit-openjfx"),
+                        getRootModule().searchModule("webfx-kit-javafxmedia-emul"),
+                        getRootModule().searchModule("webfx-platform-java-boot-impl")
                 ) : ReusableStream.of(
-                        getRootModule().findModule("webfx-kit-openjfx"),
-                        getRootModule().findModule("webfx-platform-java-boot-impl")
+                        getRootModule().searchModule("webfx-kit-openjfx"),
+                        getRootModule().searchModule("webfx-platform-java-boot-impl")
                 );
             }
             return ProjectModule.mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
