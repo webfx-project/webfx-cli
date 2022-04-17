@@ -137,25 +137,7 @@ class CommonCommand {
 
     protected ModuleRegistry getModuleRegistry() {
         if (moduleRegistry == null)
-            moduleRegistry = new ModuleRegistry(getWorkspaceDirectoryPath(),
-                    "webfx",
-                    "webfx-platform",
-                    "webfx-lib-javacupruntime",
-                    "webfx-lib-odometer",
-                    "webfx-lib-enzo",
-                    "webfx-lib-medusa",
-                    "webfx-lib-reusablestream",
-                    "webfx-extras",
-                    "webfx-extras-flexbox",
-                    "webfx-extras-materialdesign",
-                    "webfx-extras-webtext",
-                    "webfx-extras-visual",
-                    "webfx-extras-visual-charts",
-                    "webfx-extras-visual-grid",
-                    "webfx-extras-cell",
-                    "webfx-stack-platform",
-                    "webfx-framework"
-            );
+            moduleRegistry = new ModuleRegistry(getWorkspaceDirectoryPath());
         return moduleRegistry;
     }
 
@@ -179,11 +161,11 @@ class CommonCommand {
         if (moduleProject == null) {
             String moduleName = getModuleName();
             if (moduleName == null)
-                return getModuleRegistry().getOrCreateProjectModule(projectDirectoryPath);
-            ProjectModule topProjectModule = getModuleRegistry().getOrCreateProjectModule(topRootDirectoryPath);
+                return getModuleRegistry().getOrCreateDevProjectModule(projectDirectoryPath);
+            ProjectModule topProjectModule = getModuleRegistry().getOrCreateDevProjectModule(topRootDirectoryPath);
             if (moduleName.equals("top") || moduleName.equals(topProjectModule.getName()) )
                 return topProjectModule;
-            moduleProject = ((RootModule) topProjectModule).findModule(moduleName, false);
+            moduleProject = topProjectModule.searchModule(moduleName, false);
         }
         return moduleProject;
     }
@@ -192,6 +174,13 @@ class CommonCommand {
         Module workingModule = getWorkingModule();
         if (workingModule instanceof ProjectModule)
             return (ProjectModule) workingModule;
+        throw new BuildException(workingModule.getName() + " is not a project module.");
+    }
+
+    protected DevProjectModule getWorkingDevProjectModule() {
+        Module workingModule = getWorkingModule();
+        if (workingModule instanceof DevProjectModule)
+            return (DevProjectModule) workingModule;
         throw new BuildException(workingModule.getName() + " is not a project module.");
     }
 }

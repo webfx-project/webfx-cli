@@ -1,42 +1,19 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- File managed by WebFX (DO NOT EDIT MANUALLY) -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <parent>
-        <groupId>${parent.groupId}</groupId>
-        <artifactId>${parent.artifactId}</artifactId>
-        <version>${parent.version}</version>
-    </parent>
-
-    <artifactId>${artifactId}</artifactId>
 
     <packaging>gwt-app</packaging>
 
     <dependencies/>
 
-    <build>
-        <plugins>
-
-            <!-- Generating the source artifact for eventually another GWT compilation -->
-            <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-
-            <!-- Calling the GWT maven plugin to compile the gwt module into javascript -->
-            <plugin>
-                <groupId>net.ltgt.gwt.maven</groupId>
-                <artifactId>gwt-maven-plugin</artifactId>
-            </plugin>
-
-        </plugins>
-    </build>
-
-    <!-- Redefining the GWT profile here so it can be activated locally when invoking this pom directly. -->
+    <!-- Redefining the GWT profile here, so it can be activated locally when invoking this pom directly. -->
     <!-- Activating a local profile here will trigger the properties defined in the root pom. -->
     <profiles>
-        <profile><id>gwt-compile</id></profile>
+        <profile>
+            <id>gwt-compile</id>
+        </profile>
     </profiles>
 
 </project>

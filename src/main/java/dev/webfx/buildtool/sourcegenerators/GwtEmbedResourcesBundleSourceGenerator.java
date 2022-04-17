@@ -1,5 +1,6 @@
 package dev.webfx.buildtool.sourcegenerators;
 
+import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.ProjectModule;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
@@ -12,14 +13,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class GwtEmbedResourcesBundleSourceGenerator {
 
-    static void generateGwtClientBundleSource(ProjectModule module) {
+    static void generateGwtClientBundleSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module EmbedResourcesBundle super source for GWT");
         StringBuilder resourceDeclaration = new StringBuilder();
         StringBuilder resourceRegistration = new StringBuilder();
         AtomicInteger resourceNumber = new AtomicInteger();
         ProjectModule.filterProjectModules(module.getThisAndTransitiveModules())
                 .flatMap(ProjectModule::getEmbedResources)
-                .stream().sorted()
+                .sorted()
                 .forEach(r -> {
                     String resourceMethodName = "r" + resourceNumber.incrementAndGet();
                     resourceDeclaration
@@ -37,15 +38,15 @@ final class GwtEmbedResourcesBundleSourceGenerator {
         TextFileReaderWriter.writeTextFileIfNewOrModified(source, getJavaFilePath(module));
     }
 
-    static String getPackageName(ProjectModule module) {
+    static String getPackageName(DevProjectModule module) {
         return module.getJavaModuleFile().getJavaModuleName() + ".embed";
     }
 
-    static Path getJavaFilePath(ProjectModule module) {
+    static Path getJavaFilePath(DevProjectModule module) {
         return module.getResourcesDirectory().resolve("super").resolve(getPackageName(module).replaceAll("\\.", "/")).resolve("EmbedResourcesBundle.java");
     }
 
-    static String getProviderClassName(ProjectModule module) {
+    static String getProviderClassName(DevProjectModule module) {
         return getPackageName(module)+ ".EmbedResourcesBundle$ProvidedGwtResourceBundle";
     }
 }

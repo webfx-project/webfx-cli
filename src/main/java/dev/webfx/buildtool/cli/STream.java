@@ -137,7 +137,7 @@ final class STream extends CommonSubcommand {
                         stream = moduleDependencyStream = projectModuleStream.flatMap(m -> m.getTransitiveDependencies().stream());
                         break;
                     case libraries:
-                        stream = moduleStream = projectModuleStream.flatMap(m -> m.getWebFxModuleFile().getLibraryModules().stream());
+                        stream = moduleStream = projectModuleStream.flatMap(m -> m.getRequiredLibraryModules().stream());
                         break;
                 }
             }
@@ -223,9 +223,11 @@ final class STream extends CommonSubcommand {
     @Command(name = "dependencies", description = "Return module dependencies.")
     static class Dependencies extends Modules {
 
+        @Option(names = {"--transitive"}, description = "Include transitive dependencies.")
+        boolean transitive;
         @Override
         Stream<?> computeStream() {
-            flatMap = FlatMap.direct_dependencies;
+            flatMap = transitive ? FlatMap.transitive_dependencies : FlatMap.direct_dependencies;
             return super.computeStream();
         }
     }

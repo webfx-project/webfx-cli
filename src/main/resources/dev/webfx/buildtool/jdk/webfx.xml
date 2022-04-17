@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+
+    <required-libraries>
+
+        <library name="java.base">
+            <exported-packages>
+                <package>java.io</package>
+                <package>java.lang</package>
+                <package>java.lang.annotation</package>
+                <package>java.lang.invoke</package>
+                <package>java.lang.module</package>
+                <package>java.lang.ref</package>
+                <package>java.lang.reflect</package>
+                <package>java.math</package>
+                <package>java.net</package>
+                <package>java.net.spi</package>
+                <!-- Not supported by GWT so not considered as part of the JDK
+                <package>java.nio</package>
+                <package>java.nio.channels</package>
+                <package>java.nio.channels.spi</package>
+                <package>java.nio.charset</package>
+                <package>java.nio.charset.spi</package>
+                <package>java.nio.file</package>
+                <package>java.nio.file.attribute</package>
+                <package>java.nio.file.spi</package>
+                -->
+                <package>java.security</package>
+                <package>java.security.acl</package>
+                <package>java.security.cert</package>
+                <package>java.security.interfaces</package>
+                <package>java.security.spec</package>
+                <package>java.text</package>
+                <package>java.text.spi</package>
+                <package>java.time</package>
+                <package>java.time.chrono</package>
+                <package>java.time.format</package>
+                <package>java.time.temporal</package>
+                <package>java.time.zone</package>
+                <package>java.util</package>
+                <package>java.util.concurrent</package>
+                <package>java.util.concurrent.atomic</package>
+                <package>java.util.concurrent.locks</package>
+                <package>java.util.function</package>
+                <package>java.util.jar</package>
+                <package>java.util.regex</package>
+                <package>java.util.spi</package>
+                <package>java.util.stream</package>
+                <package>java.util.zip</package>
+                <package>javax.crypto</package>
+                <package>javax.crypto.interfaces</package>
+                <package>javax.crypto.spec</package>
+                <package>javax.net</package>
+                <package>javax.net.ssl</package>
+                <package>javax.security.auth</package>
+                <package>javax.security.auth.callback</package>
+                <package>javax.security.auth.login</package>
+                <package>javax.security.auth.spi</package>
+                <package>javax.security.auth.x500</package>
+                <package>javax.security.cert</package>
+            </exported-packages>
+        </library>
+
+        <library name="java.compiler"/>
+        <library name="java.datatransfer"/>
+        <library name="java.desktop"/>
+        <library name="java.instrument"/>
+
+        <library name="java.logging">
+            <exported-packages>
+                <package>java.util.logging</package>
+            </exported-packages>
+        </library>
+
+        <library name="java.management"/>
+        <library name="java.management.rmi"/>
+        <library name="java.naming"/>
+        <library name="java.net.http"/>
+        <library name="java.prefs"/>
+        <library name="java.rmi"/>
+        <library name="java.scripting"/>
+        <library name="java.se"/>
+        <library name="java.security.jgss"/>
+        <library name="java.security.sasl"/>
+        <library name="java.smartcardio"/>
+
+        <library name="java.sql">
+            <exported-packages>
+                <package>java.sql</package>
+                <package>javax.sql</package>
+            </exported-packages>
+        </library>
+
+        <library name="java.sql.rowset"/>
+        <library name="java.transaction.xa"/>
+
+        <library name="java.xml">
+            <exported-packages>
+                <package>javax.xml</package>
+                <package>javax.xml.parsers</package>
+                <package>javax.xml.transform</package>
+                <package>javax.xml.transform.dom</package>
+                <package>javax.xml.transform.stream</package>
+                <package>javax.xml.namespace</package>
+                <package>javax.xml.xpath</package>
+                <package>org.w3c.dom</package>
+                <package>org.xml.sax</package>
+            </exported-packages>
+        </library>
+
+        <library name="java.xml.crypto"/>
+        <library name="jdk.accessibility"/>
+        <library name="jdk.attach"/>
+        <library name="jdk.charsets"/>
+        <library name="jdk.compiler"/>
+        <library name="jdk.crypto.cryptoki"/>
+        <library name="jdk.crypto.ec"/>
+        <library name="jdk.dynalink"/>
+        <library name="jdk.editpad"/>
+        <library name="jdk.hotspot.agent"/>
+        <library name="jdk.httpserver"/>
+        <library name="jdk.incubator.foreign"/>
+        <library name="jdk.incubator.vector"/>
+        <library name="jdk.jartool"/>
+        <library name="jdk.javadoc"/>
+        <library name="jdk.jcmd"/>
+        <library name="jdk.jconsole"/>
+        <library name="jdk.jdeps"/>
+        <library name="jdk.jdi"/>
+        <library name="jdk.jdwp.agent"/>
+        <library name="jdk.jfr"/>
+        <library name="jdk.jlink"/>
+        <library name="jdk.jpackage"/>
+        <library name="jdk.jshell"/>
+
+        <library name="jdk.jsobject">
+            <exported-packages>
+                <package>netscape.javascript</package>
+            </exported-packages>
+        </library>
+
+        <library name="jdk.jstatd"/>
+        <library name="jdk.localedata"/>
+
+        <library name="jdk.management">
+            <exported-packages>
+                <package>com.sun.management</package>
+                <package>java.lang.management</package>
+            </exported-packages>
+        </library>
+
+        <library name="jdk.management.agent"/>
+        <library name="jdk.management.jfr"/>
+        <library name="jdk.naming.dns"/>
+        <library name="jdk.naming.rmi"/>
+        <library name="jdk.net"/>
+        <library name="jdk.nio.mapmode"/>
+        <library name="jdk.sctp"/>
+        <library name="jdk.security.auth"/>
+        <library name="jdk.security.jgss"/>
+        <library name="jdk.xml.dom"/>
+        <library name="jdk.zipfs"/>
+
+    </required-libraries>
+
+</project>

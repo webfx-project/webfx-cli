@@ -18,7 +18,8 @@ public final class Providers implements Comparable<Providers> {
         this.spiClassName = spiClassName;
         this.providerModules = providerModules;
         this.providerClassNames = providerModules
-                .flatMap(m -> m.getProvidedJavaServiceImplementations(spiClassName, true));
+                .flatMap(m -> m.getProvidedJavaServiceImplementations(spiClassName, true))
+                .sorted();
     }
 
     public String getSpiClassName() {

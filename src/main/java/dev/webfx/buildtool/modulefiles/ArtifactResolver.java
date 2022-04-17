@@ -21,12 +21,12 @@ public final class ArtifactResolver {
     }
 
     public static String getArtifactId(Module module) {
-        if (module instanceof ProjectModule)
-            return getArtifactId(module, ((ProjectModule) module).getBuildInfo());
+        if (module instanceof ProjectModuleImpl)
+            return getArtifactId((ProjectModuleImpl) module);
         return getArtifactId(module, false, false, false);
     }
 
-    static String getArtifactId(ProjectModule module) {
+    static String getArtifactId(ProjectModuleImpl module) {
         return getArtifactId(module, module.getBuildInfo());
     }
 
@@ -36,7 +36,7 @@ public final class ArtifactResolver {
 
     static String getArtifactId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
-        if (isJdkModule(moduleName) || isJdkEmulationModule(moduleName) && !(isForGwt && isExecutable))
+        if (ModuleRegistry.isJdkModule(module) || isJdkEmulationModule(moduleName) && !(isForGwt && isExecutable))
             return null; // No external dependency is required
         switch (moduleName) {
             //case "gwt-charts":
@@ -74,12 +74,12 @@ public final class ArtifactResolver {
     }
 
     public static String getGroupId(Module module) {
-        if (module instanceof ProjectModule)
-            return getGroupId(module, ((ProjectModule) module).getBuildInfo());
+        if (module instanceof ProjectModuleImpl)
+            return getGroupId((ProjectModuleImpl) module);
         return getGroupId(module, false, false, false);
     }
 
-    static String getGroupId(ProjectModule module) {
+    static String getGroupId(ProjectModuleImpl module) {
         return getGroupId(module, module.getBuildInfo());
     }
 
@@ -90,25 +90,17 @@ public final class ArtifactResolver {
     static String getGroupId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
-            module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
-        String groupId = module.getGroupId();
-        if (groupId != null)
-            return groupId;
-        return "null";
-    }
-
-    public static String getSafeVersion(Module module) {
-        String version = getVersion(module);
-        return version != null ? version : "null";
+            module = ((ProjectModule) module).getRootModule().searchModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+        return module.getGroupId();
     }
 
     public static String getVersion(Module module) {
-        if (module instanceof ProjectModule)
-            return getVersion(module, ((ProjectModule) module).getBuildInfo());
+        if (module instanceof ProjectModuleImpl)
+            return getVersion((ProjectModuleImpl) module);
         return getVersion(module, false, false, false);
     }
 
-    static String getVersion(ProjectModule module) {
+    static String getVersion(ProjectModuleImpl module) {
         return getVersion(module, module.getBuildInfo());
     }
 
@@ -119,7 +111,7 @@ public final class ArtifactResolver {
     static String getVersion(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
-            module = ((ProjectModule) module).getRootModule().findModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+            module = ((ProjectModule) module).getRootModule().searchModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
         return module.getVersion();
     }
 
@@ -176,85 +168,6 @@ public final class ArtifactResolver {
                 return moduleName.contains("-gwt-emul-") ? "shaded-sources" : "sources";
         }
         return null;
-    }
-
-    static boolean isJdkModule(String moduleName) {
-        switch (moduleName.replaceAll("-", ".")) {
-            // List returned by java --list-modules
-            case "java.base":
-            case "java.compiler":
-            case "java.datatransfer":
-            case "java.desktop":
-            case "java.instrument":
-            case "java.logging":
-            case "java.management":
-            case "java.management.rmi":
-            case "java.naming":
-            case "java.net.http":
-            case "java.prefs":
-            case "java.rmi":
-            case "java.scripting":
-            case "java.se":
-            case "java.security.jgss":
-            case "java.security.sasl":
-            case "java.smartcardio":
-            case "java.sql":
-            case "java.sql.rowset":
-            case "java.transaction.xa":
-            case "java.xml":
-            case "java.xml.crypto":
-            case "jdk.accessibility":
-            case "jdk.aot":
-            case "jdk.attach":
-            case "jdk.charsets":
-            case "jdk.compiler":
-            case "jdk.crypto.cryptoki":
-            case "jdk.crypto.ec":
-            case "jdk.dynalink":
-            case "jdk.editpad":
-            case "jdk.hotspot.agent":
-            case "jdk.httpserver":
-            case "jdk.internal.ed":
-            case "jdk.internal.jvmstat":
-            case "jdk.internal.le":
-            case "jdk.internal.opt":
-            case "jdk.internal.vm.ci":
-            case "jdk.internal.vm.compiler":
-            case "jdk.internal.vm.compiler.management":
-            case "jdk.jartool":
-            case "jdk.javadoc":
-            case "jdk.jcmd":
-            case "jdk.jconsole":
-            case "jdk.jdeps":
-            case "jdk.jdi":
-            case "jdk.jdwp.agent":
-            case "jdk.jfr":
-            case "jdk.jlink":
-            case "jdk.jshell":
-            case "jdk.jsobject":
-            case "jdk.jstatd":
-            case "jdk.localedata":
-            case "jdk.management":
-            case "jdk.management.agent":
-            case "jdk.management.jfr":
-            case "jdk.naming.dns":
-            case "jdk.naming.ldap":
-            case "jdk.naming.rmi":
-            case "jdk.net":
-            case "jdk.pack":
-            case "jdk.rmic":
-            case "jdk.scripting.nashorn":
-            case "jdk.scripting.nashorn.shell":
-            case "jdk.sctp":
-            case "jdk.security.auth":
-            case "jdk.security.jgss":
-            case "jdk.unsupported":
-            case "jdk.unsupported.desktop":
-            case "jdk.xml.dom":
-            case "jdk.zipfs":
-                return true;
-        }
-        return false;
     }
 
     private static boolean isJdkEmulationModule(String moduleName) {

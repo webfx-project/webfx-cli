@@ -1,32 +1,24 @@
 package dev.webfx.buildtool.modulefiles;
 
-import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
-import org.w3c.dom.Node;
+import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.ProjectModule;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.buildtool.modulefiles.abstr.DevModuleFileImpl;
+import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.buildtool.util.xml.XmlUtil;
+import dev.webfx.tools.util.reusablestream.ReusableStream;
+import org.w3c.dom.Node;
 
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Scanner;
 
 /**
  * @author Bruno Salmon
  */
-public class GwtHtmlFile extends ModuleFile {
+public class DevGwtHtmlFile extends DevModuleFileImpl {
 
-    public GwtHtmlFile(ProjectModule module) {
-        super(module);
-    }
-
-    @Override
-    Path getModuleFilePath() {
-        return getProjectModule().getResourcesDirectory().resolve("public/index.html");
-    }
-
-    @Override
-    void readFile() {
+    public DevGwtHtmlFile(DevProjectModule module) {
+        super(module, module.getResourcesDirectory().resolve("public/index.html"));
     }
 
     @Override
@@ -40,7 +32,7 @@ public class GwtHtmlFile extends ModuleFile {
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
                 .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.getChildNodes(), n -> n))
-                .stream().sorted(Comparator.comparingInt(GwtHtmlFile::getNodeOrder))
+                .stream().sorted(Comparator.comparingInt(DevGwtHtmlFile::getNodeOrder))
                 .filter(headOrBodyNode -> checkNodeConditions(headOrBodyNode, transitiveProjectModules))
                 .forEach(headOrBodyNode -> {
                     String nodeName = headOrBodyNode.getNodeName();
@@ -92,7 +84,7 @@ public class GwtHtmlFile extends ModuleFile {
 
     private static boolean checkNodeConditions(Node headOrBodyNode, ReusableStream<ProjectModule> transitiveProjectModules) {
         String ifModulePropertyTrue = XmlUtil.getAttributeValue(headOrBodyNode, "if-module-property-true");
-        if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> m.getWebFxModuleFile().getModuleProperties().anyMatch(p -> p.getName().equals(ifModulePropertyTrue) && "true".equalsIgnoreCase(p.getValue()))))
+        if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> m.getWebFxModuleFile().getModuleProperties().anyMatch(p -> p.getPropertyName().equals(ifModulePropertyTrue) && "true".equalsIgnoreCase(p.getPropertyValue()))))
             return false;
         String ifUsesJavaPackage = XmlUtil.getAttributeValue(headOrBodyNode, "if-uses-java-package");
         if (ifUsesJavaPackage != null && !ProjectModule.modulesUsesJavaPackage(transitiveProjectModules, ifUsesJavaPackage))

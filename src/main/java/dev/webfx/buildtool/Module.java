@@ -1,24 +1,20 @@
 package dev.webfx.buildtool;
 
+import dev.webfx.buildtool.modulefiles.abstr.GavApi;
+
 /**
  * @author Bruno Salmon
  */
-public interface Module extends Comparable<Module> {
+public interface Module extends GavApi, Comparable<Module> {
 
     String getName();
-
-    String getVersion();
-
-    String getArtifactId();
-
-    String getGroupId();
 
     String getType();
 
     // Comparison function used to sort modules dependencies in the Maven pom files
     @Override
     default int compareTo(Module m) {
-        // Moving JavaFx emulation modules on top (before JavaFx itself even if scope is just provided) so specific emulation API can be eventually be used in peer java code
+        // Moving JavaFX emulation modules on top (before JavaFX itself even if scope is just provided) so specific emulation API can be eventually be used in peer java code
         boolean thisEmul = RootModule.isJavaFxEmulModule(this);
         boolean mEmul = RootModule.isJavaFxEmulModule(m);
         if (thisEmul != mEmul)
