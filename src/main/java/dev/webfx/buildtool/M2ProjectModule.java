@@ -2,10 +2,12 @@ package dev.webfx.buildtool;
 
 import dev.webfx.buildtool.modulefiles.M2MavenPomModuleFile;
 import dev.webfx.buildtool.modulefiles.M2WebFxModuleFile;
+import dev.webfx.buildtool.util.process.ProcessUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -13,8 +15,7 @@ import java.nio.file.Path;
  */
 public class M2ProjectModule extends ProjectModuleImpl {
 
-    // TODO replace this with a maven command: mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout
-    private static final Path M2_LOCAL_REPOSITORY = Path.of(System.getProperty("user.home"), ".m2", "repository");
+    private final static Path M2_LOCAL_REPOSITORY = Path.of(ProcessUtil.executeAndReturnLastOutputLine("mvn -N help:evaluate -Dexpression=settings.localRepository -q -DforceStdout"));// Path.of(System.getProperty("user.home"), ".m2", "repository");
 
     private final Path m2ProjectHomeDirectory;
 
@@ -72,9 +73,12 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public Path getJavaSourceDirectory() {
-        if (javaSourceDirectory == null) {
+        if (javaSourceDirectory == null && !isAggregate()) {
             try {
-                javaSourceDirectory = FileSystems.newFileSystem(getM2ArtifactSubPath("-sources.jar")).getPath("/");
+                Path m2SourcesJarPath = getM2ArtifactSubPath("-sources.jar");
+                if (!Files.exists(m2SourcesJarPath))
+                    downloadArtifactClassifier("jar:sources");
+                javaSourceDirectory = FileSystems.newFileSystem(m2SourcesJarPath).getPath("/");
             } catch (IOException e) {
                 //e.printStackTrace();
             }
@@ -89,6 +93,10 @@ public class M2ProjectModule extends ProjectModuleImpl {
     @Override
     public ReusableStream<String> getSubdirectoriesChildrenModules() {
         return null; // Should never be called as for M2 projects, the modules are taken from the pom, not from webfx.xml (so the <subdirectories-modules/> directive is never executed)
+    }
+
+    public void downloadArtifactClassifier(String classifier) {
+        ProcessUtil.execute("mvn -N dependency:get -Dartifact=" + getGroupId() + ":" + getArtifactId() + ":" + getVersion() + ":" + classifier, line -> line.startsWith("Downloading"));
     }
 
 }

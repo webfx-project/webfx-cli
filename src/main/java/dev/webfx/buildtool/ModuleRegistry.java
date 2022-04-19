@@ -211,7 +211,7 @@ final public class ModuleRegistry {
     public void importLibrary(LibraryModule libraryModule) {
         String moduleName = libraryModule.getName();
         boolean isM2Library = libraryModule.getGroupId() != null &&
-                        libraryModule.getArtifactId() != null &&
+                        //libraryModule.getArtifactId() != null &&
                         libraryModule.getVersion() != null &&
                         libraryModule.getExportedPackages().isEmpty();
         if (isM2Library) {

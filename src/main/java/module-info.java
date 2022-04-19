@@ -15,6 +15,7 @@ module webfx.buildtool {
     exports dev.webfx.buildtool.modulefiles.abstr;
     exports dev.webfx.buildtool.sourcegenerators;
     exports dev.webfx.buildtool.util.javacode;
+    exports dev.webfx.buildtool.util.process;
     exports dev.webfx.buildtool.util.splitfiles;
     exports dev.webfx.buildtool.util.textfile;
     exports dev.webfx.buildtool.util.xml;

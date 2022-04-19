@@ -461,7 +461,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         if (parentModule == null) {
             String lookupParentName = gavModuleFile.lookupParentName();
             String parentName = lookupParentName != null ? lookupParentName : "webfx-parent";
-            parentModule = getRootModule().searchProjectModule(parentName);
+            if (!parentName.equals(getName()))
+                parentModule = getRootModule().searchProjectModule(parentName);
         }
     }
 
