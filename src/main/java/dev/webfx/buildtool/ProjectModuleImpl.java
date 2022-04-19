@@ -427,7 +427,12 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private void checkReadGavFromModuleFiles() {
         if (!checkReadGavFromModuleFiles) {
             checkReadGavFromModuleFiles = true;
-            readGavFromModuleFile(getWebFxModuleFile().fileExists() ? getWebFxModuleFile() : getMavenModuleFile());
+            readGavFromModuleFile(
+                    // Reading GAV from webfx.xml (and parents) unless webfx.xml doesn't exist or maven update is skipped
+                    getWebFxModuleFile().fileExists() && !getWebFxModuleFile().skipMavenPomUpdate() ? getWebFxModuleFile()
+                            // in that case, pom.xml is the reference to read the GAV for this module
+                            : getMavenModuleFile()
+            );
         }
     }
 
