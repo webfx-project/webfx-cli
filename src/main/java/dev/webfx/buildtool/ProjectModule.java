@@ -174,7 +174,7 @@ public interface ProjectModule extends Module {
 
     ReusableStream<ModuleDependency> getTransitiveDependenciesWithoutImplicitProviders();
 
-    ReusableStream<ModuleDependency> getDiscoveredByCodeAnalyzerSourceDependencies();
+    ReusableStream<ModuleDependency> getDetectedByCodeAnalyzerSourceDependencies();
 
     ReusableStream<ModuleDependency> getDirectDependenciesWithoutFinalExecutableResolutions();
 

@@ -72,12 +72,12 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     /**
      * Returns all source module dependencies directly required by the source code of this module but that couldn't be
-     * discovered by the source code analyzer (due to limitations of the current source code analyzer which is based on
-     * regular expressions). These source module dependencies not discovered by the source code analyzer must be listed
+     * detected by the source code analyzer (due to limitations of the current source code analyzer which is based on
+     * regular expressions). These source module dependencies not detected by the source code analyzer must be listed
      * in the webfx module file for now.
      */
-    private final ReusableStream<ModuleDependency> undiscoveredByCodeAnalyzerSourceDependenciesCache =
-            ReusableStream.create(() -> getWebFxModuleFile().getUndiscoveredUsedBySourceModulesDependencies())
+    private final ReusableStream<ModuleDependency> undetectedByCodeAnalyzerSourceDependenciesCache =
+            ReusableStream.create(() -> getWebFxModuleFile().getUndetectedUsedBySourceModulesDependencies())
                     .cache();
 
 
@@ -164,8 +164,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     /**
      * Returns all packages directly used in this module (or empty if this is not a java source module). These packages
-     * are discovered through a source code analyze of all java classes.
-     * The packages of the SPIs are also added here in case they are not discovered by the java source analyser. This can
+     * are detected through a source code analyze of all java classes.
+     * The packages of the SPIs are also added here in case they are not detected by the java source analyser. This can
      * happen if the provider extends a class instead of directly implementing the interface. Then the module-info.java
      * will report an error on the provider declaration because the module of the SPI won't be listed in the required modules.
      * TODO Remove this addition once the java source analyser will be able to find implicit java packages
@@ -181,9 +181,9 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     /**
      * Returns all source module dependencies directly required by the source code of this module and that could be
-     * discovered by the source code analyzer.
+     * detected by the source code analyzer.
      */
-    private final ReusableStream<ModuleDependency> discoveredByCodeAnalyzerSourceDependenciesCache =
+    private final ReusableStream<ModuleDependency> detectedByCodeAnalyzerSourceDependenciesCache =
             ReusableStream.create(() -> !getWebFxModuleFile().areUsedBySourceModulesDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
                     usedJavaPackagesCache
                             .map(p -> getRootModule().searchJavaPackageModule(p, this))
@@ -196,14 +196,14 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
 
     /**
-     * Returns all source module dependencies directly required by the source code of this module (discovered or not by
+     * Returns all source module dependencies directly required by the source code of this module (detected or not by
      * the source code analyzer).
      */
     private final ReusableStream<ModuleDependency> sourceDirectDependenciesCache =
             ReusableStream.concat(
                     explicitSourceDependenciesCache,
-                    discoveredByCodeAnalyzerSourceDependenciesCache,
-                    undiscoveredByCodeAnalyzerSourceDependenciesCache
+                    detectedByCodeAnalyzerSourceDependenciesCache,
+                    undetectedByCodeAnalyzerSourceDependenciesCache
             );
 
     /**
@@ -579,8 +579,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     }
 
     @Override
-    public ReusableStream<ModuleDependency> getDiscoveredByCodeAnalyzerSourceDependencies() {
-        return discoveredByCodeAnalyzerSourceDependenciesCache;
+    public ReusableStream<ModuleDependency> getDetectedByCodeAnalyzerSourceDependencies() {
+        return detectedByCodeAnalyzerSourceDependenciesCache;
     }
 
     @Override

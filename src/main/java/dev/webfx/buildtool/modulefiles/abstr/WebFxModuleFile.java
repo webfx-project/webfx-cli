@@ -65,8 +65,8 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupNode("dependencies/used-by-source-modules") != null;
     }
 
-    default ReusableStream<ModuleDependency> getUndiscoveredUsedBySourceModulesDependencies() {
-        return lookupDependencies("dependencies/used-by-source-modules//undiscovered-used-by-source-module", ModuleDependency.Type.SOURCE, null);
+    default ReusableStream<ModuleDependency> getUndetectedUsedBySourceModulesDependencies() {
+        return lookupDependencies("dependencies/used-by-source-modules//undetected-used-by-source-module", ModuleDependency.Type.SOURCE, null);
     }
 
     default ReusableStream<ModuleDependency> getExplicitSourceModulesDependencies() {
