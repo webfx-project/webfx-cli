@@ -37,7 +37,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
 
     @Override
     public boolean recreateOnUpdateAndWrite() {
-        return !getProjectModule().getWebFxModuleFile().skipMavenPomBuild();
+        return !getProjectModule().getWebFxModuleFile().skipMavenPomUpdate();
     }
 
     @Override
@@ -54,8 +54,9 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                         : buildInfo.isForGluon ? "pom_gluon_executable.xml"
                         : buildInfo.isForVertx ? "pom_vertx_executable.xml"
                         : "pom_javafx_executable.xml";
+        String groupId = ArtifactResolver.getGroupId(projectModule);
         String template = ResourceTextFileReader.readTemplate(templateFileName)
-                .replace("${groupId}",    ArtifactResolver.getGroupId(projectModule))
+                .replace("${groupId}", groupId)
                 .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
                 .replace("${version}",    ArtifactResolver.getVersion(projectModule))
                 ;

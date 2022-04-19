@@ -117,8 +117,8 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupNode("maven-pom-manual");
     }
 
-    default boolean skipMavenPomBuild() {
-        return !fileExists() || lookupNode("build-options/skip-maven-pom") != null;
+    default boolean skipMavenPomUpdate() {
+        return !fileExists() || lookupNode("update-options/skip-maven-pom") != null;
     }
 
     private boolean getBooleanProjectAttributeValue(String attribute) {
