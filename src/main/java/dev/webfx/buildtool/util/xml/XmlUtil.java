@@ -216,6 +216,16 @@ public final class XmlUtil {
         return element;
     }
 
+    public static void appendTextNodeIfNotAlreadyExists(Node parentNode, String xpath, String text, boolean... linefeeds) {
+        if (lookupTextNode(parentNode, xpath, text) == null)
+            appendTextElement(parentNode, xpath, text, linefeeds);
+    }
+
+    public static void prependTextNodeIfNotAlreadyExists(Node parentNode, String xpath, String text, boolean... linefeeds) {
+        if (lookupTextNode(parentNode,xpath, text) == null)
+            prependTextElement(parentNode, xpath, text, linefeeds);
+    }
+
     public static Element appendTextElementIfNotNull(Node parentNode, String xpath, String text, boolean... lineFeeds) {
         if (text != null)
             return appendTextElement(parentNode, xpath, text, lineFeeds);

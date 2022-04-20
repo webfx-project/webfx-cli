@@ -277,12 +277,12 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                             ReusableStream.create(() -> ReusableStream.concat(
                                                     ReusableStream.of(
                                                             getRootModule(),
-                                                            getRootModule().searchProjectModule("webfx-platform"),
-                                                            getRootModule().searchProjectModule("webfx-kit")
+                                                            getRootModule().searchRegisteredProjectModule("webfx-platform"),
+                                                            getRootModule().searchRegisteredProjectModule("webfx-kit")
                                                     ),
-                                                    getRootModule().searchProjectModuleStartingWith("webfx-stack"),
-                                                    getRootModule().searchProjectModuleStartingWith("webfx-extras"),
-                                                    getRootModule().searchProjectModuleStartingWith("webfx-framework")
+                                                    getRootModule().searchRegisteredProjectModuleStartingWith("webfx-stack"),
+                                                    getRootModule().searchRegisteredProjectModuleStartingWith("webfx-extras"),
+                                                    getRootModule().searchRegisteredProjectModuleStartingWith("webfx-framework")
                                             )
                                     )
                                     .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
@@ -467,7 +467,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
             String lookupParentName = gavModuleFile.lookupParentName();
             String parentName = lookupParentName != null ? lookupParentName : "webfx-parent";
             if (!parentName.equals(getName()))
-                parentModule = getRootModule().searchProjectModule(parentName);
+                parentModule = getRootModule().searchRegisteredProjectModule(parentName);
         }
     }
 
@@ -717,20 +717,20 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private ReusableStream<Module> collectExecutableEmulationModules() {
         if (isExecutable(Platform.GWT))
             return ReusableStream.of(
-                    getRootModule().searchModule("webfx-kit-gwt"),
-                    getRootModule().searchModule("webfx-platform-gwt-emul-javabase"),
-                    getRootModule().searchModule("gwt-time")
+                    getRootModule().searchRegisteredModule("webfx-kit-gwt"),
+                    getRootModule().searchRegisteredModule("webfx-platform-gwt-emul-javabase"),
+                    getRootModule().searchRegisteredModule("gwt-time")
             );
         if (isExecutable(Platform.JRE)) {
             if (getTarget().hasTag(TargetTag.OPENJFX) || getTarget().hasTag(TargetTag.GLUON)) {
                 boolean usesMedia = ProjectModule.mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().contains("webfx-kit-javafxmedia-emul"));
                 return usesMedia ? ReusableStream.of(
-                        getRootModule().searchModule("webfx-kit-openjfx"),
-                        getRootModule().searchModule("webfx-kit-javafxmedia-emul"),
-                        getRootModule().searchModule("webfx-platform-java-boot-impl")
+                        getRootModule().searchRegisteredModule("webfx-kit-openjfx"),
+                        getRootModule().searchRegisteredModule("webfx-kit-javafxmedia-emul"),
+                        getRootModule().searchRegisteredModule("webfx-platform-java-boot-impl")
                 ) : ReusableStream.of(
-                        getRootModule().searchModule("webfx-kit-openjfx"),
-                        getRootModule().searchModule("webfx-platform-java-boot-impl")
+                        getRootModule().searchRegisteredModule("webfx-kit-openjfx"),
+                        getRootModule().searchRegisteredModule("webfx-platform-java-boot-impl")
                 );
             }
             return ProjectModule.mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)

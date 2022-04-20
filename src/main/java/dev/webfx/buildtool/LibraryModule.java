@@ -28,6 +28,10 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
         return webFx;
     }
 
+    public boolean isThirdParty() {
+        return !webFx;
+    }
+
     @Override
     public Node getXmlNode() {
         return moduleNode;
@@ -35,6 +39,13 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
 
     public ReusableStream<String> getExportedPackages() {
         return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(moduleNode, "exported-packages//package"));
+    }
+
+    public boolean shouldBeDownloadedInM2() {
+        return getGroupId() != null &&
+                //getArtifactId() != null &&
+                getVersion() != null &&
+                getExportedPackages().isEmpty();
     }
 
     public static LibraryModule createWebFxLibraryModule(Node moduleNode) {

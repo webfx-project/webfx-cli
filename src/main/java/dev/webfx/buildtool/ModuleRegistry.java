@@ -1,6 +1,6 @@
 package dev.webfx.buildtool;
 
-import dev.webfx.buildtool.modulefiles.abstr.ResWebFxModuleFile;
+import dev.webfx.buildtool.modulefiles.ResWebFxModuleFile;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
@@ -210,11 +210,7 @@ final public class ModuleRegistry {
 
     public void importLibrary(LibraryModule libraryModule) {
         String moduleName = libraryModule.getName();
-        boolean isM2Library = libraryModule.getGroupId() != null &&
-                        //libraryModule.getArtifactId() != null &&
-                        libraryModule.getVersion() != null &&
-                        libraryModule.getExportedPackages().isEmpty();
-        if (isM2Library) {
+        if (libraryModule.shouldBeDownloadedInM2()) {
             if (getRegisteredModuleOrLibraryWithExportedPackages(moduleName) == null)
                 registerM2ProjectModule(new M2RootModule(libraryModule, this));
         } else if (getRegisteredLibrary(moduleName) == null) {

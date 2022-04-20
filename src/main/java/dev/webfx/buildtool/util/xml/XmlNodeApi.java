@@ -38,13 +38,11 @@ public interface XmlNodeApi {
     }
 
     default void appendTextNodeIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
-        if (lookupTextNode(xpath, text) == null)
-            appendTextElement(xpath, text, linefeeds);
+        XmlUtil.appendTextNodeIfNotAlreadyExists(getXmlNode(), xpath, text, linefeeds);
     }
 
     default void prependTextNodeIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
-        if (lookupTextNode(xpath, text) == null)
-            prependTextElement(xpath, text, linefeeds);
+        XmlUtil.prependTextNodeIfNotAlreadyExists(getXmlNode(), xpath, text, linefeeds);
     }
 
     default Node lookupTextNode(String xpath, String text) {

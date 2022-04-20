@@ -1,5 +1,7 @@
-package dev.webfx.buildtool.modulefiles.abstr;
+package dev.webfx.buildtool.modulefiles;
 
+import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
+import dev.webfx.buildtool.modulefiles.abstr.XmlModuleFileImpl;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 

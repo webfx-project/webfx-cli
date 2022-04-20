@@ -90,7 +90,7 @@ public final class ArtifactResolver {
     static String getGroupId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
-            module = ((ProjectModule) module).getRootModule().searchModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+            module = ((ProjectModule) module).getRootModule().searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
         return module.getGroupId();
     }
 
@@ -111,7 +111,7 @@ public final class ArtifactResolver {
     static String getVersion(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
         if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
-            module = ((ProjectModule) module).getRootModule().searchModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+            module = ((ProjectModule) module).getRootModule().searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
         return module.getVersion();
     }
 

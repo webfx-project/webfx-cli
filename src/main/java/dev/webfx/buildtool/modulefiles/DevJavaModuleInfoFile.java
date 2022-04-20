@@ -101,7 +101,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
                     DevProjectModule projectModule = (DevProjectModule) module;
                     String abstractModule = projectModule.implementedInterfaces().findFirst().orElse(null);
                     if (abstractModule != null && !abstractModule.equals(""))
-                        moduleName = projectModule.getRootModule().searchModule(abstractModule).getName();
+                        moduleName = projectModule.getRootModule().searchRegisteredModule(abstractModule).getName();
                 }
                 return moduleName.replaceAll("[^a-zA-Z0-9]", ".");
         }

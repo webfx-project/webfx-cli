@@ -295,11 +295,11 @@ public interface ProjectModule extends Module {
         return searchDeclaredModules(predicate, resume).findFirst().orElse(null);
     }
 
-    default Module searchModule(String name) {
-        return searchModule(name, false);
+    default Module searchRegisteredModule(String name) {
+        return searchRegisteredModule(name, false);
     }
 
-    default Module searchModule(String name, boolean silent) {
+    default Module searchRegisteredModule(String name, boolean silent) {
         // Trying first a quick get() which will work only if the module is already registered
         Module module = getModuleRegistry().getRegisteredModuleOrLibrary(name);
         // Otherwise, continuing polling the registration stream until we find it
@@ -310,11 +310,11 @@ public interface ProjectModule extends Module {
         return module;
     }
 
-    default ProjectModule searchProjectModule(String name) {
-        return searchProjectModule(name, false);
+    default ProjectModule searchRegisteredProjectModule(String name) {
+        return searchRegisteredProjectModule(name, false);
     }
 
-    default ProjectModule searchProjectModule(String name, boolean silent) {
+    default ProjectModule searchRegisteredProjectModule(String name, boolean silent) {
         // Trying first a quick get() which will work only if the module is already registered
         ProjectModule module = getModuleRegistry().getRegisteredProjectModule(name);
         // Otherwise, continuing polling the registration stream until we find it
@@ -325,7 +325,7 @@ public interface ProjectModule extends Module {
         return module;
     }
 
-    default ReusableStream<ProjectModule> searchProjectModuleStartingWith(String name) {
+    default ReusableStream<ProjectModule> searchRegisteredProjectModuleStartingWith(String name) {
         // searching along the whole registration stream (already registered + not yet registered) until we find it
         return searchRegisteredProjectModules(module -> module.getName().startsWith(name), false);
     }
