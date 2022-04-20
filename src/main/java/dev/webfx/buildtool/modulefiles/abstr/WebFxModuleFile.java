@@ -121,6 +121,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return !fileExists() || lookupNode("update-options/skip-maven-pom") != null;
     }
 
+    default boolean generatesExportSnapshot() {
+        return lookupNode("update-options/generate-export-snapshot") != null;
+    }
+
     private boolean getBooleanProjectAttributeValue(String attribute) {
         return XmlUtil.getBooleanAttributeValue(getXmlNode(), attribute);
     }

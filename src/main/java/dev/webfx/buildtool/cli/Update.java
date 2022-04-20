@@ -1,9 +1,6 @@
 package dev.webfx.buildtool.cli;
 
-import dev.webfx.buildtool.DevProjectModule;
-import dev.webfx.buildtool.Platform;
-import dev.webfx.buildtool.TargetTag;
-import dev.webfx.buildtool.UnresolvedException;
+import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.sourcegenerators.GluonFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.GwtFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.JavaFilesGenerator;
@@ -25,6 +22,7 @@ final class Update extends CommonSubcommand implements Runnable {
     String[] skip;
 
     private Boolean
+            webfxXml,
             mavenPom,
             moduleInfoJava,
             metaInfServices,
@@ -54,6 +52,7 @@ final class Update extends CommonSubcommand implements Runnable {
             's', // gwtSuperSources
             'l', // gwtServiceLoader
             'b', // gwtResourceBundles
+            'w', // webfx.xml
     };
 
     private void processTaskFlags(String[] flags, boolean value) {
@@ -83,23 +82,19 @@ final class Update extends CommonSubcommand implements Runnable {
         return false;
     }
 
-    private void enableTask(int taskIndex, boolean value) {
-        if (taskIndex == 0)
-            mavenPom = value;
-        else if (taskIndex == 1)
-            moduleInfoJava = value;
-        else if (taskIndex == 2)
-            metaInfServices = value;
-        else if (taskIndex == 3)
-            indexHtml = value;
-        else if (taskIndex == 4)
-            gwtXml = value;
-        else if (taskIndex == 5)
-            gwtSuperSources = value;
-        else if (taskIndex == 6)
-            gwtServiceLoader = value;
-        else if (taskIndex == 7)
-            gwtResourceBundles = value;
+    private boolean enableTask(int taskIndex, boolean value) {
+        switch (taskIndex) {
+            case 0: return mavenPom = value;
+            case 1: return moduleInfoJava = value;
+            case 2: return metaInfServices = value;
+            case 3: return indexHtml = value;
+            case 4: return gwtXml = value;
+            case 5: return gwtSuperSources = value;
+            case 6: return gwtServiceLoader = value;
+            case 7: return gwtResourceBundles = value;
+            case 8: return webfxXml = value;
+        }
+        return false;
     }
 
     @Override
@@ -115,11 +110,15 @@ final class Update extends CommonSubcommand implements Runnable {
 
             DevProjectModule workingModule = getWorkingDevProjectModule();
 
+            // Update webfx.xml if the working file is a root file
+            getWorkingAndChildrenModules(workingModule)
+                    .filter(module -> module instanceof RootModule)
+                    .forEach(m -> m.getWebFxModuleFile().updateAndWrite());
+
             // Generating or updating Maven module files (pom.xml)
             if (mavenPom)
                 getWorkingAndChildrenModulesInDepth(workingModule)
-                        .forEach(m -> m.getMavenModuleFile().updateAndWrite())
-                        ;
+                        .forEach(m -> m.getMavenModuleFile().updateAndWrite());
 
             // Generating files for Java modules (module-info.java and META-INF/services)
             if (moduleInfoJava || metaInfServices)
@@ -127,8 +126,7 @@ final class Update extends CommonSubcommand implements Runnable {
                         .filter(DevProjectModule::hasSourceDirectory)
                         .filter(DevProjectModule::hasJavaSourceDirectory)
                         .filter(m -> m.getTarget().isPlatformSupported(Platform.JRE))
-                        .forEach(JavaFilesGenerator::generateJavaFiles)
-                        ;
+                        .forEach(JavaFilesGenerator::generateJavaFiles);
 
             if (gwtXml || indexHtml || gwtSuperSources || gwtServiceLoader || gwtResourceBundles)
                 // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
@@ -151,10 +149,17 @@ final class Update extends CommonSubcommand implements Runnable {
         }
     }
 
+    private static ReusableStream<DevProjectModule> getWorkingAndChildrenModules(DevProjectModule workingModule) {
+        return workingModule
+                .getThisAndChildrenModules()
+                .filter(m -> m instanceof DevProjectModule)
+                .map(DevProjectModule.class::cast);
+    }
+
     private static ReusableStream<DevProjectModule> getWorkingAndChildrenModulesInDepth(DevProjectModule workingModule) {
         return workingModule
                 .getThisAndChildrenModulesInDepth()
                 .filter(m -> m instanceof DevProjectModule)
-                .map(m -> (DevProjectModule) m);
+                .map(DevProjectModule.class::cast);
     }
 }

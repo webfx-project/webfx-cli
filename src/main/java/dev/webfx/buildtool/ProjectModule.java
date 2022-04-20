@@ -111,13 +111,17 @@ public interface ProjectModule extends Module {
 
     default ReusableStream<String> getExportedJavaPackages() {
         ReusableStream<String> exportedPackages = getWebFxModuleFile().getExplicitExportedPackages();
-        if (getWebFxModuleFile().areSourcePackagesAutomaticallyExported()) {
-            exportedPackages = ReusableStream.concat(getDeclaredJavaPackages(), exportedPackages).distinct();
-            ReusableStream<String> excludedPackages = getWebFxModuleFile().getExcludedPackagesFromSourcePackages().cache();
-            if (excludedPackages.count() > 0)
-                exportedPackages = exportedPackages.filter(p -> excludedPackages.noneMatch(p::equals));
-        }
+        if (getWebFxModuleFile().areSourcePackagesAutomaticallyExported())
+            exportedPackages = ReusableStream.concat(getDeclaredJavaPackages(), getExportedSourcesPackages()).distinct();
         return exportedPackages;
+    }
+
+    default ReusableStream<String> getExportedSourcesPackages() {
+        ReusableStream<String> sourcePackages = getDeclaredJavaPackages();
+        ReusableStream<String> excludedPackages = getWebFxModuleFile().getExcludedPackagesFromSourcePackages().cache();
+        if (!excludedPackages.isEmpty())
+            sourcePackages = sourcePackages.filter(p -> excludedPackages.noneMatch(p::equals));
+        return sourcePackages;
     }
 
 

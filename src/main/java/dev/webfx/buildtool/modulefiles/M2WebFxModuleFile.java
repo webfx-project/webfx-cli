@@ -23,7 +23,7 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
 
     private static Path getWebFxPathAndDownloadIfMissing(M2ProjectModule module) {
         Path path = module.getM2ArtifactSubPath("-webfx.xml");
-        if (!Files.exists(path))
+        if (false && !Files.exists(path))
             module.downloadArtifactClassifier("xml:webfx");
         return path;
     }
