@@ -81,8 +81,12 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupDependencies("dependencies//resource-module", ModuleDependency.Type.RESOURCE, "runtime");
     }
 
-    default ReusableStream<LibraryModule> getRequiredLibraryModules() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("required-libraries//library"), LibraryModule::new);
+    default ReusableStream<LibraryModule> getRequiredWebFxLibraryModules() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("required-libraries//webfx-library"), LibraryModule::createWebFxLibraryModule);
+    }
+
+    default ReusableStream<LibraryModule> getRequiredThirdPartyLibraryModules() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("required-libraries//library"), LibraryModule::createThirdPartyLibraryModule);
     }
 
     default ReusableStream<String> getPackagesAutoCondition() {

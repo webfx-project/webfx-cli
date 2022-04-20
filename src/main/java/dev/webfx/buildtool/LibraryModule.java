@@ -12,14 +12,20 @@ import org.w3c.dom.Node;
 public class LibraryModule extends ModuleImpl implements XmlGavApi {
 
     private final Node moduleNode;
+    private final boolean webFx;
 
-    public LibraryModule(Node moduleNode) {
+    public LibraryModule(Node moduleNode, boolean webFx) {
         super(XmlGavUtil.lookupName(moduleNode));
         this.moduleNode = moduleNode;
         groupId = lookupGroupId();
         artifactId = lookupArtifactId();
         version = lookupVersion();
         type = lookupType();
+        this.webFx = webFx;
+    }
+
+    public boolean isWebFx() {
+        return webFx;
     }
 
     @Override
@@ -29,6 +35,14 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
 
     public ReusableStream<String> getExportedPackages() {
         return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(moduleNode, "exported-packages//package"));
+    }
+
+    public static LibraryModule createWebFxLibraryModule(Node moduleNode) {
+        return new LibraryModule(moduleNode, true);
+    }
+
+    public static LibraryModule createThirdPartyLibraryModule(Node moduleNode) {
+        return new LibraryModule(moduleNode, false);
     }
 
 }

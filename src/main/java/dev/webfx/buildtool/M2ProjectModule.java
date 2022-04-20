@@ -24,15 +24,15 @@ public class M2ProjectModule extends ProjectModuleImpl {
     private Boolean hasJavaSourceDirectory;
     private Path javaSourceDirectory;
 
-    public M2ProjectModule(String name, ProjectModule parentModule) {
+    public M2ProjectModule(String name, M2ProjectModule parentModule) {
         this(name, parentModule.getGroupId(), name, parentModule.getVersion(), parentModule);
     }
 
-    public M2ProjectModule(Module descriptor, ProjectModule parentModule) {
+    public M2ProjectModule(Module descriptor, M2ProjectModule parentModule) {
         this(descriptor.getName(), descriptor.getGroupId(), descriptor.getArtifactId(), descriptor.getVersion(), parentModule);
     }
 
-    public M2ProjectModule(String name, String groupId, String artifactId, String version, ProjectModule parentModule) {
+    public M2ProjectModule(String name, String groupId, String artifactId, String version, M2ProjectModule parentModule) {
         super(name, parentModule);
         if (artifactId == null)
             artifactId = name;
@@ -42,12 +42,17 @@ public class M2ProjectModule extends ProjectModuleImpl {
         m2ProjectHomeDirectory = M2_LOCAL_REPOSITORY.resolve(groupId.replace('.', '/')).resolve(artifactId).resolve(version);
     }
 
-    public Path getM2ProjectHomeDirectory() {
-        return m2ProjectHomeDirectory;
-    }
-
     public Path getM2ArtifactSubPath(String suffix) {
         return m2ProjectHomeDirectory.resolve(getArtifactId() + '-' + getVersion() + suffix);
+    }
+
+    @Override
+    public M2ProjectModule getParentModule() {
+        return (M2ProjectModule) super.getParentModule();
+    }
+
+    public boolean isWebFxModuleFileExpected() { // Should be overridden in M2RootModule
+        return getParentModule().isWebFxModuleFileExpected();
     }
 
     @Override

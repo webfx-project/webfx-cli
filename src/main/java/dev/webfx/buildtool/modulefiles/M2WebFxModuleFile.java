@@ -13,7 +13,7 @@ import java.nio.file.Path;
 public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implements WebFxModuleFile {
 
     public M2WebFxModuleFile(M2ProjectModule module) {
-        super(module, getWebFxPathAndDownloadIfMissing(module));
+        super(module, getWebFxModuleFilePathAndDownloadIfMissing(module));
     }
 
     @Override
@@ -21,9 +21,9 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
         return false;
     }
 
-    private static Path getWebFxPathAndDownloadIfMissing(M2ProjectModule module) {
+    private static Path getWebFxModuleFilePathAndDownloadIfMissing(M2ProjectModule module) {
         Path path = module.getM2ArtifactSubPath("-webfx.xml");
-        if (false && !Files.exists(path))
+        if (module.isWebFxModuleFileExpected() && !Files.exists(path))
             module.downloadArtifactClassifier("xml:webfx");
         return path;
     }

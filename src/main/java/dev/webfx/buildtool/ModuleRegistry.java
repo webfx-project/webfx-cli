@@ -15,7 +15,7 @@ final public class ModuleRegistry {
 
     static {
         // Registering JDK modules (packages registration will be done in the non-static constructor)
-        new ResWebFxModuleFile("dev/webfx/buildtool/jdk/webfx.xml").getRequiredLibraryModules().forEach(m -> JDK_MODULES.put(m.getName(), m));
+        new ResWebFxModuleFile("dev/webfx/buildtool/jdk/webfx.xml").getRequiredThirdPartyLibraryModules().forEach(m -> JDK_MODULES.put(m.getName(), m));
     }
 
     public static boolean isJdkModule(Module module) {

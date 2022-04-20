@@ -55,7 +55,10 @@ public interface ProjectModule extends Module {
     ProjectModule getOrCreateChildProjectModule(String name);
 
     default ReusableStream<LibraryModule> getRequiredLibraryModules() { // Should be overridden to use a cache
-        return getWebFxModuleFile().getRequiredLibraryModules();
+        return ReusableStream.concat(
+                getWebFxModuleFile().getRequiredWebFxLibraryModules(),
+                getWebFxModuleFile().getRequiredThirdPartyLibraryModules()
+        );
     }
 
     default ReusableStream<String> getResourcePackages() {

@@ -18,7 +18,7 @@
 
     <required-libraries>
 
-        <library artifact="dev.webfx:webfx-lib-reusablestream:0.1.0-SNAPSHOT"/>
+        <webfx-library artifact="dev.webfx:webfx-lib-reusablestream:0.1.0-SNAPSHOT"/>
         <library name="info.picocli" artifact="info.picocli:picocli:4.6.3"/>
 
     </required-libraries>
