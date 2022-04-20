@@ -26,11 +26,12 @@ public final class M2RootModule extends M2ProjectModule implements RootModule {
 
     @Override
     public boolean isInlineWebFxParent() {
-        return false;
+        return false; // Never called
     }
 
     @Override
     public void setInlineWebFxParent(boolean inlineWebFxParent) {
+        // Never called
     }
 
 }

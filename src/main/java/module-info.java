@@ -6,6 +6,7 @@ module webfx.buildtool {
     requires info.picocli;
     requires java.base;
     requires java.xml;
+    requires maven.invoker;
     requires webfx.lib.reusablestream;
 
     // Exported packages

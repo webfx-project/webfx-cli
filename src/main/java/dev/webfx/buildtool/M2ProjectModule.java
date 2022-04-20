@@ -4,18 +4,29 @@ import dev.webfx.buildtool.modulefiles.M2MavenPomModuleFile;
 import dev.webfx.buildtool.modulefiles.M2WebFxModuleFile;
 import dev.webfx.buildtool.util.process.ProcessUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
+import org.apache.maven.shared.invoker.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 
 /**
  * @author Bruno Salmon
  */
 public class M2ProjectModule extends ProjectModuleImpl {
 
-    private final static Path M2_LOCAL_REPOSITORY = Path.of(ProcessUtil.executeAndReturnLastOutputLine("mvn -N help:evaluate -Dexpression=settings.localRepository -q -DforceStdout"));// Path.of(System.getProperty("user.home"), ".m2", "repository");
+    private final static boolean USE_MAVEN_INVOKER = false; // if false, just using shell invocation
+    private final static boolean ASK_MAVEN_LOCAL_REPOSITORY = false; // if false, we will use the default path: ${user.home}/.m2/repository
+    private final static Path M2_LOCAL_REPOSITORY = ASK_MAVEN_LOCAL_REPOSITORY ?
+            // Maven invocation (advantage: return the correct path 100% sure / disadvantage: takes a few seconds to execute)
+            Path.of(ProcessUtil.executeAndReturnLastOutputLine("mvn -N help:evaluate -Dexpression=settings.localRepository -q -DforceStdout"))
+            // Otherwise, getting the standard path  (advantage: very quick / disadvantage: not 100% sure (the developer may have changed the default settings)
+            : Path.of(System.getProperty("user.home"), ".m2", "repository");
+
+    private static Invoker MAVEN_INVOKER; // Will be initialised later if needed
 
     private final Path m2ProjectHomeDirectory;
 
@@ -101,7 +112,30 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     public void downloadArtifactClassifier(String classifier) {
-        ProcessUtil.execute("mvn -N dependency:get -Dartifact=" + getGroupId() + ":" + getArtifactId() + ":" + getVersion() + ":" + classifier + " -Dtransitive=false", line -> line.startsWith("Downloading"));
+        invokeMavenGoal("dependency:get -N -Dtransitive=false -Dartifact=" + getGroupId() + ":" + getArtifactId() + ":" + getVersion() + ":" + classifier);
+    }
+
+    private static void invokeMavenGoal(String goal) {
+        if (!USE_MAVEN_INVOKER) {
+            ProcessUtil.execute("mvn " + goal, line -> line.startsWith("Downloading"));
+        } else {
+            Logger.log("Invoking maven goal: " + goal);
+            InvocationRequest request = new DefaultInvocationRequest();
+            request.setGoals(Collections.singletonList(goal));
+            if (MAVEN_INVOKER == null) {
+                MAVEN_INVOKER = new DefaultInvoker();
+                String mavenHome = System.getProperty("maven.home");
+                if (mavenHome == null)
+                    // Invoking mvn -version through the shell to get the maven home (takes about 300ms)
+                    mavenHome = ProcessUtil.executeAndReturnLastMatchingLine("mvn -version", line -> line.startsWith("Maven home:")).substring(11).trim();
+                MAVEN_INVOKER.setMavenHome(new File(mavenHome));
+            }
+            try {
+                MAVEN_INVOKER.execute( request );
+            } catch (MavenInvocationException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
 }
