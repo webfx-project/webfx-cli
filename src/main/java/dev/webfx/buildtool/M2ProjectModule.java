@@ -101,7 +101,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     public void downloadArtifactClassifier(String classifier) {
-        ProcessUtil.execute("mvn -N dependency:get -Dartifact=" + getGroupId() + ":" + getArtifactId() + ":" + getVersion() + ":" + classifier, line -> line.startsWith("Downloading"));
+        ProcessUtil.execute("mvn -N dependency:get -Dartifact=" + getGroupId() + ":" + getArtifactId() + ":" + getVersion() + ":" + classifier + " -Dtransitive=false", line -> line.startsWith("Downloading"));
     }
 
 }
