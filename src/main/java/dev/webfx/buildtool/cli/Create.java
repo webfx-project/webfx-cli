@@ -126,7 +126,7 @@ class Create extends CommonSubcommand {
     }
 
     private static DevMavenPomModuleFile getParentDevMavenModuleFile(DevProjectModule module) {
-        MavenPomModuleFile mavenModuleFile = module.getParentModule().getMavenModuleFile();
+        MavenPomModuleFile mavenModuleFile = module.fetchParentModule().getMavenModuleFile();
         if (mavenModuleFile instanceof DevMavenPomModuleFile)
             return (DevMavenPomModuleFile) mavenModuleFile;
         return null;

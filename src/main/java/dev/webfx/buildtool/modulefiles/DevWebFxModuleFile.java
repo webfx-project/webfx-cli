@@ -5,9 +5,7 @@ import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.modulefiles.abstr.DevXmlModuleFileImpl;
 import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.buildtool.util.xml.XmlUtil;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
+import org.w3c.dom.*;
 
 /**
  * @author Bruno Salmon
@@ -15,6 +13,22 @@ import org.w3c.dom.Node;
 public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements WebFxModuleFile {
 
     private final static String EXPORT_SNAPSHOT_TAG = "export-snapshot";
+    private final static String EXPORT_SECTION_COMMENT = "\n" +
+            "\n" +
+            "     ******************************************************************************************************************* \n" +
+            "     ******************************* Section managed by WebFX (DO NOT EDIT MANUALLY) *********************************** \n" +
+            "     ******************************************************************************************************************* \n" +
+            "\n" +
+            "     <export-snapshot> allows a much faster import of this WebFX library into another project. It's a self-contained\n" +
+            "     image of this and children modules. All information required for the import of this library is present in this\n" +
+            "     single file. The export snapshot is optional, and a WebFX library that doesn't generate it can still be imported\n" +
+            "     into another project, but WebFX will then need to download all individual webfx.xml files for every children\n" +
+            "     modules, together with their pom and sources. Knowing that each download requires a maven invocation that takes\n" +
+            "     at least 3s (sometimes 10s or more), the export snapshot brings a significant performance improvement in the\n" +
+            "     import process.\n" +
+            "\n" +
+            "     ";
+
 
     public DevWebFxModuleFile(DevProjectModule module) {
         super(module, module.getHomeDirectory().resolve("webfx.xml"));
@@ -23,19 +37,20 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
     @Override
     public boolean updateDocument(Document document) {
         Node exportNode = lookupNode(EXPORT_SNAPSHOT_TAG);
-        if (!generatesExportSnapshot()) {
-            if (exportNode != null)
-                XmlUtil.removeNode(exportNode);
-            return exportNode != null;
-        }
-        if (exportNode != null)
+        boolean exportNodeWasPresent = exportNode != null;
+        if (exportNode != null) {
             XmlUtil.removeChildren(exportNode);
-        else
-            appendIndentNode(exportNode = document.createElement(EXPORT_SNAPSHOT_TAG), true);
-        exportNode.appendChild(document.createComment(" Node managed by WebFX (DO NOT EDIT MANUALLY) "));
+            removeNodeAndPreviousBlankText(exportNode, true);
+            XmlUtil.removeNode(exportNode);
+        } else
+            exportNode = document.createElement(EXPORT_SNAPSHOT_TAG);
+        if (!generatesExportSnapshot())
+            return exportNodeWasPresent;
         final Node finalExportNode = exportNode;
         getProjectModule().getThisAndChildrenModulesInDepth()
                 .forEach(m -> exportChildModule(m, finalExportNode));
+        appendIndentNode(document.createComment(EXPORT_SECTION_COMMENT), true);
+        appendIndentNode(exportNode, true);
         return true;
     }
 
@@ -51,7 +66,7 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
             Node sourcePackagesNode = XmlUtil.lookupNode(childProjectElement, "exported-packages/source-packages");
             if (sourcePackagesNode != null) {
                 childModule.getExportedJavaPackages().forEach(p -> XmlUtil.appendTextElement(sourcePackagesNode.getParentNode(), "package", p));
-                XmlUtil.removeNode(sourcePackagesNode);
+                removeNodeAndPreviousBlankText(sourcePackagesNode, false);
             }
             // Replacing the <modules/> section with the effective modules (so the import doesn't need to download the pom)
             Node modulesNode = XmlUtil.lookupNode(childProjectElement, "modules");
@@ -83,5 +98,17 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
                     });
             XmlUtil.appendIndentNode(childProjectElement, exportNode, true);
         }
+    }
+
+    private static void removeNodeAndPreviousBlankText(Node node, boolean removeComments) {
+        while (true) {
+            Node previousSibling = node.getPreviousSibling();
+            if (previousSibling instanceof Text && previousSibling.getTextContent().isBlank()
+                    || removeComments && previousSibling instanceof Comment)
+                XmlUtil.removeNode(previousSibling);
+            else
+                break;
+        }
+        XmlUtil.removeNode(node);
     }
 }

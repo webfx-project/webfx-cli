@@ -60,7 +60,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                 .replace("${version}",    ArtifactResolver.getVersion(projectModule))
                 ;
         if (!isRootModule) {
-            ProjectModule parentModule = projectModule.getParentModule();
+            ProjectModule parentModule = projectModule.fetchParentModule();
             template = template
                     .replace("${parent.groupId}", ArtifactResolver.getGroupId(parentModule))
                     .replace("${parent.artifactId}", ArtifactResolver.getArtifactId(parentModule))
@@ -140,7 +140,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         }
         String groupId = ArtifactResolver.getGroupId(module);
         String version = ArtifactResolver.getVersion(module);
-        Module parentModule = module.getParentModule();
+        Module parentModule = module.fetchParentModule();
         String parentGroupId = ArtifactResolver.getGroupId(parentModule);
         String parentVersion = ArtifactResolver.getVersion(parentModule);
         if (version != null && !version.equals(parentVersion))

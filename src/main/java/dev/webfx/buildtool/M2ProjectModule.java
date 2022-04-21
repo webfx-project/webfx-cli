@@ -58,12 +58,12 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     @Override
-    public M2ProjectModule getParentModule() {
-        return (M2ProjectModule) super.getParentModule();
+    public M2ProjectModule fetchParentModule() {
+        return (M2ProjectModule) super.fetchParentModule();
     }
 
     public boolean isWebFxModuleFileExpected() { // Should be overridden in M2RootModule
-        return getParentModule().isWebFxModuleFileExpected();
+        return fetchParentModule().isWebFxModuleFileExpected();
     }
 
     @Override
@@ -89,11 +89,20 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public Path getJavaSourceDirectory() {
-        if (javaSourceDirectory == null && !isAggregate()) {
+        if (javaSourceDirectory == null // Not yet evaluated (first time call)
+                // No java source directory for aggregate projects (which are just parent modules with children modules but no sources)
+                && !isAggregate()
+                // Also, for exported projects there is no need to access the java source code as all required information has been captured in the export snapshot
+                && !getWebFxModuleFile().isExported()
+        ) {
+            // For all other cases, we check if there is a source artifact
             try {
+                // Path to the source artifact in the local maven repository
                 Path m2SourcesJarPath = getM2ArtifactSubPath("-sources.jar");
+                // If it doesn't exist, probably it's because it hasn't been downloaded yet, so we try to download it
                 if (!Files.exists(m2SourcesJarPath))
                     downloadArtifactClassifier("jar:sources");
+                // Once the source jar is potentially there, the source directory corresponds to the root of this jar
                 javaSourceDirectory = FileSystems.newFileSystem(m2SourcesJarPath).getPath("/");
             } catch (IOException e) {
                 //e.printStackTrace();

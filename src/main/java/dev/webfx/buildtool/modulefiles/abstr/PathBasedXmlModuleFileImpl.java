@@ -26,7 +26,7 @@ public abstract class PathBasedXmlModuleFileImpl extends XmlModuleFileImpl imple
 
     @Override
     public Document getDocument() {
-        if (document == null & readFileIfExists)
+        if (document == null && readFileIfExists)
             readFile();
         return document;
     }

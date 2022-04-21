@@ -409,8 +409,13 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         rootModule = (RootModule) m;
     }
 
-    public ProjectModule getParentModule() {
+    public ProjectModule fetchParentModule() {
         checkParentFromModuleFiles();
+        return parentModule;
+    }
+
+    @Override
+    public ProjectModule getParentModule() {
         return parentModule;
     }
 
@@ -473,19 +478,22 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     @Override
     public String getGroupId() {
-        checkReadGavFromModuleFiles();
+        if (groupId == null)
+            checkReadGavFromModuleFiles();
         return groupId != null || parentModule == null ? groupId : parentModule.getGroupId();
     }
 
     @Override
     public String getArtifactId() {
-        checkReadGavFromModuleFiles();
+        if (artifactId == null)
+            checkReadGavFromModuleFiles();
         return artifactId;
     }
 
     @Override
     public String getVersion() {
-        checkReadGavFromModuleFiles();
+        if (version == null)
+            checkReadGavFromModuleFiles();
         return version != null || parentModule == null ? version : parentModule.getVersion();
     }
 

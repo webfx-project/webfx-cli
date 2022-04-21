@@ -14,6 +14,8 @@ public interface ProjectModule extends Module {
 
     ProjectModule getParentModule();
 
+    ProjectModule fetchParentModule();
+
     /*************************
      ***** Basic streams *****
      *************************/
@@ -91,7 +93,9 @@ public interface ProjectModule extends Module {
     }
 
     default boolean isAggregate() {
-        return getMavenModuleFile().isAggregate() || getWebFxModuleFile().isAggregate();
+        return getWebFxModuleFile().skipMavenPomUpdate() ?
+                getMavenModuleFile().isAggregate()
+                : getWebFxModuleFile().isAggregate();
     }
 
     default boolean isImplementingInterface() {
