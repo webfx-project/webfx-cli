@@ -55,7 +55,6 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
         if (module.getTarget().isPlatformSupported(Platform.JRE) && providedJavaServices.count() > 0) {
             sb.append("\n    // Provided services\n");
             providedJavaServices
-                    .stream()
                     .sorted()
                     .forEach(s -> sb.append("    provides ").append(s).append(" with ").append(module.getProvidedJavaServiceImplementations(s, true).collect(Collectors.joining(", "))).append(";\n"));
         }
@@ -67,8 +66,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
     private static void processSection(StringBuilder sb, String sectionName, String keyword, ReusableStream<String> tokens) {
         if (tokens.count() > 0) {
             sb.append("\n    // ").append(sectionName).append('\n');
-            tokens.stream()
-                    .sorted()
+            tokens.sorted()
                     .forEach(p -> sb.append("    ").append(keyword).append(' ').append(p).append(";\n"));
         }
     }

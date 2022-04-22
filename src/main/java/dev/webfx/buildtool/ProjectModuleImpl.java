@@ -22,9 +22,10 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
 
     /**
-     * Returns all java files declared in this module (or empty if this is not a java source module).
+     * Returns all java source files present in this module (or empty if this is not a java source module).
+     * Note: they are not captured in the export snapshot.
      */
-    private final ReusableStream<JavaFile> declaredJavaFilesCache =
+    private final ReusableStream<JavaFile> javaSourceFilesCache =
             ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
                             hasJavaSourceDirectory() ? SplitFiles.uncheckedWalk(getJavaSourceDirectory()) : Spliterators.emptySpliterator())
                     .filter(JAVA_FILE_MATCHER::matches)
@@ -33,13 +34,17 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                     .cache();
 
     /**
-     * Returns all packages declared in this module (or empty if this is not a java source module). These packages are
-     * simply deduced from the declared java classes.
+     * Returns all java source packages present in this module (or empty if this is not a java source module). These
+     * packages are simply deduced from the java source files when present, or from the export snapshot otherwise.
      */
-    private final ReusableStream<String> declaredJavaPackagesCache =
-            declaredJavaFilesCache
-                    .map(JavaFile::getPackageName)
-                    .distinct();
+    private final ReusableStream<String> javaSourcePackagesCache =
+            ReusableStream.create(() -> javaSourceFilesCache.isEmpty() ?
+                            getWebFxModuleFile().javaSourcePackagesFromExportSnapshot()
+                            :
+                    javaSourceFilesCache
+                            .map(JavaFile::getPackageName)
+                            .distinct()
+                    );
 
     /**
      * Returns the children project modules if any (only first level under this module).
@@ -47,8 +52,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private final ReusableStream<ProjectModule> childrenModulesCache =
             getChildrenModuleNames()
                     .map(this::getOrCreateChildProjectModule)
-                    .cache()
-            ;
+                    .cache();
 
     /**
      * Returns the children project modules if any (all levels under this module).
@@ -63,7 +67,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * Returns all java services provided by this module (returns the list of files under META-INF/services).
      */
     private final ReusableStream<String> providedJavaServicesCache =
-            ReusableStream.create(() -> getWebFxModuleFile().providedServerProviders())
+            ReusableStream.create(() -> getWebFxModuleFile().providedServiceProviders())
                     .map(ServiceProvider::getSpi)
                     .distinct()
                     .sorted()
@@ -127,8 +131,10 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * full name of the SPI class.
      */
     private final ReusableStream<String> usedRequiredJavaServicesCache =
-            declaredJavaFilesCache
-                    .flatMap(JavaFile::getUsedRequiredJavaServices)
+            ReusableStream.concat(
+                            javaSourceFilesCache.flatMap(JavaFile::getUsedRequiredJavaServices),
+                            ReusableStream.create(() -> getWebFxModuleFile().usedRequiredJavaServicesFromExportSnapshot())
+                    )
                     .distinct()
                     .cache();
 
@@ -137,8 +143,10 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * full name of the SPI class.
      */
     private final ReusableStream<String> usedOptionalJavaServicesCache =
-            declaredJavaFilesCache
-                    .flatMap(JavaFile::getUsedOptionalJavaServices)
+            ReusableStream.concat(
+                            javaSourceFilesCache.flatMap(JavaFile::getUsedOptionalJavaServices),
+                            ReusableStream.create(() -> getWebFxModuleFile().usedOptionalJavaServicesFromExportSnapshot())
+                    )
                     .distinct()
                     .cache();
 
@@ -158,7 +166,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      */
     private final ReusableStream<String> declaredJavaServicesCache =
             usedJavaServicesCache
-                    .filter(s -> declaredJavaFilesCache.anyMatch(jc -> s.equals(jc.getClassName())))
+                    .filter(s -> javaSourceFilesCache.anyMatch(javaFile -> s.equals(javaFile.getClassName())))
                     .cache();
 
 
@@ -172,7 +180,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      */
     private final ReusableStream<String> usedJavaPackagesCache =
             ReusableStream.concat(
-                            declaredJavaFilesCache.flatMap(JavaFile::getUsedJavaPackages),
+                            javaSourceFilesCache.flatMap(JavaFile::getUsedJavaPackages),
                             providedJavaServicesCache.map(spi -> spi.substring(0, spi.lastIndexOf('.'))) // package of the SPI (ex: javafx.application if SPI = javafx.application.Application)
                     )
                     .distinct()
@@ -358,7 +366,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Returns the final list of all the direct module dependencies. There are 2 changes made in this last step.
      * 1) modules dependencies declared with an executable target (ex: my-module-if-java) are kept only if this module
-     * is executable and compatible with this target (if not, these dependencies are removed). Also these dependencies
+     * is executable and compatible with this target (if not, these dependencies are removed). Also, these dependencies
      * (if kept) are moved into the direct dependencies of this executable module even if they were initially in the
      * transitive dependencies (ex: if my-module-if-java was a transitive dependency and this module is a java(fx) final
      * executable module, my-module-if-java will finally be a direct dependency of this module and removed from the
@@ -511,14 +519,14 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     ///// Java classes
 
-    public ReusableStream<JavaFile> getDeclaredJavaFiles() {
-        return declaredJavaFilesCache;
+    public ReusableStream<JavaFile> getJavaSourceFiles() {
+        return javaSourceFilesCache;
     }
 
     ///// Java packages
 
-    public ReusableStream<String> getDeclaredJavaPackages() {
-        return declaredJavaPackagesCache;
+    public ReusableStream<String> getJavaSourcePackages() {
+        return javaSourcePackagesCache;
     }
 
     public ReusableStream<String> getProvidedJavaServices() {
@@ -575,7 +583,6 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      ******************************/
 
     ///// Dependencies
-
     @Override
     public ReusableStream<ModuleDependency> getDirectDependencies() {
         return directDependenciesCache;
@@ -607,7 +614,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     }
 
     public ReusableStream<JavaFile> getJavaFilesDependingOn(String destinationModule) {
-        return getDeclaredJavaFiles()
+        return getJavaSourceFiles()
                 .filter(jf -> jf.getUsedJavaPackages().anyMatch(p -> destinationModule.equals(rootModule.searchJavaPackageModule(p, this).getName())))
                 ;
     }
@@ -675,7 +682,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                     Providers providers = new Providers(spiClassName, RootModule.findModulesProvidingJavaService(searchScope, spiClassName, getTarget(), single));
                     providers.getProviderModules().collect(Collectors.toCollection(() -> allProviderModules));
                     if (providers.getProviderClassNames().count() == 0)
-                        Logger.verbose("No provider found for " + spiClassName + " among " + searchScope.map(ProjectModule::getName).stream().sorted().collect(Collectors.toList()));
+                        Logger.verbose("No provider found for " + spiClassName + " among " + searchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList()));
                     return providers;
                 })
                 .filter(Objects::nonNull) // Removing nulls
@@ -712,9 +719,9 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                             .distinct()
                             ;
                 }
-                String message = "No concrete module found for interface module " + module + " in executable module " + this + " among " + searchScope.map(ProjectModule::getName).stream().sorted().collect(Collectors.toList());
+                String message = "No concrete module found for interface module " + module + " in executable module " + this + " among " + searchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList());
                 //if (isModuleUnderRootHomeDirectory(this))
-                    Logger.warning(message);
+                Logger.warning(message);
                 //else
                 //    Logger.verbose(message);
             }

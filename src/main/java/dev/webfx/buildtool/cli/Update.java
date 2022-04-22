@@ -137,7 +137,7 @@ final class Update extends CommonSubcommand implements Runnable {
 
             // Update webfx.xml if the working file is a root file
             getWorkingAndChildrenModules(workingModule)
-                    .filter(module -> module instanceof RootModule)
+                    .filter(RootModule.class::isInstance)
                     .forEach(m -> m.getWebFxModuleFile().updateAndWrite());
 
             int operationsCount = transaction.operationsCount();
@@ -152,14 +152,14 @@ final class Update extends CommonSubcommand implements Runnable {
     private static ReusableStream<DevProjectModule> getWorkingAndChildrenModules(DevProjectModule workingModule) {
         return workingModule
                 .getThisAndChildrenModules()
-                .filter(m -> m instanceof DevProjectModule)
+                .filter(DevProjectModule.class::isInstance)
                 .map(DevProjectModule.class::cast);
     }
 
     private static ReusableStream<DevProjectModule> getWorkingAndChildrenModulesInDepth(DevProjectModule workingModule) {
         return workingModule
                 .getThisAndChildrenModulesInDepth()
-                .filter(m -> m instanceof DevProjectModule)
+                .filter(DevProjectModule.class::isInstance)
                 .map(DevProjectModule.class::cast);
     }
 }

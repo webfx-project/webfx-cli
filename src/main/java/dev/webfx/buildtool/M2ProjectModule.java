@@ -21,9 +21,9 @@ public class M2ProjectModule extends ProjectModuleImpl {
     private final static boolean USE_MAVEN_INVOKER = false; // if false, just using shell invocation
     private final static boolean ASK_MAVEN_LOCAL_REPOSITORY = false; // if false, we will use the default path: ${user.home}/.m2/repository
     private final static Path M2_LOCAL_REPOSITORY = ASK_MAVEN_LOCAL_REPOSITORY ?
-            // Maven invocation (advantage: return the correct path 100% sure / disadvantage: takes a few seconds to execute)
+            // Maven invocation (advantage: returns the correct path 100% sure / disadvantage: takes a few seconds to execute)
             Path.of(ProcessUtil.executeAndReturnLastOutputLine("mvn -N help:evaluate -Dexpression=settings.localRepository -q -DforceStdout"))
-            // Otherwise, getting the standard path  (advantage: very quick / disadvantage: not 100% sure (the developer may have changed the default settings)
+            // Otherwise, getting the standard path  (advantage: immediate / disadvantage: not 100% sure (the developer may have changed the default Maven settings)
             : Path.of(System.getProperty("user.home"), ".m2", "repository");
 
     private static Invoker MAVEN_INVOKER; // Will be initialised later if needed
@@ -117,7 +117,9 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public ReusableStream<String> getSubdirectoriesChildrenModules() {
-        return null; // Should never be called as for M2 projects, the modules are taken from the pom, not from webfx.xml (so the <subdirectories-modules/> directive is never executed)
+        // Should never be called as for M2 projects, the modules are taken from the pom, not from webfx.xml
+        // (so the <subdirectories-modules/> directive is never executed)
+        throw new UnsupportedOperationException("getSubdirectoriesChildrenModules() should never be called on M2 project");
     }
 
     public void downloadArtifactClassifier(String classifier) {

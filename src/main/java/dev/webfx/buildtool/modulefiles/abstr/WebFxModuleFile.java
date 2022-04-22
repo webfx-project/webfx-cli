@@ -29,6 +29,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupNode("modules") != null;
     }
 
+    default boolean shouldTakeChildrenModuleNamesFromPomInstead() {
+        return !isAggregate(); // Default behaviour: yes if there is no <modules/> section
+    }
+
     default boolean shouldSubdirectoriesChildrenModulesBeAdded() {
         return lookupNode("modules/subdirectories-modules") != null;
     }
@@ -109,7 +113,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupNodeTextContent("graalvm-reflection-json");
     }
 
-    default ReusableStream<ServiceProvider> providedServerProviders() {
+    default ReusableStream<ServiceProvider> providedServiceProviders() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("providers//*"), node -> new ServiceProvider(node.getNodeName(), node.getTextContent()));
     }
 
@@ -127,6 +131,18 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
 
     default boolean generatesExportSnapshot() {
         return lookupNode("update-options/generate-export-snapshot") != null;
+    }
+
+    default ReusableStream<String> javaSourcePackagesFromExportSnapshot() {
+        return lookupNodeListTextContent("source-packages//package");
+    }
+
+    default ReusableStream<String> usedRequiredJavaServicesFromExportSnapshot() {
+        return lookupNodeListTextContent("used-services//required-service");
+    }
+
+    default ReusableStream<String> usedOptionalJavaServicesFromExportSnapshot() {
+        return lookupNodeListTextContent("used-services//optional-service");
     }
 
     private boolean getBooleanProjectAttributeValue(String attribute) {

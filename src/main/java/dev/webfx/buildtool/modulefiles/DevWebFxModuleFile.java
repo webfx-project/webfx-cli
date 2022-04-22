@@ -62,12 +62,10 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
             Element childProjectElement = (Element) document.importNode(childDocument.getDocumentElement(), true);
             // Making the project name explicit (so the import knows what module we are talking about)
             childProjectElement.setAttribute("name", childModule.getName());
-            // Replacing the <source-packages/> directive with the effective source packages (so the import doesn't need to download the sources)
-            Node sourcePackagesNode = XmlUtil.lookupNode(childProjectElement, "exported-packages/source-packages");
-            if (sourcePackagesNode != null) {
-                childModule.getExportedJavaPackages().forEach(p -> XmlUtil.appendTextElement(sourcePackagesNode.getParentNode(), "package", p));
-                removeNodeAndPreviousBlankText(sourcePackagesNode, false);
-            }
+            // Removing tags that are not necessary for the import: <update-options>, <maven-pom-manual>
+            String[] unnecessaryTags = {"update-options", "maven-pom-manual"};
+            for (String tag : unnecessaryTags)
+                removeNodeAndPreviousBlankText(XmlUtil.lookupNode(childProjectElement, tag), true);
             // Replacing the <modules/> section with the effective modules (so the import doesn't need to download the pom)
             Node modulesNode = XmlUtil.lookupNode(childProjectElement, "modules");
             if (modulesNode != null) {
@@ -93,22 +91,31 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
                     .forEach(libraryModule -> {
                         ProjectModule libraryProjectModule = projectModule.searchRegisteredProjectModule(libraryModule.getName(), true);
                         if (libraryProjectModule != null)
-                            libraryProjectModule.getDeclaredJavaPackages()
-                                    .forEach(p -> XmlUtil.appendTextNodeIfNotAlreadyExists(libraryModule.getXmlNode(), "exported-packages/package", p));
+                            libraryProjectModule.getJavaSourcePackages()
+                                    .forEach(p -> XmlUtil.appendTextNodeIfNotAlreadyExists(libraryModule.getXmlNode(), "exported-packages/package", p, true));
                     });
+            // Adding a snapshot of the source packages (must be listed in executable GWT modules),
+            // and also to be able to evaluate the <source-packages/> directive without having to download the sources
+            childModule.getJavaSourcePackages().forEach(p -> XmlUtil.appendTextNodeIfNotAlreadyExists(childProjectElement, "source-packages/package", p, true));
+            // Adding a snapshot of the used required java services
+            childModule.getUsedRequiredJavaServices().forEach(js -> XmlUtil.appendTextNodeIfNotAlreadyExists(childProjectElement, "used-services/required-service", js, true));
+            // Adding a snapshot of the used optional java services
+            childModule.getUsedOptionalJavaServices().forEach(js -> XmlUtil.appendTextNodeIfNotAlreadyExists(childProjectElement, "used-services/optional-service", js, true));
             XmlUtil.appendIndentNode(childProjectElement, exportNode, true);
         }
     }
 
     private static void removeNodeAndPreviousBlankText(Node node, boolean removeComments) {
-        while (true) {
-            Node previousSibling = node.getPreviousSibling();
-            if (previousSibling instanceof Text && previousSibling.getTextContent().isBlank()
-                    || removeComments && previousSibling instanceof Comment)
-                XmlUtil.removeNode(previousSibling);
-            else
-                break;
-        }
-        XmlUtil.removeNode(node);
+        if (node != null)
+            while (true) {
+                Node previousSibling = node.getPreviousSibling();
+                if (previousSibling instanceof Text && previousSibling.getTextContent().isBlank()
+                        || removeComments && previousSibling instanceof Comment)
+                    XmlUtil.removeNode(previousSibling);
+                else {
+                    XmlUtil.removeNode(node);
+                    break;
+                }
+            }
     }
 }

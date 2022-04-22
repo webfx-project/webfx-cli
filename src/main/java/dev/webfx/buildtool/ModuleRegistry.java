@@ -222,7 +222,7 @@ final public class ModuleRegistry {
 
     void declareProjectModulePackages(ProjectModule module) {
         //System.out.println("Declaring packages for project module " + module);
-        module.getDeclaredJavaPackages().forEach(p -> declarePackageBelongsToModule(p, module));
+        module.getJavaSourcePackages().forEach(p -> declarePackageBelongsToModule(p, module));
         module.getWebFxModuleFile().getExplicitExportedPackages().forEach(p -> declarePackageBelongsToModule(p, module));
         declaredModules.add(module);
     }
@@ -244,7 +244,7 @@ final public class ModuleRegistry {
                 .orElse(null);
         if (module == null) { // Module not found :-(
             // Last chance: the package was actually in the source package! (ex: webfx-kit-extracontrols-registry-spi)
-            if (sourceModule.getDeclaredJavaPackages().anyMatch(p -> p.equals(packageName)))
+            if (sourceModule.getJavaSourcePackages().anyMatch(p -> p.equals(packageName)))
                 module = sourceModule;
             else if (!canReturnNull) // Otherwise, raising an exception (unless returning null is permitted)
                 throw new UnresolvedException("Unresolved module for package " + packageName + " (used by " + sourceModule + ")");
@@ -260,7 +260,7 @@ final public class ModuleRegistry {
         if (pm.isImplementingInterface() && !sourceModule.isExecutable()) {
             // Exception is however made for non-executable source modules that implement a provider
             // Ex: webfx-kit-extracontrols-registry-javafx can include webfx-kit-extracontrols-registry-spi (which implements webfx-kit-extracontrols-registry)
-            boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> pm.getDeclaredJavaFiles().anyMatch(c -> c.getClassName().equals(s)));
+            boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> pm.getJavaSourceFiles().anyMatch(c -> c.getClassName().equals(s)));
             if (!exception)
                 return false;
         }

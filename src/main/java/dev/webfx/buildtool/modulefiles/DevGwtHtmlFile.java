@@ -32,7 +32,7 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
                 .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.getChildNodes(), n -> n))
-                .stream().sorted(Comparator.comparingInt(DevGwtHtmlFile::getNodeOrder))
+                .sorted(Comparator.comparingInt(DevGwtHtmlFile::getNodeOrder))
                 .filter(headOrBodyNode -> checkNodeConditions(headOrBodyNode, transitiveProjectModules))
                 .forEach(headOrBodyNode -> {
                     String nodeName = headOrBodyNode.getNodeName();

@@ -41,7 +41,7 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
         Node moduleSourceEndNode = moduleSourceCommentNode.getNextSibling();
         // In the GWT module file, we need to list all transitive dependencies (not only direct dependencies) so that GWT can find all the sources required by the application
         getProjectModule().getTransitiveDependencies()
-                .stream().collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
+                .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                 .stream().sorted(Map.Entry.comparingByKey())
                 .forEach(moduleGroup -> {
                     Module module = moduleGroup.getKey();
@@ -87,15 +87,15 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                     }
                     if (module instanceof ProjectModule) {
                         ProjectModule projectModule = (ProjectModule) module;
-                        projectModule.getDeclaredJavaPackages()
-                                .stream().sorted()
+                        projectModule.getJavaSourcePackages()
+                                .sorted()
                                 .forEach(p -> {
                                     Element sourceElement = document.createElement("source");
                                     sourceElement.setAttribute("path", p.replaceAll("\\.", "/"));
                                     nodeAppenderIfNotOnlyComment.accept(sourceElement);
                                 });
                         projectModule.getResourcePackages()
-                                .stream().sorted()
+                                .sorted()
                                 .forEach(p -> {
                                     Element resourceElement = document.createElement("resource");
                                     resourceElement.setAttribute("path", p.replaceAll("\\.", "/"));
@@ -110,7 +110,7 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                         // Note: these properties are set with the -setProperty GWT compiler argument when calling the
                         // GWT plugin in the root pom.xml
                         projectModule.getSystemProperties()
-                                .stream().sorted()
+                                .sorted()
                                 .forEach(p -> {
                                     Element propertyElement = document.createElement("define-configuration-property");
                                     propertyElement.setAttribute("name", p);

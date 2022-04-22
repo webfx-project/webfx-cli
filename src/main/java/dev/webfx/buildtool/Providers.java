@@ -60,7 +60,7 @@ public final class Providers implements Comparable<Providers> {
 
     @Override
     public String toString() {
-        return spiClassName + " -> " + providerClassNames.stream().collect(Collectors.joining(", "));
+        return spiClassName + " -> " + providerClassNames.collect(Collectors.joining(", "));
     }
 
     @Override

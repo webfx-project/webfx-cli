@@ -103,7 +103,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                     ).distinct();
             Set<String> gas = new HashSet<>(); // set of groupId:artifactId listed so far in the pom dependencies - used for duplicate removal below
             dependencies
-                    .stream().collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
+                    .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                     .stream().sorted(Map.Entry.comparingByKey())
                     .forEach(moduleGroup -> {
                         Module destinationModule = moduleGroup.getKey();

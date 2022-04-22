@@ -24,7 +24,7 @@ public interface ProjectModule extends Module {
         return ReusableStream.create(() -> {
             ReusableStream<String> childrenModuleNames;
             WebFxModuleFile webFxModuleFile = getWebFxModuleFile();
-            if (webFxModuleFile != null && webFxModuleFile.isAggregate()) {
+            if (webFxModuleFile != null && !webFxModuleFile.shouldTakeChildrenModuleNamesFromPomInstead()) {
                 childrenModuleNames = webFxModuleFile.getChildrenModuleNames();
                 if (webFxModuleFile.shouldSubdirectoriesChildrenModulesBeAdded())
                     childrenModuleNames = childrenModuleNames.concat(getSubdirectoriesChildrenModules());
@@ -108,7 +108,7 @@ public interface ProjectModule extends Module {
 
     default ReusableStream<String> getProvidedJavaServiceImplementations(String javaService, boolean replaceDollarWithDot) {
         // Providers declared in the webfx module file
-        ReusableStream<String> implementations = getWebFxModuleFile().providedServerProviders()
+        ReusableStream<String> implementations = getWebFxModuleFile().providedServiceProviders()
                 .filter(p -> p.getSpi().equals(javaService))
                 .map(ServiceProvider::getImplementation);
         if (replaceDollarWithDot)
@@ -119,12 +119,12 @@ public interface ProjectModule extends Module {
     default ReusableStream<String> getExportedJavaPackages() {
         ReusableStream<String> exportedPackages = getWebFxModuleFile().getExplicitExportedPackages();
         if (getWebFxModuleFile().areSourcePackagesAutomaticallyExported())
-            exportedPackages = ReusableStream.concat(getDeclaredJavaPackages(), getExportedSourcesPackages()).distinct();
+            exportedPackages = ReusableStream.concat(getJavaSourcePackages(), getJavaSourcePackagesMinusExcludedPackages()).distinct();
         return exportedPackages;
     }
 
-    default ReusableStream<String> getExportedSourcesPackages() {
-        ReusableStream<String> sourcePackages = getDeclaredJavaPackages();
+    private ReusableStream<String> getJavaSourcePackagesMinusExcludedPackages() {
+        ReusableStream<String> sourcePackages = getJavaSourcePackages();
         ReusableStream<String> excludedPackages = getWebFxModuleFile().getExcludedPackagesFromSourcePackages().cache();
         if (!excludedPackages.isEmpty())
             sourcePackages = sourcePackages.filter(p -> excludedPackages.noneMatch(p::equals));
@@ -138,9 +138,9 @@ public interface ProjectModule extends Module {
 
     Path getJavaSourceDirectory();
 
-    ReusableStream<String> getDeclaredJavaPackages();
+    ReusableStream<String> getJavaSourcePackages();
 
-    ReusableStream<JavaFile> getDeclaredJavaFiles();
+    ReusableStream<JavaFile> getJavaSourceFiles();
 
     default ModuleRegistry getModuleRegistry() {
         return getRootModule().getModuleRegistry();
@@ -339,7 +339,7 @@ public interface ProjectModule extends Module {
 
     static ReusableStream<ProjectModule> filterProjectModules(ReusableStream<Module> modules) {
         return modules
-                .filter(m -> m instanceof ProjectModule)
+                .filter(ProjectModule.class::isInstance)
                 .map(ProjectModule.class::cast);
     }
 
@@ -354,7 +354,7 @@ public interface ProjectModule extends Module {
         return modules.anyMatch(m -> {
             if (excludeWebFxKit && m.getName().startsWith("webfx-kit-"))
                 return false;
-            return m.usesJavaPackage(packageName) && m.getDeclaredJavaFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
+            return m.usesJavaPackage(packageName) && m.getJavaSourceFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
         });
     }
 

@@ -4,6 +4,7 @@ import dev.webfx.buildtool.M2ProjectModule;
 import dev.webfx.buildtool.modulefiles.abstr.PathBasedXmlModuleFileImpl;
 import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.buildtool.util.xml.XmlUtil;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -39,8 +40,18 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
         return exported;
     }
 
+    @Override
+    public boolean shouldTakeChildrenModuleNamesFromPomInstead() {
+        return !exported // No, if the module is exported as the snapshot itself contains the effective children module names
+                // No, if children modules names are explicitly listed in webfx.xml (<modules> section without <subdirectories-modules/> directive)
+                && !(isAggregate() && !shouldSubdirectoriesChildrenModulesBeAdded())
+                // Yes, otherwise (ie no <modules/> section or with <subdirectories-modules/> directive)
+                ;
+    }
+
     private Element lookupExportedSnapshotProjectElement(M2ProjectModule module) {
-        Node exportedProjectNode = XmlUtil.lookupNode(getDocument().getDocumentElement(), "export-snapshot/project[@name='" + module.getName() + "']");
+        Document document = getDocument();
+        Node exportedProjectNode = document == null ? null : XmlUtil.lookupNode(document.getDocumentElement(), "export-snapshot/project[@name='" + module.getName() + "']");
         if (exportedProjectNode instanceof Element)
             return (Element) exportedProjectNode;
         return null;

@@ -107,16 +107,16 @@ final class STream extends CommonSubcommand {
                 moduleStream = null;
                 switch (flatMap) {
                     case java_files:
-                        stream = projectModuleStream.flatMap(m -> m.getDeclaredJavaFiles().stream());
+                        stream = projectModuleStream.flatMap(m -> m.getJavaSourceFiles().stream());
                         break;
                     case java_classes:
-                        stream = projectModuleStream.flatMap(m -> m.getDeclaredJavaFiles().stream()).map(JavaFile::getClassName);
+                        stream = projectModuleStream.flatMap(m -> m.getJavaSourceFiles().stream()).map(JavaFile::getClassName);
                         break;
                     case code_lines:
-                        stream = projectModuleStream.flatMap(m -> m.getDeclaredJavaFiles().stream()).flatMap(f -> Arrays.stream(f.getJavaCode().getTextCode().split("\n")));
+                        stream = projectModuleStream.flatMap(m -> m.getJavaSourceFiles().stream()).flatMap(f -> Arrays.stream(f.getJavaCode().getTextCode().split("\n")));
                         break;
                     case declared_packages:
-                        stream = projectModuleStream.flatMap(m -> m.getDeclaredJavaPackages().stream());
+                        stream = projectModuleStream.flatMap(m -> m.getJavaSourcePackages().stream());
                         break;
                     case used_packages:
                         stream = projectModuleStream.flatMap(m -> m.getUsedJavaPackages().stream());
