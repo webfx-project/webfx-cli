@@ -145,6 +145,14 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupNodeListTextContent("used-services//optional-service");
     }
 
+    default ReusableStream<String> modulesUsingJavaPackageFromExportSnapshot(String javaPackage) {
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(getDocument(), "/project/export-snapshot/usages/java-package[@name='" + javaPackage + "']//module"));
+    }
+
+    default ReusableStream<String> modulesUsingJavaClassFromExportSnapshot(String javaClass) {
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(getDocument(), "/project/export-snapshot/usages/java-class[@name='" + javaClass + "']//module"));
+    }
+
     private boolean getBooleanProjectAttributeValue(String attribute) {
         return XmlUtil.getBooleanAttributeValue(getXmlNode(), attribute);
     }
@@ -158,12 +166,12 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         if (executable != isExecutable()) {
             Attr attribute = getOrCreateDocument().createAttribute("executable");
             attribute.setValue(String.valueOf(executable));
-            getXmlNode().getAttributes().setNamedItem(attribute);
+            getModuleElement().getAttributes().setNamedItem(attribute);
         }
     }
 
     default void addProvider(String spiClassName, String providerClassName) {
-        appendTextNodeIfNotAlreadyExists("providers/" + spiClassName, providerClassName, true);
+        appendElementWithTextContentIfNotAlreadyExists("providers/" + spiClassName, providerClassName, true);
     }
 
     default boolean updateDocument(Document document) {

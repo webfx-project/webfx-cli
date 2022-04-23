@@ -81,7 +81,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
     public boolean updateDocument(Document document) {
         DevProjectModule module = getProjectModule();
         if (module.isAggregate()) {
-            appendTextNodeIfNotAlreadyExists("packaging", "pom", true);
+            appendElementWithTextContentIfNotAlreadyExists("packaging", "pom", true);
             if (module.getWebFxModuleFile().isAggregate())
                 module.getChildrenModules().forEach(this::addModule);
             else
@@ -114,24 +114,24 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                             String ga = groupId + ":" + artifactId;
                             if (!gas.contains(ga)) { // Checking uniqueness to avoid malformed pom
                                 gas.add(ga);
-                                Node groupNode = XmlUtil.appendTextElement(dependenciesNode, "/dependency/groupId", groupId, true, false);
+                                Node groupNode = XmlUtil.appendElementWithTextContent(dependenciesNode, "/dependency/groupId", groupId, true, false);
                                 Node dependencyNode = groupNode.getParentNode();
-                                XmlUtil.appendTextElement(dependencyNode, "/artifactId", artifactId);
+                                XmlUtil.appendElementWithTextContent(dependencyNode, "/artifactId", artifactId);
                                 String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
                                 if (version != null)
-                                    XmlUtil.appendTextElement(dependencyNode, "/version", version);
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/version", version);
                                 String type = ArtifactResolver.getType(destinationModule);
                                 if (type != null)
-                                    XmlUtil.appendTextElement(dependencyNode, "/type", type);
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/type", type);
                                 String scope = ArtifactResolver.getScope(moduleGroup, buildInfo);
                                 String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
                                 // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
                                 if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))
-                                    XmlUtil.appendTextElement(dependencyNode, "/scope", scope);
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/scope", scope);
                                 if (classifier != null)
-                                    XmlUtil.appendTextElement(dependencyNode, "/classifier", classifier);
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/classifier", classifier);
                                 if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
-                                    XmlUtil.appendTextElement(dependencyNode, "/optional", "true");
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/optional", "true");
                             }
                         }
                     });
@@ -144,29 +144,29 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         String parentGroupId = ArtifactResolver.getGroupId(parentModule);
         String parentVersion = ArtifactResolver.getVersion(parentModule);
         if (version != null && !version.equals(parentVersion))
-            prependTextNodeIfNotAlreadyExists("version", version, true);
-        prependTextNodeIfNotAlreadyExists("artifactId", ArtifactResolver.getArtifactId(module), true);
+            prependElementWithTextContentIfNotAlreadyExists("version", version, true);
+        prependElementWithTextContentIfNotAlreadyExists("artifactId", ArtifactResolver.getArtifactId(module), true);
         if (groupId != null && !groupId.equals(parentGroupId))
-            prependTextNodeIfNotAlreadyExists("groupId", groupId, true);
+            prependElementWithTextContentIfNotAlreadyExists("groupId", groupId, true);
         if (parentModule != null && lookupNode("parent/artifactId") == null) {
             Node parentNode = lookupNode("parent");
             if (parentNode == null)
                 parentNode = createAndPrependElement("parent", true);
             else
                 XmlUtil.removeChildren(parentNode);
-            XmlUtil.appendTextElement(parentNode, "groupId", parentGroupId);
-            XmlUtil.appendTextElement(parentNode, "artifactId", ArtifactResolver.getArtifactId(parentModule));
-            XmlUtil.appendTextElement(parentNode, "version", parentVersion);
+            XmlUtil.appendElementWithTextContent(parentNode, "groupId", parentGroupId);
+            XmlUtil.appendElementWithTextContent(parentNode, "artifactId", ArtifactResolver.getArtifactId(parentModule));
+            XmlUtil.appendElementWithTextContent(parentNode, "version", parentVersion);
         }
         Node modelVersionNode = lookupNode("modelVersion");
         if (modelVersionNode == null)
-            prependTextElement("modelVersion", "4.0.0");
+            prependElementWithTextContent("modelVersion", "4.0.0");
         return true;
     }
 
     public void addModule(Module module) {
         String artifactId = ArtifactResolver.getArtifactId(module);
-        appendTextNodeIfNotAlreadyExists("modules/module", artifactId, true, false);
+        appendElementWithTextContentIfNotAlreadyExists("modules/module", artifactId, true, false);
     }
 
 }

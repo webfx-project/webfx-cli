@@ -7,12 +7,22 @@ import dev.webfx.buildtool.util.xml.XmlDocumentApi;
 import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.tools.util.reusablestream.ReusableStream;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
  * @author Bruno Salmon
  */
 public interface XmlModuleFile extends ModuleFile, XmlDocumentApi {
+
+    default Element getXmlNode() {
+        return getModuleElement();
+    }
+
+    default Element getModuleElement() {
+        Document document = getDocument();
+        return document == null ? null : document.getDocumentElement();
+    }
 
     default boolean updateDocument(Document document) {
         XmlUtil.removeChildren(document);

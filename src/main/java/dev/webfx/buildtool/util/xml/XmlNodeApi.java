@@ -37,28 +37,28 @@ public interface XmlNodeApi {
         return XmlUtil.createAndAppendElement(getOrCreateXmlNode(), xpath, linefeeds);
     }
 
-    default void appendTextNodeIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
-        XmlUtil.appendTextNodeIfNotAlreadyExists(getXmlNode(), xpath, text, linefeeds);
+    default Element appendElementWithTextContentIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
+        return XmlUtil.appendElementWithTextContentIfNotAlreadyExists(getXmlNode(), xpath, text, linefeeds);
     }
 
-    default void prependTextNodeIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
-        XmlUtil.prependTextNodeIfNotAlreadyExists(getXmlNode(), xpath, text, linefeeds);
+    default Element prependElementWithTextContentIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
+        return XmlUtil.prependElementWithTextContentIfNotAlreadyExists(getXmlNode(), xpath, text, linefeeds);
     }
 
-    default Node lookupTextNode(String xpath, String text) {
-        return XmlUtil.lookupTextNode(getXmlNode(), xpath, text);
+    default Node lookupNodeWithTextContent(String xpath, String text) {
+        return XmlUtil.lookupNodeWithTextContent(getXmlNode(), xpath, text);
     }
 
     default void appendIndentNode(Node node, boolean linefeed) {
         XmlUtil.appendIndentNode(node, getOrCreateXmlNode(), linefeed);
     }
 
-    default Element appendTextElement(String xpath, String text, boolean... linefeeds) {
-        return XmlUtil.appendTextElement(getOrCreateXmlNode(), xpath, text, linefeeds);
+    default Element appendElementWithTextContent(String xpath, String text, boolean... linefeeds) {
+        return XmlUtil.appendElementWithTextContent(getOrCreateXmlNode(), xpath, text, linefeeds);
     }
 
-    default Element prependTextElement(String xpath, String text, boolean... linefeeds) {
-        return XmlUtil.prependTextElement(getOrCreateXmlNode(), xpath, text, linefeeds);
+    default Element prependElementWithTextContent(String xpath, String text, boolean... linefeeds) {
+        return XmlUtil.prependElementWithTextContent(getOrCreateXmlNode(), xpath, text, linefeeds);
     }
 
     default Element createAndPrependElement(String xpath, boolean... linefeeds) {
@@ -71,14 +71,6 @@ public interface XmlNodeApi {
 
     default ReusableStream<String> lookupNodeListTextContent(String xPathExpression) {
         return XmlUtil.nodeListToTextContentReusableStream(lookupNodeList(xPathExpression));
-    }
-
-    default ReusableStream<String> lookupNodeListAttribute(String xPathExpression, String attribute) {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList(xPathExpression), node -> XmlUtil.getAttributeValue(node, attribute));
-    }
-
-    default boolean getBooleanAttributeValue(String name) {
-        return XmlUtil.getBooleanAttributeValue(getXmlNode(), name);
     }
 
 }

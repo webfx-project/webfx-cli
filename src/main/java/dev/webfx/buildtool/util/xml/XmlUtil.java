@@ -114,8 +114,12 @@ public final class XmlUtil {
         return node == null ? null : node.getTextContent();
     }
 
-    public static Node lookupTextNode(Object item, String xpath, String text) {
+    public static Node lookupNodeWithTextContent(Object item, String xpath, String text) {
         return lookupNode(item, xpath + "[text() = '" + text + "']");
+    }
+
+    public static Element lookupElementWithAttributeValue(Object item, String xpath, String attribute, String value) {
+        return (Element) lookupNode(item, xpath + "[@" + attribute + "='" + value + "']");
     }
 
     private static <T> T lookup(Object item, String xpathExpression, QName returnType) {
@@ -133,6 +137,10 @@ public final class XmlUtil {
 
     public static ReusableStream<String> nodeListToTextContentReusableStream(NodeList nodeList) {
         return nodeListToReusableStream(nodeList, Node::getTextContent);
+    }
+
+    public static ReusableStream<String> nodeListToAttributeValueReusableStream(NodeList nodeList, String attribute) {
+        return nodeListToReusableStream(nodeList, n -> XmlUtil.getAttributeValue(n, attribute));
     }
 
     public static <T> ReusableStream<T> nodeListToReusableStream(NodeList nodeList, Function<Node, ? extends T> transformer) {
@@ -210,33 +218,44 @@ public final class XmlUtil {
         return element;
     }
 
-    public static Element appendTextElement(Node parentNode, String xpath, String text, boolean... lineFeeds) {
-        Element element = XmlUtil.createAndAppendElement(parentNode, xpath, lineFeeds);
+    public static Element appendElementWithTextContent(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+        Element element = createAndAppendElement(parentNode, xpath, lineFeeds);
         element.setTextContent(text);
         return element;
     }
 
-    public static void appendTextNodeIfNotAlreadyExists(Node parentNode, String xpath, String text, boolean... linefeeds) {
-        if (lookupTextNode(parentNode, xpath, text) == null)
-            appendTextElement(parentNode, xpath, text, linefeeds);
+    public static Element appendElementWithTextContentIfNotAlreadyExists(Node parentNode, String xpath, String text, boolean... linefeeds) {
+        Element element = (Element) lookupNodeWithTextContent(parentNode, xpath, text);
+        if (element == null)
+            element = appendElementWithTextContent(parentNode, xpath, text, linefeeds);
+        return element;
     }
 
-    public static void prependTextNodeIfNotAlreadyExists(Node parentNode, String xpath, String text, boolean... linefeeds) {
-        if (lookupTextNode(parentNode,xpath, text) == null)
-            prependTextElement(parentNode, xpath, text, linefeeds);
+    public static Element createAndAppendElementWithAttribute(Node parentNode, String xpath, String attribute, String value, boolean... lineFeeds) {
+        Element element = createAndAppendElement(parentNode, xpath, lineFeeds);
+        element.setAttribute(attribute, value);
+        return element;
     }
 
-    public static Element appendTextElementIfNotNull(Node parentNode, String xpath, String text, boolean... lineFeeds) {
-        if (text != null)
-            return appendTextElement(parentNode, xpath, text, lineFeeds);
-        return null;
+    public static Element appendElementWithAttributeIfNotAlreadyExists(Node parentNode, String xpath, String attribute, String value, boolean... lineFeeds) {
+        Element element = lookupElementWithAttributeValue(parentNode, xpath, attribute, value);
+        if (element == null)
+            element = createAndAppendElementWithAttribute(parentNode, xpath, attribute, value, lineFeeds);
+        return element;
+    }
+
+    public static Element prependElementWithTextContentIfNotAlreadyExists(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+        Element element = (Element) lookupNodeWithTextContent(parentNode, xpath, text);
+        if (element == null)
+            element = prependElementWithTextContent(parentNode, xpath, text, lineFeeds);
+        return element;
     }
 
     public static Element createAndPrependElement(Node parentElement, String xpath, boolean... lineFeeds) {
         return createAndAddElement(parentElement, xpath, false, lineFeeds);
     }
 
-    public static Element prependTextElement(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+    public static Element prependElementWithTextContent(Node parentNode, String xpath, String text, boolean... lineFeeds) {
         Element element = XmlUtil.createAndPrependElement(parentNode, xpath, lineFeeds);
         element.setTextContent(text);
         return element;

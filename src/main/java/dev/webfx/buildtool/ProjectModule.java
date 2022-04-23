@@ -153,7 +153,19 @@ public interface ProjectModule extends Module {
     ReusableStream<String> getUsedJavaPackages();
 
     default boolean usesJavaPackage(String javaPackage) {
+        if (getWebFxModuleFile().modulesUsingJavaPackageFromExportSnapshot(javaPackage).anyMatch(m -> m.equals(getName())))
+            return true;
         return getUsedJavaPackages().anyMatch(javaPackage::equals);
+    }
+
+    default boolean usesJavaClass(String javaClass) {
+        if (getWebFxModuleFile().modulesUsingJavaClassFromExportSnapshot(javaClass).anyMatch(m -> m.equals(getName())))
+            return true;
+        String packageName = JavaFile.getPackageNameFromJavaClass(javaClass);
+        boolean excludeWebFxKit = packageName.startsWith("javafx.");
+        if (excludeWebFxKit && getName().startsWith("webfx-kit-"))
+            return false;
+        return usesJavaPackage(packageName) && getJavaSourceFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
     }
 
     ReusableStream<String> getUsedRequiredJavaServices();
@@ -348,14 +360,7 @@ public interface ProjectModule extends Module {
     }
 
     static boolean modulesUsesJavaClass(ReusableStream<ProjectModule> modules, String javaClass) {
-        int lastDotIndex = javaClass.lastIndexOf('.');
-        String packageName = javaClass.substring(0, lastDotIndex);
-        boolean excludeWebFxKit = packageName.startsWith("javafx.");
-        return modules.anyMatch(m -> {
-            if (excludeWebFxKit && m.getName().startsWith("webfx-kit-"))
-                return false;
-            return m.usesJavaPackage(packageName) && m.getJavaSourceFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
-        });
+        return modules.anyMatch(m -> m.usesJavaClass(javaClass));
     }
 
     static ReusableStream<ProjectModule> filterDestinationProjectModules(ReusableStream<ModuleDependency> dependencies) {

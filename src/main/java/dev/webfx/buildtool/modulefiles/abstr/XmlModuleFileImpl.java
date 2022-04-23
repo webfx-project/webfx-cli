@@ -37,8 +37,9 @@ public abstract class XmlModuleFileImpl extends ModuleFileImpl implements XmlMod
         this.document = document;
     }
 
-    public Element getXmlNode() {
-        return moduleElement != null ? moduleElement : getDocument() == null ? null : document.getDocumentElement();
+    @Override
+    public Element getModuleElement() {
+        return moduleElement != null ? moduleElement : XmlModuleFile.super.getModuleElement();
     }
 
 }

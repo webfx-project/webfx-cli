@@ -107,4 +107,15 @@ public final class JavaFile implements Comparable<JavaFile> {
     public int compareTo(JavaFile o) {
         return path.compareTo(o.path);
     }
+
+    private static String lastJavaClass;
+    private static String lastPackageName;
+
+    static String getPackageNameFromJavaClass(String javaClass) {
+        if (javaClass == lastJavaClass)
+            return lastPackageName;
+        lastJavaClass = javaClass;
+        int lastDotIndex = javaClass.lastIndexOf('.');
+        return lastPackageName = javaClass.substring(0, lastDotIndex);
+    }
 }
