@@ -3,7 +3,7 @@ package dev.webfx.buildtool.cli;
 import dev.webfx.buildtool.Module;
 import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.modulefiles.ArtifactResolver;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 

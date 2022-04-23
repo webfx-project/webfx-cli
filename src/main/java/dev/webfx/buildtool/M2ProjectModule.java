@@ -3,7 +3,7 @@ package dev.webfx.buildtool;
 import dev.webfx.buildtool.modulefiles.M2MavenPomModuleFile;
 import dev.webfx.buildtool.modulefiles.M2WebFxModuleFile;
 import dev.webfx.buildtool.util.process.ProcessUtil;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import org.apache.maven.shared.invoker.*;
 
 import java.io.File;

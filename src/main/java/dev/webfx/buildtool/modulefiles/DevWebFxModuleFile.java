@@ -5,7 +5,7 @@ import dev.webfx.buildtool.*;
 import dev.webfx.buildtool.modulefiles.abstr.DevXmlModuleFileImpl;
 import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.buildtool.util.xml.XmlUtil;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import org.w3c.dom.*;
 
 /**

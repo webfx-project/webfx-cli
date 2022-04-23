@@ -6,7 +6,7 @@ import dev.webfx.buildtool.modulefiles.abstr.DevModuleFileImpl;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
 import dev.webfx.buildtool.util.xml.XmlUtil;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import org.w3c.dom.Node;
 
 import java.util.Comparator;

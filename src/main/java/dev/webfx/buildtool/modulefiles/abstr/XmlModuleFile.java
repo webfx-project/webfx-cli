@@ -5,7 +5,7 @@ import dev.webfx.buildtool.Target;
 import dev.webfx.buildtool.TargetTag;
 import dev.webfx.buildtool.util.xml.XmlDocumentApi;
 import dev.webfx.buildtool.util.xml.XmlUtil;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;

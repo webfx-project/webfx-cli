@@ -2,7 +2,7 @@ package dev.webfx.buildtool.util.xml;
 
 import org.w3c.dom.*;
 import org.xml.sax.InputSource;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;

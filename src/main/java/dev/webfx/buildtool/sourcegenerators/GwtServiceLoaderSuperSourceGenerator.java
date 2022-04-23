@@ -3,7 +3,7 @@ package dev.webfx.buildtool.sourcegenerators;
 import dev.webfx.buildtool.DevProjectModule;
 import dev.webfx.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.buildtool.util.textfile.TextFileReaderWriter;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.nio.file.Files;
 

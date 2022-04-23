@@ -2,7 +2,7 @@ package dev.webfx.buildtool;
 
 import dev.webfx.buildtool.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
 import java.util.function.Predicate;

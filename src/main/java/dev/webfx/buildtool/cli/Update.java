@@ -5,7 +5,7 @@ import dev.webfx.buildtool.sourcegenerators.GluonFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.GwtFilesGenerator;
 import dev.webfx.buildtool.sourcegenerators.JavaFilesGenerator;
 import dev.webfx.buildtool.util.textfile.TextFileThreadTransaction;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 

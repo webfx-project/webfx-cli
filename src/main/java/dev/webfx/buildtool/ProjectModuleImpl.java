@@ -3,7 +3,7 @@ package dev.webfx.buildtool;
 import dev.webfx.buildtool.modulefiles.DevJavaModuleInfoFile;
 import dev.webfx.buildtool.modulefiles.abstr.XmlGavModuleFile;
 import dev.webfx.buildtool.util.splitfiles.SplitFiles;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;

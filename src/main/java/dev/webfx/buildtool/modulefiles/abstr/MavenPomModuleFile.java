@@ -1,6 +1,6 @@
 package dev.webfx.buildtool.modulefiles.abstr;
 
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 
 /**
  * @author Bruno Salmon

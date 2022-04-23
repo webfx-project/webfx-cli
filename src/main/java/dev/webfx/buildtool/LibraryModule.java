@@ -3,7 +3,7 @@ package dev.webfx.buildtool;
 import dev.webfx.buildtool.modulefiles.abstr.XmlGavApi;
 import dev.webfx.buildtool.modulefiles.abstr.XmlGavUtil;
 import dev.webfx.buildtool.util.xml.XmlUtil;
-import dev.webfx.tools.util.reusablestream.ReusableStream;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import org.w3c.dom.Node;
 
 /**
