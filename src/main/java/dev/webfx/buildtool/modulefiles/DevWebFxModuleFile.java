@@ -8,6 +8,8 @@ import dev.webfx.buildtool.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import org.w3c.dom.*;
 
+import java.util.*;
+
 /**
  * @author Bruno Salmon
  */
@@ -41,37 +43,42 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
         boolean exportNodeWasPresent = exportNode != null;
         if (exportNode != null) {
             XmlUtil.removeChildren(exportNode);
-            removeNodeAndPreviousBlankText(exportNode, true);
+            removeNodeAndPreviousCommentsOrBlankTexts(exportNode);
             XmlUtil.removeNode(exportNode);
         } else
             exportNode = document.createElement(EXPORT_SNAPSHOT_TAG);
         if (!generatesExportSnapshot())
             return exportNodeWasPresent;
-        final Node finalExportNode = exportNode;
         // Exporting this and children modules in depth
         DevProjectModule projectModule = getProjectModule();
+        final Node finalExportNode = exportNode;
         projectModule.getThisAndChildrenModulesInDepth()
                 .forEach(pm -> exportChildModuleProject(pm, finalExportNode));
         // Adding usage to resolve if-uses-java-package and if-uses-java-class directives without downloading the sources
-        ReusableStream<String>[] packagesToFindUsageHolder = new ReusableStream[1];
-        ReusableStream<String>[] classesToFindUsageHolder = new ReusableStream[1];
-        ReusableStream<ProjectModule> transitiveProjectModules = projectModule.getThisAndChildrenModulesInDepth()
-                .flatMap(ProjectModule::getThisAndTransitiveModules)
-                .filter(ProjectModule.class::isInstance)
-                .map(ProjectModule.class::cast)
-                .distinct()
-                .cache();
-        // First pass: collect
-        transitiveProjectModules
-                .forEach(pm -> collectJavaPackagesAndClassesToFindUsage(pm.getWebFxModuleFile().getModuleElement(), packagesToFindUsageHolder, classesToFindUsageHolder));
-        // Second pass: record
+        ReusableStream<ProjectModule> usageCoverage = projectModule.getDirectivesUsageCoverage();
+        // First pass: searching all the if-uses-java-package and if-java-classes directives and collecting the packages or classes that require to find the usage
+        Set<String> packagesListedInDirectives = new HashSet<>(); // To be populated
+        Set<String> classesListedInDirectives = new HashSet<>(); // To be populated
+        usageCoverage
+                .forEach(pm -> collectJavaPackagesAndClassesListedInDirectives(pm, packagesListedInDirectives, classesListedInDirectives));
+        //System.out.println("packagesListedInDirectives: " + packagesListedInDirectives);
+        //System.out.println("classesListedInDirectives: " + classesListedInDirectives);
+        // Third pass: finding usage
         Element usagesElement = document.createElement("usages");
-        findUsageOfJavaPackagesAndClasses(usagesElement, transitiveProjectModules, packagesToFindUsageHolder, classesToFindUsageHolder);
+        computeAndPopulateUsagesOfJavaPackagesAndClasses(usagesElement, usageCoverage,
+                convertSetToSortedList(packagesListedInDirectives),
+                convertSetToSortedList(classesListedInDirectives));
         if (usagesElement.hasChildNodes())
             XmlUtil.appendIndentNode(usagesElement, exportNode, true);
         appendIndentNode(document.createComment(EXPORT_SECTION_COMMENT), true);
         appendIndentNode(exportNode, true);
         return true;
+    }
+
+    private static <T extends Comparable<? super T>> List<T> convertSetToSortedList(Set<T> set) {
+        List<T> list = new ArrayList<>(set);
+        Collections.sort(list);
+        return list;
     }
 
     private void exportChildModuleProject(ProjectModule childModule, Node exportNode) {
@@ -85,21 +92,12 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
             // Removing tags that are not necessary for the import: <update-options>, <maven-pom-manual>
             String[] unnecessaryTags = {"update-options", "maven-pom-manual"};
             for (String tag : unnecessaryTags)
-                removeNodeAndPreviousBlankText(XmlUtil.lookupNode(childProjectElement, tag), true);
+                removeNodeAndPreviousCommentsOrBlankTexts(XmlUtil.lookupNode(childProjectElement, tag));
             // Replacing the <modules/> section with the effective modules (so the import doesn't need to download the pom)
             Node modulesNode = XmlUtil.lookupNode(childProjectElement, "modules");
             if (modulesNode != null) {
                 XmlUtil.removeChildren(modulesNode);
                 childModule.getChildrenModules().forEach(m -> XmlUtil.appendElementWithTextContent(modulesNode, "module", m.getName()));
-            }
-            // Replacing the <used-by-source-modules/> directive with the detected source modules (so the import doesn't need to download the sources)
-            Node usedBySourceModulesNode = XmlUtil.lookupNode(childProjectElement, "dependencies/used-by-source-modules");
-            if (usedBySourceModulesNode != null) {
-                childModule.getDetectedByCodeAnalyzerSourceDependencies()
-                        .map(ModuleDependency::getDestinationModule)
-                        .map(Module::getName)
-                        .sorted()
-                        .forEach(m -> XmlUtil.appendElementWithTextContent(usedBySourceModulesNode, "module", m));
             }
             // Trying to export the packages for the third-party libraries (so the import doesn't need to download their sources)
             DevProjectModule projectModule = getProjectModule();
@@ -117,6 +115,15 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
             // Adding a snapshot of the source packages, because they must be listed in executable GWT modules, and also
             // because we want to be able to evaluate the <source-packages/> directive without having to download the sources
             childModule.getJavaSourcePackages().forEach(p -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(childProjectElement, "source-packages/package", p, true));
+            // Adding a snapshot of the detected used by sources modules (so the import doesn't need to download the sources).
+            if (childModule.hasJavaSourceDirectory()) {
+                Node detectedUsedBySourceModulesNode = XmlUtil.appendIndentNode(document.createElement("used-by-source-modules"), childProjectElement, true);
+                childModule.getDetectedByCodeAnalyzerSourceDependencies()
+                        .map(ModuleDependency::getDestinationModule)
+                        .map(Module::getName)
+                        .sorted()
+                        .forEach(m -> XmlUtil.appendElementWithTextContent(detectedUsedBySourceModulesNode, "module", m));
+            }
             // Adding a snapshot of the used required java services
             childModule.getUsedRequiredJavaServices().forEach(js -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(childProjectElement, "used-services/required-service", js, true));
             // Adding a snapshot of the used optional java services
@@ -125,59 +132,61 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
         }
     }
 
-    private static void collectJavaPackagesAndClassesToFindUsage(Element moduleElement, ReusableStream<String>[] packagesToFindUsageHolder, ReusableStream<String>[] classesToFindUsageHolder) {
-        collectJavaPackagesOrClassesToFindUsage(moduleElement, packagesToFindUsageHolder, true);
-        collectJavaPackagesOrClassesToFindUsage(moduleElement, classesToFindUsageHolder, false);
+    private static void collectJavaPackagesAndClassesListedInDirectives(ProjectModule pm, Set<String> packagesListedInDirectives /* to populate */, Set<String> classesListedInDirectives /* to populate */) {
+        Element moduleElement = pm.getWebFxModuleFile().getModuleElement();
+        collectJavaPackagesOrClassesListedInDirectives(moduleElement, packagesListedInDirectives, true);
+        collectJavaPackagesOrClassesListedInDirectives(moduleElement, classesListedInDirectives, false);
     }
 
-    private static void collectJavaPackagesOrClassesToFindUsage(Element moduleElement, ReusableStream<String>[] packagesOrClassesToFindUsageHolder, boolean packages) {
+    private static void collectJavaPackagesOrClassesListedInDirectives(Element moduleElement, Set<String> packagesOrClassesListedInDirectives, boolean packages) {
         if (moduleElement != null) {
-            // Searching elements with matching text content
-            NodeList nodeList = XmlUtil.lookupNodeList(moduleElement, packages ? "//if-uses-java-package" : "//if-uses-java-class");
-            if (nodeList.getLength() > 0)
-                addJavaPackagesOrClassesToFindUsage(
-                        XmlUtil.nodeListToTextContentReusableStream(nodeList)
-                        , packagesOrClassesToFindUsageHolder);
-            nodeList = XmlUtil.lookupNodeList(moduleElement, packages ? "//*[@if-uses-java-package]" : "//*[@if-uses-java-class]");
-            if (nodeList.getLength() > 0)
-                addJavaPackagesOrClassesToFindUsage(
-                        XmlUtil.nodeListToAttributeValueReusableStream(nodeList, packages ? "if-uses-java-package" : "if-uses-java-class")
-                        , packagesOrClassesToFindUsageHolder);
+            // Collecting elements with matching text content
+            packagesOrClassesListedInDirectives.addAll(
+                    XmlUtil.nodeListToTextContentList(
+                            XmlUtil.lookupNodeList(moduleElement, packages ? "//if-uses-java-package" : "//if-uses-java-class")
+                    )
+            );
+            // Collecting element with matching attributes
+            packagesOrClassesListedInDirectives.addAll(
+                    XmlUtil.nodeListToAttributeValueList(
+                            XmlUtil.lookupNodeList(moduleElement, packages ? "//*[@if-uses-java-package]" : "//*[@if-uses-java-class]")
+                            , packages ? "if-uses-java-package" : "if-uses-java-class"
+                    )
+            );
         }
     }
 
-    private static void addJavaPackagesOrClassesToFindUsage(ReusableStream<String> packagesOrClasses, ReusableStream<String>[] packagesOrClassesToFindUsageHolder) {
-        if (packagesOrClassesToFindUsageHolder[0] != null)
-            packagesOrClasses = packagesOrClassesToFindUsageHolder[0].concat(packagesOrClasses);
-        packagesOrClassesToFindUsageHolder[0] = packagesOrClasses;
+    private static void computeAndPopulateUsagesOfJavaPackagesAndClasses(Element usagesElement, ReusableStream<ProjectModule> searchScope, List<String> packagesListedInDirectives, List<String> classesListedInDirectives) {
+        computeAndPopulateUsagesOfJavaPackagesOrClasses(usagesElement, searchScope, packagesListedInDirectives, true);
+        computeAndPopulateUsagesOfJavaPackagesOrClasses(usagesElement, searchScope, classesListedInDirectives, false);
     }
 
-    private static void findUsageOfJavaPackagesAndClasses(Element usagesElement, ReusableStream<ProjectModule> transitiveProjectModules, ReusableStream<String>[] packagesToFindUsageHolder, ReusableStream<String>[] classesToFindUsageHolder) {
-        findUsageOfJavaPackagesOrClasses(usagesElement, transitiveProjectModules, packagesToFindUsageHolder, true);
-        findUsageOfJavaPackagesOrClasses(usagesElement, transitiveProjectModules, classesToFindUsageHolder, false);
-    }
-
-    private static void findUsageOfJavaPackagesOrClasses(Element usagesElement, ReusableStream<ProjectModule> transitiveProjectModules, ReusableStream<String>[] packagesOrClassesToFindUsageHolder, boolean packages) {
-        if (packagesOrClassesToFindUsageHolder[0] != null)
-            packagesOrClassesToFindUsageHolder[0].distinct().sorted().forEach(packageOrClassToFindUsage -> {
-                ReusableStream<ProjectModule> modulesUsingJavaPackagesOrClasses = transitiveProjectModules
-                        .filter(m -> packages ? m.usesJavaPackage(packageOrClassToFindUsage) : m.usesJavaClass(packageOrClassToFindUsage))
-                        .distinct()
-                        .sorted();
-                if (!modulesUsingJavaPackagesOrClasses.isEmpty()) {
+    private static void computeAndPopulateUsagesOfJavaPackagesOrClasses(Element usagesElement, ReusableStream<ProjectModule> searchScope, List<String> packagesOrClassesListedInDirectives, boolean packages) {
+        packagesOrClassesListedInDirectives
+                .forEach(packageOrClassToFindUsage -> {
+                    ReusableStream<ProjectModule> modulesUsingJavaPackagesOrClasses = searchScope
+                            //.flatMap(ProjectModule::getThisAndTransitiveModules) // already done, no?
+                            .filter(ProjectModule.class::isInstance)
+                            .map(ProjectModule.class::cast)
+                            .distinct()
+                            .filter(m -> usesJavaPackageOrClass(m, packageOrClassToFindUsage, packages))
+                            .sorted();
                     Element packageElement = XmlUtil.appendElementWithAttributeIfNotAlreadyExists(usagesElement, packages ? "java-package" : "java-class", "name", packageOrClassToFindUsage, true);
                     modulesUsingJavaPackagesOrClasses
                             .forEach(pm -> XmlUtil.appendElementWithTextContent(packageElement, "module", pm.getName()));
-                }
-            });
+                });
     }
 
-        private static void removeNodeAndPreviousBlankText(Node node, boolean removeComments) {
+    private static boolean usesJavaPackageOrClass(ProjectModule pm, String packageOrClassToFindUsage, boolean isPackage) {
+        return isPackage ? pm.usesJavaPackage(packageOrClassToFindUsage) : pm.usesJavaClass(packageOrClassToFindUsage);
+    }
+
+    private static void removeNodeAndPreviousCommentsOrBlankTexts(Node node) {
         if (node != null)
             while (true) {
                 Node previousSibling = node.getPreviousSibling();
-                if (previousSibling instanceof Text && previousSibling.getTextContent().isBlank()
-                        || removeComments && previousSibling instanceof Comment)
+                if (previousSibling instanceof Comment ||
+                        previousSibling instanceof Text && previousSibling.getTextContent().isBlank())
                     XmlUtil.removeNode(previousSibling);
                 else {
                     XmlUtil.removeNode(node);
@@ -185,4 +194,5 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
                 }
             }
     }
+
 }

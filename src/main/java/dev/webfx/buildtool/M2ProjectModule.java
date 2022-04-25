@@ -80,6 +80,46 @@ public class M2ProjectModule extends ProjectModuleImpl {
         return webFxModuleFile;
     }
 
+    public M2WebFxModuleFile getWebFxModuleFileWithExportSnapshotContainingThisModule() {
+        M2ProjectModule moduleWithExport = this;
+        while ((moduleWithExport.getParentModule() != null && (moduleWithExport = moduleWithExport.fetchParentModule()) != null)) {
+            if (moduleWithExport.getWebFxModuleFile().lookupExportedSnapshotProjectElement(this) != null)
+                return moduleWithExport.getWebFxModuleFile();
+        }
+        return null;
+    }
+
+    @Override
+    public boolean usesJavaPackage(String javaPackage) {
+        // If the sources are already present, we can skip this section and just do a sources analyse to compute the requested usage.
+        if (javaSourceDirectory == null) { // But if they are absent, we try to compute the usage without downloading the sources (if possible with the export snapshot).
+            // If this module is an aggregate module, we don't expect any sources, so we return false
+            if (isAggregate())
+                return false;
+            Module moduleDeclaringThisPackage = getRootModule().searchJavaPackageModule(javaPackage, this);
+            if (moduleDeclaringThisPackage == this)
+                return true;
+            if (moduleDeclaringThisPackage != null && getDirectModules().filter(m -> m == moduleDeclaringThisPackage).isEmpty())
+                return false;
+            Boolean computedUsage = getModuleRegistry().askExportSnapshotsIfModuleIsUsingPackageOrClass(this, javaPackage);
+            if (computedUsage != null)
+                return computedUsage;
+        }
+        return super.usesJavaPackage(javaPackage);
+    }
+
+    @Override
+    public boolean usesJavaClass(String javaClass) {
+        if (javaSourceDirectory == null) {
+            if (isAggregate())
+                return false;
+            Boolean computedUsage = getModuleRegistry().askExportSnapshotsIfModuleIsUsingPackageOrClass(this, javaClass);
+            if (computedUsage != null)
+                return computedUsage;
+        }
+        return super.usesJavaClass(javaClass);
+    }
+
     @Override
     public boolean hasJavaSourceDirectory() {
         if (hasJavaSourceDirectory == null)
@@ -89,20 +129,23 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public Path getJavaSourceDirectory() {
-        if (javaSourceDirectory == null // Not yet evaluated (first time call)
+        if (javaSourceDirectory == null) { // Not yet evaluated (first and last time call)
+            // Path to the source artifact in the local maven repository
+            Path m2SourcesJarPath = getM2ArtifactSubPath("-sources.jar");
+            // See what we do if the source artifact is not there:
+            if (!Files.exists(m2SourcesJarPath)) {
                 // No java source directory for aggregate projects (which are just parent modules with children modules but no sources)
-                && !isAggregate()
-                // Also, for exported projects there is no need to access the java source code as all required information has been captured in the export snapshot
-                && !getWebFxModuleFile().isExported()
-        ) {
-            // For all other cases, we check if there is a source artifact
-            try {
-                // Path to the source artifact in the local maven repository
-                Path m2SourcesJarPath = getM2ArtifactSubPath("-sources.jar");
-                // If it doesn't exist, probably it's because it hasn't been downloaded yet, so we try to download it
+                // Also we don't expect a source directory for parent modules such as webfx-parent or webfx-stack-parent
+                if (isAggregate() || getName().endsWith("-parent"))
+                    return null;
+                // For all other cases, we try to download the source artifact
+                downloadArtifactClassifier("jar:sources");
+                // If there is none, we return null
                 if (!Files.exists(m2SourcesJarPath))
-                    downloadArtifactClassifier("jar:sources");
-                // Once the source jar is potentially there, the source directory corresponds to the root of this jar
+                    return null;
+            }
+            // At this point the source jar should be there, and the source directory corresponds to the root of this jar
+            try {
                 javaSourceDirectory = FileSystems.newFileSystem(m2SourcesJarPath).getPath("/");
             } catch (IOException e) {
                 //e.printStackTrace();
@@ -142,7 +185,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
                 MAVEN_INVOKER.setMavenHome(new File(mavenHome));
             }
             try {
-                MAVEN_INVOKER.execute( request );
+                MAVEN_INVOKER.execute(request);
             } catch (MavenInvocationException e) {
                 throw new RuntimeException(e);
             }

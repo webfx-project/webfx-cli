@@ -38,11 +38,11 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default ReusableStream<String> getChildrenModuleNames() {
-        return lookupNodeListTextContent(("modules//module"));
+        return lookupNodeListTextContent(("modules/module"));
     }
 
     default ReusableStream<String> getExplicitExportedPackages() {
-        return lookupNodeListTextContent("exported-packages//package");
+        return lookupNodeListTextContent("exported-packages/package");
     }
 
     default boolean areSourcePackagesAutomaticallyExported() {
@@ -50,19 +50,19 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default ReusableStream<String> getExcludedPackagesFromSourcePackages() {
-        return lookupNodeListTextContent("exported-packages/source-packages//exclude-package");
+        return lookupNodeListTextContent("exported-packages/source-packages/exclude-package");
     }
 
     default ReusableStream<String> getResourcePackages() {
-        return lookupNodeListTextContent("exported-packages//resource-package");
+        return lookupNodeListTextContent("exported-packages/resource-package");
     }
 
     default ReusableStream<String> implementedInterfaces() {
-        return lookupNodeListTextContent("implements//module");
+        return lookupNodeListTextContent("implements/module");
     }
 
     default ReusableStream<ModuleProperty> getModuleProperties() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("properties//*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("properties/*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
     }
 
     default boolean areUsedBySourceModulesDependenciesAutomaticallyAdded() {
@@ -70,19 +70,19 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default ReusableStream<ModuleDependency> getUndetectedUsedBySourceModulesDependencies() {
-        return lookupDependencies("dependencies/used-by-source-modules//undetected-module", ModuleDependency.Type.SOURCE, null);
+        return lookupDependencies("dependencies/used-by-source-modules/undetected-module", ModuleDependency.Type.SOURCE, null);
     }
 
     default ReusableStream<ModuleDependency> getExplicitSourceModulesDependencies() {
-        return lookupDependencies("dependencies/used-by-source-modules//module", ModuleDependency.Type.SOURCE, null);
+        return lookupDependencies("dependencies/used-by-source-modules/module", ModuleDependency.Type.SOURCE, null);
     }
 
     default ReusableStream<ModuleDependency> getPluginModuleDependencies() {
-        return lookupDependencies("dependencies//plugin-module", ModuleDependency.Type.PLUGIN, "runtime");
+        return lookupDependencies("dependencies/plugin-module", ModuleDependency.Type.PLUGIN, "runtime");
     }
 
     default ReusableStream<ModuleDependency> getResourceModuleDependencies() {
-        return lookupDependencies("dependencies//resource-module", ModuleDependency.Type.RESOURCE, "runtime");
+        return lookupDependencies("dependencies/resource-module", ModuleDependency.Type.RESOURCE, "runtime");
     }
 
     default ReusableStream<LibraryModule> getRequiredWebFxLibraryModules() {
@@ -94,19 +94,19 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default ReusableStream<String> getPackagesAutoCondition() {
-        return lookupNodeListTextContent("auto-conditions//if-uses-java-package");
+        return lookupNodeListTextContent("auto-conditions/if-uses-java-package");
     }
 
     default ReusableStream<String> getEmbedResources() {
-        return lookupNodeListTextContent("embed-resources//resource");
+        return lookupNodeListTextContent("embed-resources/resource");
     }
 
     default ReusableStream<String> getSystemProperties() {
-        return lookupNodeListTextContent("system-properties//property");
+        return lookupNodeListTextContent("system-properties/property");
     }
 
     default ReusableStream<String> getArrayNewInstanceClasses() {
-        return lookupNodeListTextContent("reflect/array-new-instance//class");
+        return lookupNodeListTextContent("reflect/array-new-instance/class");
     }
 
     default String getGraalVmReflectionJson() {
@@ -114,7 +114,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default ReusableStream<ServiceProvider> providedServiceProviders() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("providers//*"), node -> new ServiceProvider(node.getNodeName(), node.getTextContent()));
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("providers/*"), node -> new ServiceProvider(node.getNodeName(), node.getTextContent()));
     }
 
     default Node getHtmlNode() {
@@ -134,23 +134,47 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default ReusableStream<String> javaSourcePackagesFromExportSnapshot() {
-        return lookupNodeListTextContent("source-packages//package");
+        return lookupNodeListTextContent("source-packages/package");
+    }
+
+    default boolean hasDetectedUsedBySourceModulesFromExportSnapshot() {
+        return lookupNode("used-by-source-modules") != null;
+    }
+
+    default ReusableStream<ModuleDependency> detectedUsedBySourceModulesDependenciesFromExportSnapshot() {
+        return lookupDependencies("used-by-source-modules/module", ModuleDependency.Type.SOURCE, null);
     }
 
     default ReusableStream<String> usedRequiredJavaServicesFromExportSnapshot() {
-        return lookupNodeListTextContent("used-services//required-service");
+        return lookupNodeListTextContent("used-services/required-service");
     }
 
     default ReusableStream<String> usedOptionalJavaServicesFromExportSnapshot() {
-        return lookupNodeListTextContent("used-services//optional-service");
+        return lookupNodeListTextContent("used-services/optional-service");
+    }
+
+    default Node javaPackageUsageNodeFromExportSnapshot(String javaPackage) {
+        return lookupNode("/project/export-snapshot/usages/java-package[@name='" + javaPackage + "']");
     }
 
     default ReusableStream<String> modulesUsingJavaPackageFromExportSnapshot(String javaPackage) {
-        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(getDocument(), "/project/export-snapshot/usages/java-package[@name='" + javaPackage + "']//module"));
+        return modulesUsingJavaPackageFromExportSnapshot(javaPackageUsageNodeFromExportSnapshot(javaPackage));
+    }
+
+    default ReusableStream<String> modulesUsingJavaPackageFromExportSnapshot(Node javaPackageUsageNode) {
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(javaPackageUsageNode, "module"));
+    }
+
+    default Node javaClassUsageNodeFromExportSnapshot(String javaClass) {
+        return lookupNode("/project/export-snapshot/usages/java-class[@name='" + javaClass + "']");
     }
 
     default ReusableStream<String> modulesUsingJavaClassFromExportSnapshot(String javaClass) {
-        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(getDocument(), "/project/export-snapshot/usages/java-class[@name='" + javaClass + "']//module"));
+        return modulesUsingJavaClassFromExportSnapshot(javaClassUsageNodeFromExportSnapshot(javaClass));
+    }
+
+    default ReusableStream<String> modulesUsingJavaClassFromExportSnapshot(Node javaClassUsageNode) {
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(javaClassUsageNode, "module"));
     }
 
     private boolean getBooleanProjectAttributeValue(String attribute) {

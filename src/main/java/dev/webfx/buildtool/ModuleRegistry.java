@@ -1,10 +1,12 @@
 package dev.webfx.buildtool;
 
 import dev.webfx.buildtool.modulefiles.ResWebFxModuleFile;
+import dev.webfx.buildtool.modulefiles.SnapshotUsage;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Bruno Salmon
@@ -48,10 +50,13 @@ final public class ModuleRegistry {
     private final ReusableStream<Module> moduleDeclarationResume;
     private final ReusableStream<Module> moduleDeclarationStream;
 
+    private final ReusableStream<M2ProjectModule> m2ProjectModulesWithExportSnapshotsResume;
+    Map<String /* package or class name */, List<SnapshotUsage>> registeredSnapshotUsages = new HashMap<>(); // To be populated
 
-    /***********************
-     ***** Constructor *****
-     ***********************/
+
+        /***********************
+         ***** Constructor *****
+         ***********************/
 
     public ModuleRegistry(Path workspaceDirectory) {
         this.workspaceDirectory = workspaceDirectory;
@@ -144,6 +149,51 @@ final public class ModuleRegistry {
                 });
 
         moduleDeclarationStream = replayProcessingResume(moduleDeclarationResume, declaredModules);
+
+        m2ProjectModulesWithExportSnapshotsResume = projectModuleRegistrationStream
+                // Keeping m2 projects only
+                .filter(M2ProjectModule.class::isInstance).map(M2ProjectModule.class::cast)
+                .filter(m2 -> m2.getName().equals(m2.getWebFxModuleFile().lookupExportedSnapshotFirstProjectName()))
+                .map(this::registerExportSnapshot)
+                .resume()
+                ;
+    }
+
+    private M2ProjectModule registerExportSnapshot(M2ProjectModule m2) {
+        m2.getWebFxModuleFile().javaPackagesFromExportSnapshotUsage()
+                .forEach(javaPackageName -> {
+                    List<SnapshotUsage> usages = registeredSnapshotUsages.computeIfAbsent(javaPackageName, k -> new ArrayList<>());
+                    usages.add(new SnapshotUsage(javaPackageName, m2, m2.getWebFxModuleFile().modulesUsingJavaPackageFromExportSnapshot(javaPackageName).collect(Collectors.toList())));
+                });
+        m2.getWebFxModuleFile().javaClassesFromExportSnapshotUsage()
+                .forEach(javaClassName -> {
+                    List<SnapshotUsage> usages = registeredSnapshotUsages.computeIfAbsent(javaClassName, k -> new ArrayList<>());
+                    usages.add(new SnapshotUsage(javaClassName, m2, m2.getWebFxModuleFile().modulesUsingJavaClassFromExportSnapshot(javaClassName).collect(Collectors.toList())));
+                });
+        return m2;
+    }
+
+    public Boolean askExportSnapshotsIfModuleIsUsingPackageOrClass(ProjectModule module, String packageOrClass) {
+        List<SnapshotUsage> packageOrClassSnapshotUsages = registeredSnapshotUsages.get(packageOrClass);
+        if (packageOrClassSnapshotUsages == null) {
+            m2ProjectModulesWithExportSnapshotsResume.takeWhile(m2 -> registeredSnapshotUsages.get(packageOrClass) == null).findAny();
+            packageOrClassSnapshotUsages = registeredSnapshotUsages.get(packageOrClass);
+            if (packageOrClassSnapshotUsages == null)
+                return null;
+        }
+        for (int i = 0, n = packageOrClassSnapshotUsages.size(); i < n; i++) {
+            SnapshotUsage snapshotUsage = packageOrClassSnapshotUsages.get(i);
+            Boolean moduleUsing = snapshotUsage.isModuleUsing(module);
+            if (moduleUsing != null)
+                return moduleUsing;
+            if (i == n - 1) {
+                final List<SnapshotUsage> finalUsages = packageOrClassSnapshotUsages;
+                int finalSize = n;
+                m2ProjectModulesWithExportSnapshotsResume.takeWhile(m2 -> finalUsages.size() == finalSize).findAny();
+                n = packageOrClassSnapshotUsages.size();
+            }
+        }
+        return null;
     }
 
     public ReusableStream<ProjectModule> getProjectModuleRegistrationResume() {
@@ -239,38 +289,50 @@ final public class ModuleRegistry {
 
     Module getDeclaredJavaPackageModule(String packageName, ProjectModule sourceModule, boolean canReturnNull) {
         List<Module> lm = packagesModulesNameMap.get(packageName);
-        Module module = lm == null ? null : lm.stream().filter(m -> isSuitableModule(m, sourceModule))
+        Module module = lm == null ? null : lm.stream()
+                .filter(m -> isSuitableModule(m, sourceModule))
                 .findFirst()
                 .orElse(null);
         if (module == null) { // Module not found :-(
             // Last chance: the package was actually in the source package! (ex: webfx-kit-extracontrols-registry-spi)
             if (sourceModule.getJavaSourcePackages().anyMatch(p -> p.equals(packageName)))
                 module = sourceModule;
-            else if (!canReturnNull) // Otherwise, raising an exception (unless returning null is permitted)
-                throw new UnresolvedException("Unresolved module for package " + packageName + " (used by " + sourceModule + ")");
+            else if (!canReturnNull) { // Otherwise, raising an exception (unless returning null is permitted)
+                if (lm == null || lm.isEmpty())
+                    throw new UnresolvedException("Unresolved module for package " + packageName + " (used by " + sourceModule + ")");
+                StringBuilder sb = new StringBuilder("Unsuitable module for package " + packageName + " (used by " + sourceModule + ")");
+                lm.forEach(m -> sb.append("\n").append(m.getName()).append(" declares this package, but it is not suitable because ").append(getUnsuitableModuleReason(m, sourceModule)));
+                throw new UnresolvedException(sb.toString());
+            }
         }
         return module;
     }
 
     private boolean isSuitableModule(Module m, ProjectModule sourceModule) {
+        return getUnsuitableModuleReason(m, sourceModule) == null;
+    }
+
+    private String getUnsuitableModuleReason(Module m, ProjectModule sourceModule) {
         if (!(m instanceof ProjectModule))
-            return true;
+            return null;
         ProjectModule pm = (ProjectModule) m;
         // First case: only executable source modules should include implementing interface modules (others should include the interface module instead)
         if (pm.isImplementingInterface() && !sourceModule.isExecutable()) {
             // Exception is however made for non-executable source modules that implement a provider
-            // Ex: webfx-kit-extracontrols-registry-javafx can include webfx-kit-extracontrols-registry-spi (which implements webfx-kit-extracontrols-registry)
-            boolean exception = sourceModule.getProvidedJavaServices().anyMatch(s -> pm.getJavaSourceFiles().anyMatch(c -> c.getClassName().equals(s)));
+            // Ex: webfx-extras-controls-registry-openjfx can include webfx-extras-controls-registry-spi (which implements webfx-extras-controls-registry)
+            boolean exception = sourceModule.getProvidedJavaServices()
+                    .isEmpty() == false;
+                  //.anyMatch(service -> pm.getJavaSourceFiles().anyMatch(c -> c.getClassName().equals(service)));
             if (!exception)
-                return false;
+                return "it implements an interface module (" + pm.implementedInterfaces().findFirst().orElse(null) + "), and only executable modules should use it (" + sourceModule.getName() + " is not an executable module)";
         }
         // Second not permitted case:
-        // Ex: webfx-kit-extracontrols-registry-javafx should not include webfx-kit-extracontrols-registry (but webfx-kit-extracontrols-registry-spi instead)
+        // Ex: webfx-extras-controls-registry-openjfx should not include webfx-extras-controls-registry (but webfx-extras-controls-registry-spi instead)
         if (pm.isInterface()) {
             if (sourceModule.getName().startsWith(pm.getName()))
-                return false;
+                return "it should not be included in " + sourceModule.getName();
         }
-        return true;
+        return null;
     }
 
     public Module getRegisteredModuleOrLibrary(String name) {

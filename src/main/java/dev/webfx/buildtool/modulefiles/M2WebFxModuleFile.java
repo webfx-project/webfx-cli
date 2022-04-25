@@ -4,7 +4,7 @@ import dev.webfx.buildtool.M2ProjectModule;
 import dev.webfx.buildtool.modulefiles.abstr.PathBasedXmlModuleFileImpl;
 import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.buildtool.util.xml.XmlUtil;
-import org.w3c.dom.Document;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -49,12 +49,27 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
                 ;
     }
 
-    private Element lookupExportedSnapshotProjectElement(M2ProjectModule module) {
-        Document document = getDocument();
-        Node exportedProjectNode = document == null ? null : XmlUtil.lookupNode(document.getDocumentElement(), "export-snapshot/project[@name='" + module.getName() + "']");
+    public Element lookupExportedSnapshotProjectElement(M2ProjectModule module) {
+        Node exportedProjectNode = lookupNode("/project/export-snapshot/project[@name='" + module.getName() + "']");
         if (exportedProjectNode instanceof Element)
             return (Element) exportedProjectNode;
         return null;
+    }
+
+    public String lookupExportedSnapshotFirstProjectName() {
+        return XmlUtil.getAttributeValue(lookupNode("(/project/export-snapshot/project[@name])[1]"), "name");
+    }
+
+    public ReusableStream<String> modulesUsingJavaPackageFromExportSnapshot(Node javaPackageUsageNode) {
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(javaPackageUsageNode, "module"));
+    }
+
+    public ReusableStream<String> javaPackagesFromExportSnapshotUsage() {
+        return XmlUtil.nodeListToAttributeValueReusableStream(lookupNodeList("/project/export-snapshot/usages/java-package"), "name");
+    }
+
+    public ReusableStream<String> javaClassesFromExportSnapshotUsage() {
+        return XmlUtil.nodeListToAttributeValueReusableStream(lookupNodeList("/project/export-snapshot/usages/java-class"), "name");
     }
 
     private static Path getWebFxModuleFilePathAndDownloadIfMissing(M2ProjectModule module) {
@@ -63,11 +78,9 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
         // module, because it will be much quicker to use (no additional webfx.xml or sources to download).
         // If found, we return here the path to that parent -webfx.xml path instead, knowing that the readFile() method
         // will finally look up the correct node corresponding to that module inside that file.
-        M2ProjectModule moduleWithExport = module;
-        while ((moduleWithExport.getParentModule() != null && (moduleWithExport = moduleWithExport.fetchParentModule()) != null)) {
-            if (moduleWithExport.getWebFxModuleFile().lookupExportedSnapshotProjectElement(module) != null)
-                return moduleWithExport.getWebFxModuleFile().getModuleFilePath();
-        }
+        M2WebFxModuleFile exportSnapshotModuleFile = module.getWebFxModuleFileWithExportSnapshotContainingThisModule();
+        if (exportSnapshotModuleFile != null)
+            return exportSnapshotModuleFile.getModuleFilePath();
         // If not found, we return the standard path that points to the "-webfx.xml" file in the maven project repository
         Path path = module.getM2ArtifactSubPath("-webfx.xml");
         // And we download it at this point if it's not present, unless it is not expected (ex: third-party library)

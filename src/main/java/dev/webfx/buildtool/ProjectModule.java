@@ -153,14 +153,10 @@ public interface ProjectModule extends Module {
     ReusableStream<String> getUsedJavaPackages();
 
     default boolean usesJavaPackage(String javaPackage) {
-        if (getWebFxModuleFile().modulesUsingJavaPackageFromExportSnapshot(javaPackage).anyMatch(m -> m.equals(getName())))
-            return true;
         return getUsedJavaPackages().anyMatch(javaPackage::equals);
     }
 
     default boolean usesJavaClass(String javaClass) {
-        if (getWebFxModuleFile().modulesUsingJavaClassFromExportSnapshot(javaClass).anyMatch(m -> m.equals(getName())))
-            return true;
         String packageName = JavaFile.getPackageNameFromJavaClass(javaClass);
         boolean excludeWebFxKit = packageName.startsWith("javafx.");
         if (excludeWebFxKit && getName().startsWith("webfx-kit-"))
@@ -345,6 +341,8 @@ public interface ProjectModule extends Module {
         // searching along the whole registration stream (already registered + not yet registered) until we find it
         return searchRegisteredProjectModules(module -> module.getName().startsWith(name), false);
     }
+
+    ReusableStream<ProjectModule> getDirectivesUsageCoverage();
 
 
     //// Static utility methods

@@ -15,8 +15,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.*;
 import java.io.*;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -159,6 +158,24 @@ public final class XmlUtil {
         });
     }
 
+    public static List<String> nodeListToTextContentList(NodeList nodeList) {
+        return nodeListToList(nodeList, Node::getTextContent);
+    }
+
+    public static List<String> nodeListToAttributeValueList(NodeList nodeList, String attribute) {
+        return nodeListToList(nodeList, n -> XmlUtil.getAttributeValue(n, attribute));
+    }
+
+    public static <T> List<T> nodeListToList(NodeList nodeList, Function<Node, ? extends T> transformer) {
+        if (nodeList == null)
+            return Collections.emptyList();
+        int n = nodeList.getLength();
+        List<T> list = new ArrayList<>(n);
+        for (int i = 0; i < n; i++)
+            list.add(transformer.apply(nodeList.item(i)));
+        return list;
+    }
+
     public static String getAttributeValue(Node node, String name) {
         NamedNodeMap attributes = node == null ? null : node.getAttributes();
         Node namedItem = attributes == null ? null : attributes.getNamedItem(name);
@@ -287,7 +304,7 @@ public final class XmlUtil {
 
     private final static int INDENT_SPACES = 4; // 4 spaces indent per depth level
 
-    public static void appendIndentNode(Node node, Node parentNode, boolean linefeed) {
+    public static <T extends Node> T appendIndentNode(T node, Node parentNode, boolean linefeed) {
         int existingLineFeedsBefore = countLineFeedsBefore(parentNode.getLastChild());
         int requiredLineFeedsBefore = linefeed ? 2 : 1;
         Document document = parentNode.getOwnerDocument();
@@ -295,6 +312,7 @@ public final class XmlUtil {
         parentNode.appendChild(node);
         parentNode.appendChild(createIndentText(requiredLineFeedsBefore, document));
         indentNode(parentNode, true);
+        return node;
     }
 
     public static void prependIndentNode(Node node, Node parentNode, boolean linefeed) {

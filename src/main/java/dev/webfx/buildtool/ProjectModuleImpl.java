@@ -1,6 +1,7 @@
 package dev.webfx.buildtool;
 
 import dev.webfx.buildtool.modulefiles.DevJavaModuleInfoFile;
+import dev.webfx.buildtool.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.buildtool.modulefiles.abstr.XmlGavModuleFile;
 import dev.webfx.buildtool.util.splitfiles.SplitFiles;
 import dev.webfx.lib.reusablestream.ReusableStream;
@@ -38,13 +39,16 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * packages are simply deduced from the java source files when present, or from the export snapshot otherwise.
      */
     private final ReusableStream<String> javaSourcePackagesCache =
-            ReusableStream.create(() -> javaSourceFilesCache.isEmpty() ?
-                            getWebFxModuleFile().javaSourcePackagesFromExportSnapshot()
-                            :
-                    javaSourceFilesCache
-                            .map(JavaFile::getPackageName)
-                            .distinct()
-                    );
+            ReusableStream.create(() -> {
+                if (isAggregate())
+                    return ReusableStream.empty();
+                ReusableStream<String> fromExportSnapshot = getWebFxModuleFile().javaSourcePackagesFromExportSnapshot().cache();
+                if (!fromExportSnapshot.isEmpty())
+                    return fromExportSnapshot;
+                return javaSourceFilesCache
+                        .map(JavaFile::getPackageName)
+                        .distinct();
+            });
 
     /**
      * Returns the children project modules if any (only first level under this module).
@@ -131,10 +135,12 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * full name of the SPI class.
      */
     private final ReusableStream<String> usedRequiredJavaServicesCache =
-            ReusableStream.concat(
-                            javaSourceFilesCache.flatMap(JavaFile::getUsedRequiredJavaServices),
-                            ReusableStream.create(() -> getWebFxModuleFile().usedRequiredJavaServicesFromExportSnapshot())
-                    )
+            ReusableStream.create(() -> {
+                        ReusableStream<String> fromExportSnapshot = getWebFxModuleFile().usedRequiredJavaServicesFromExportSnapshot().cache();
+                        if (this instanceof M2ProjectModule || !fromExportSnapshot.isEmpty())
+                            return fromExportSnapshot;
+                        return javaSourceFilesCache.flatMap(JavaFile::getUsedRequiredJavaServices);
+                    })
                     .distinct()
                     .cache();
 
@@ -143,10 +149,12 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * full name of the SPI class.
      */
     private final ReusableStream<String> usedOptionalJavaServicesCache =
-            ReusableStream.concat(
-                            javaSourceFilesCache.flatMap(JavaFile::getUsedOptionalJavaServices),
-                            ReusableStream.create(() -> getWebFxModuleFile().usedOptionalJavaServicesFromExportSnapshot())
-                    )
+            ReusableStream.create(() -> {
+                        ReusableStream<String> fromExportSnapshot = getWebFxModuleFile().usedOptionalJavaServicesFromExportSnapshot().cache();
+                        if (this instanceof M2ProjectModule || !fromExportSnapshot.isEmpty())
+                            return fromExportSnapshot;
+                        return javaSourceFilesCache.flatMap(JavaFile::getUsedOptionalJavaServices);
+                    })
                     .distinct()
                     .cache();
 
@@ -173,15 +181,17 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Returns all packages directly used in this module (or empty if this is not a java source module). These packages
      * are detected through a source code analyze of all java classes.
+     * <p>
      * The packages of the SPIs are also added here in case they are not detected by the java source analyser. This can
      * happen if the provider extends a class instead of directly implementing the interface. Then the module-info.java
      * will report an error on the provider declaration because the module of the SPI won't be listed in the required modules.
      * TODO Remove this addition once the java source analyser will be able to find implicit java packages
      */
     private final ReusableStream<String> usedJavaPackagesCache =
-            ReusableStream.concat(
-                            javaSourceFilesCache.flatMap(JavaFile::getUsedJavaPackages),
-                            providedJavaServicesCache.map(spi -> spi.substring(0, spi.lastIndexOf('.'))) // package of the SPI (ex: javafx.application if SPI = javafx.application.Application)
+            ReusableStream.create(() -> ReusableStream.concat(
+                                    javaSourceFilesCache.flatMap(JavaFile::getUsedJavaPackages),
+                                    providedJavaServicesCache.map(spi -> spi.substring(0, spi.lastIndexOf('.'))) // package of the SPI (ex: javafx.application if SPI = javafx.application.Application)
+                            )
                     )
                     .distinct()
                     .cache();
@@ -192,15 +202,23 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * detected by the source code analyzer.
      */
     private final ReusableStream<ModuleDependency> detectedByCodeAnalyzerSourceDependenciesCache =
-            ReusableStream.create(() -> !getWebFxModuleFile().areUsedBySourceModulesDependenciesAutomaticallyAdded() ? ReusableStream.empty() :
-                    usedJavaPackagesCache
-                            .map(p -> getRootModule().searchJavaPackageModule(p, this))
-                            //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
-                            .filter(module -> module != this && !module.getName().equals(getName()))
-                            .distinct()
-                            .map(m -> ModuleDependency.createSourceDependency(this, m))
-                            .distinct()
-                            .cache());
+            ReusableStream.create(() -> {
+                WebFxModuleFile webFxModuleFile = getWebFxModuleFile();
+                if (!webFxModuleFile.areUsedBySourceModulesDependenciesAutomaticallyAdded())
+                    return ReusableStream.empty();
+                if (webFxModuleFile.hasDetectedUsedBySourceModulesFromExportSnapshot())
+                    return webFxModuleFile.detectedUsedBySourceModulesDependenciesFromExportSnapshot();
+                if (webFxModuleFile.isAggregate())
+                    return ReusableStream.empty();
+                return usedJavaPackagesCache
+                        .map(p -> getRootModule().searchJavaPackageModule(p, this))
+                        //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
+                        .filter(module -> module != this && !module.getName().equals(getName()))
+                        .distinct()
+                        .map(m -> ModuleDependency.createSourceDependency(this, m))
+                        .distinct()
+                        .cache();
+            });
 
 
     /**
@@ -756,6 +774,32 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     public BuildInfo getBuildInfo() {
         return new BuildInfo(this);
+    }
+
+    private ReusableStream<ProjectModule> exportSnapshotUsageCoverage;
+    @Override
+    public ReusableStream<ProjectModule> getDirectivesUsageCoverage() {
+        if (exportSnapshotUsageCoverage == null)
+            exportSnapshotUsageCoverage = getDirectivesUsageCoverage(this).distinct().cache();
+        return exportSnapshotUsageCoverage;
+    }
+
+    private static ReusableStream<ProjectModule> getDirectivesUsageCoverage(ProjectModule projectModule) {
+        ReusableStream<ProjectModule> projectWithoutLibrariesCoverage = projectModule
+                .getThisAndChildrenModulesInDepth()
+                .flatMap(ProjectModule::getThisAndTransitiveModules) // Normally doesn't require to access sources...
+                .filter(ProjectModule.class::isInstance).map(ProjectModule.class::cast)
+                .distinct();
+        ReusableStream<ProjectModule> librariesCoverage = projectWithoutLibrariesCoverage
+                .flatMap(ProjectModule::getRequiredLibraryModules)
+                .distinct()
+                .map(l -> projectModule.searchRegisteredModule(l.getName(), true))
+                .filter(ProjectModule.class::isInstance).map(ProjectModule.class::cast)
+                .flatMap(ProjectModule::getDirectivesUsageCoverage);
+        return ReusableStream.concat(
+                projectWithoutLibrariesCoverage,
+                librariesCoverage
+        );
     }
 
 }
