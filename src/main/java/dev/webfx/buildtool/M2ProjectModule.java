@@ -101,7 +101,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
                 return true;
             if (moduleDeclaringThisPackage != null && getDirectModules().filter(m -> m == moduleDeclaringThisPackage).isEmpty())
                 return false;
-            Boolean computedUsage = getModuleRegistry().askExportSnapshotsIfModuleIsUsingPackageOrClass(this, javaPackage);
+            Boolean computedUsage = getModuleRegistry().doExportSnapshotsTellIfModuleIsUsingPackageOrClass(this, javaPackage);
             if (computedUsage != null)
                 return computedUsage;
         }
@@ -113,7 +113,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
         if (javaSourceDirectory == null) {
             if (isAggregate())
                 return false;
-            Boolean computedUsage = getModuleRegistry().askExportSnapshotsIfModuleIsUsingPackageOrClass(this, javaClass);
+            Boolean computedUsage = getModuleRegistry().doExportSnapshotsTellIfModuleIsUsingPackageOrClass(this, javaClass);
             if (computedUsage != null)
                 return computedUsage;
         }
