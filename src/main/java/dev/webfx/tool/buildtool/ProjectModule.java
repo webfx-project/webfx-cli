@@ -88,8 +88,8 @@ public interface ProjectModule extends Module {
         return getWebFxModuleFile().isInterface();
     }
 
-    default boolean isAutomatic() {
-        return getWebFxModuleFile().isAutomatic();
+    default boolean hasAutoInjectionConditions() {
+        return getWebFxModuleFile().hasAutoInjectionConditions();
     }
 
     default boolean isAggregate() {
@@ -133,6 +133,10 @@ public interface ProjectModule extends Module {
 
 
     RootModule getRootModule();
+
+    boolean hasSourceDirectory();
+
+    Path getSourceDirectory();
 
     boolean hasJavaSourceDirectory();
 

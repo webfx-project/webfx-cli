@@ -116,7 +116,7 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
             // because we want to be able to evaluate the <source-packages/> directive without having to download the sources
             childModule.getJavaSourcePackages().forEach(p -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(childProjectElement, "source-packages/package", p, true));
             // Adding a snapshot of the detected used by sources modules (so the import doesn't need to download the sources).
-            if (childModule.hasJavaSourceDirectory()) {
+            if (childModule.hasSourceDirectory()) {
                 Node detectedUsedBySourceModulesNode = XmlUtil.appendIndentNode(document.createElement("used-by-source-modules"), childProjectElement, true);
                 childModule.getDetectedByCodeAnalyzerSourceDependencies()
                         .map(ModuleDependency::getDestinationModule)

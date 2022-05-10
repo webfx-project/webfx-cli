@@ -72,8 +72,8 @@ final class STream extends CommonSubcommand {
         @Option(names = {"-i", "--interface"}, negatable = true, description = "Filter interface modules.")
         Boolean isInterface;
 
-        @Option(names = {"-a", "--automatic"}, negatable = true, description = "Filter automatic modules.")
-        Boolean automatic;
+        @Option(names = {"-a", "--auto-inject"}, negatable = true, description = "Filter modules with auto injection conditions.")
+        Boolean autoInject;
 
         @Option(names = {"-g", "--aggregate"}, negatable = true, description = "Filter aggregate modules.")
         Boolean aggregate;
@@ -173,8 +173,8 @@ final class STream extends CommonSubcommand {
                 stream = stream.filter(m -> m.isExecutable() == executable);
             if (isInterface != null)
                 stream = stream.filter(m -> m.isInterface() == isInterface);
-            if (automatic != null)
-                stream = stream.filter(m -> m.isAutomatic() == automatic);
+            if (autoInject != null)
+                stream = stream.filter(m -> m.hasAutoInjectionConditions() == autoInject);
             if (aggregate != null)
                 stream = stream.filter(m -> m.isAggregate() == aggregate);
             if (leaf != null)

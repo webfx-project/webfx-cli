@@ -16,7 +16,7 @@ import java.nio.file.Path;
  */
 public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implements WebFxModuleFile {
 
-    private boolean exported;
+    private Boolean exported;
 
     public M2WebFxModuleFile(M2ProjectModule module) {
         super(module, getWebFxModuleFilePathAndDownloadIfMissing(module));
@@ -37,14 +37,18 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
     }
 
     public boolean isExported() {
+        if (exported == null)
+            readFile();
         return exported;
     }
 
     @Override
     public boolean shouldTakeChildrenModuleNamesFromPomInstead() {
-        return !exported // No, if the module is exported as the snapshot itself contains the effective children module names
+        return !isExported() // No, if the module is exported as the snapshot itself contains the effective children module names
                 // No, if children modules names are explicitly listed in webfx.xml (<modules> section without <subdirectories-modules/> directive)
                 && !(isAggregate() && !shouldSubdirectoriesChildrenModulesBeAdded())
+                // No, if the module name ends with "-parent" as it's not meant to have children
+                && !getProjectModule().getName().endsWith("-parent")
                 // Yes, otherwise (ie no <modules/> section or with <subdirectories-modules/> directive)
                 ;
     }

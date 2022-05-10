@@ -24,7 +24,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return getBooleanProjectAttributeValue("interface");
     }
 
-    default boolean isAutomatic() {
+    default boolean hasAutoInjectionConditions() {
         return lookupNode("auto-conditions") != null;
     }
 
@@ -96,7 +96,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("required-libraries//library"), LibraryModule::createThirdPartyLibraryModule);
     }
 
-    default ReusableStream<String> getPackagesAutoCondition() {
+    default ReusableStream<String> getPackagesAutoInjectionConditions() {
         return lookupNodeListTextContent("auto-conditions/if-uses-java-package");
     }
 

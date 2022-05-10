@@ -32,8 +32,8 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     private M2MavenPomModuleFile mavenPomModuleFile;
     private M2WebFxModuleFile webFxModuleFile;
-    private Boolean hasJavaSourceDirectory;
-    private Path javaSourceDirectory;
+    private Boolean hasSourceDirectory;
+    private Path sourceDirectory;
 
     public M2ProjectModule(String name, M2ProjectModule parentModule) {
         this(name, parentModule.getGroupId(), name, parentModule.getVersion(), parentModule);
@@ -92,7 +92,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
     @Override
     public boolean usesJavaPackage(String javaPackage) {
         // If the sources are already present, we can skip this section and just do a sources analyse to compute the requested usage.
-        if (javaSourceDirectory == null) { // But if they are absent, we try to compute the usage without downloading the sources (if possible with the export snapshot).
+        if (sourceDirectory == null) { // But if they are absent, we try to compute the usage without downloading the sources (if possible with the export snapshot).
             // If this module is an aggregate module, we don't expect any sources, so we return false
             if (isAggregate())
                 return false;
@@ -110,7 +110,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public boolean usesJavaClass(String javaClass) {
-        if (javaSourceDirectory == null) {
+        if (sourceDirectory == null) {
             if (isAggregate())
                 return false;
             Boolean computedUsage = getModuleRegistry().doExportSnapshotsTellIfModuleIsUsingPackageOrClass(this, javaClass);
@@ -121,20 +121,20 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     @Override
-    public boolean hasJavaSourceDirectory() {
-        if (hasJavaSourceDirectory == null)
-            hasJavaSourceDirectory = getJavaSourceDirectory() != null;
-        return hasJavaSourceDirectory;
+    public boolean hasSourceDirectory() {
+        if (hasSourceDirectory == null)
+            hasSourceDirectory = getSourceDirectory() != null;
+        return hasSourceDirectory;
     }
 
     @Override
-    public Path getJavaSourceDirectory() {
-        if (javaSourceDirectory == null) { // Not yet evaluated (first and last time call)
+    public Path getSourceDirectory() {
+        if (sourceDirectory == null) { // Not yet evaluated (first and last time call)
             // Path to the source artifact in the local maven repository
             Path m2SourcesJarPath = getM2ArtifactSubPath("-sources.jar");
             // See what we do if the source artifact is not there:
             if (!Files.exists(m2SourcesJarPath)) {
-                // No java source directory for aggregate projects (which are just parent modules with children modules but no sources)
+                // No source directory for aggregate projects (which are just parent modules with children modules but no sources)
                 // Also we don't expect a source directory for parent modules such as webfx-parent or webfx-stack-parent
                 if (isAggregate() || getName().endsWith("-parent"))
                     return null;
@@ -146,12 +146,23 @@ public class M2ProjectModule extends ProjectModuleImpl {
             }
             // At this point the source jar should be there, and the source directory corresponds to the root of this jar
             try {
-                javaSourceDirectory = FileSystems.newFileSystem(m2SourcesJarPath).getPath("/");
+                sourceDirectory = FileSystems.newFileSystem(m2SourcesJarPath).getPath("/");
             } catch (IOException e) {
                 //e.printStackTrace();
             }
         }
-        return javaSourceDirectory;
+        return sourceDirectory;
+    }
+
+    @Override
+    public boolean hasJavaSourceDirectory() {
+        return hasSourceDirectory();
+    }
+
+    @Override
+    public Path getJavaSourceDirectory() {
+        // Same as source directory (there is no main/java subdirectory in the -sources.jar artifact)
+        return getSourceDirectory();
     }
 
     public M2ProjectModule getOrCreateChildProjectModule(String name) {

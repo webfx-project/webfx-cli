@@ -1,6 +1,7 @@
 package dev.webfx.tool.buildtool;
 
 import dev.webfx.tool.buildtool.modulefiles.DevJavaModuleInfoFile;
+import dev.webfx.tool.buildtool.modulefiles.M2WebFxModuleFile;
 import dev.webfx.tool.buildtool.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.tool.buildtool.modulefiles.abstr.XmlGavModuleFile;
 import dev.webfx.tool.buildtool.util.splitfiles.SplitFiles;
@@ -30,7 +31,10 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
             ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
                             hasJavaSourceDirectory() ? SplitFiles.uncheckedWalk(getJavaSourceDirectory()) : Spliterators.emptySpliterator())
                     .filter(JAVA_FILE_MATCHER::matches)
-                    .filter(path -> !path.getFileName().toString().endsWith("-info.java")) // Ignoring module-info.java and package-info.java files
+                    // Ignoring Gwt super sources (required for m2 sources artifacts only)
+                    .filter(path -> !path.startsWith("/super/"))
+                    // Ignoring module-info.java and package-info.java files
+                    .filter(path -> !path.getFileName().toString().endsWith("-info.java"))
                     .map(path -> new JavaFile(path, this))
                     .cache();
 
@@ -42,9 +46,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
             ReusableStream.create(() -> {
                 if (isAggregate())
                     return ReusableStream.empty();
-                ReusableStream<String> fromExportSnapshot = getWebFxModuleFile().javaSourcePackagesFromExportSnapshot().cache();
-                if (!fromExportSnapshot.isEmpty())
-                    return fromExportSnapshot;
+                if (this instanceof M2ProjectModule && ((M2WebFxModuleFile) getWebFxModuleFile()).isExported())
+                    return getWebFxModuleFile().javaSourcePackagesFromExportSnapshot();
                 return javaSourceFilesCache
                         .map(JavaFile::getPackageName)
                         .distinct();
@@ -320,7 +323,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * Returns the automatic modules required for this executable module (returns nothing if this module is not executable).
      */
     private final ReusableStream<ProjectModule> executableAutomaticModulesCaches =
-            ReusableStream.create(this::collectExecutableAutomaticModules)
+            ReusableStream.create(this::collectExecutableAutoInjectedModules)
                     .cache();
 
     /**
@@ -640,11 +643,11 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     ///// Modules
 
-    private ReusableStream<ProjectModule> collectExecutableAutomaticModules() {
+    private ReusableStream<ProjectModule> collectExecutableAutoInjectedModules() {
         if (isExecutable())
             return automaticOrRequiredProvidersModulesSearchScopeCache
-                    .filter(ProjectModule::isAutomatic)
-                    .filter(am -> am.getWebFxModuleFile().getPackagesAutoCondition().allMatch(p -> usesJavaPackage(p) || transitiveProjectModulesWithoutImplicitProvidersCache.anyMatch(tm -> tm.usesJavaPackage(p))))
+                    .filter(ProjectModule::hasAutoInjectionConditions)
+                    .filter(am -> am.getWebFxModuleFile().getPackagesAutoInjectionConditions().allMatch(p -> usesJavaPackage(p) || transitiveProjectModulesWithoutImplicitProvidersCache.anyMatch(tm -> tm.usesJavaPackage(p))))
                     ;
         return ReusableStream.empty();
     }
