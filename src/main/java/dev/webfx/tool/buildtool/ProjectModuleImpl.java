@@ -300,7 +300,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Defines the project modules scope to use when searching required providers.
      */
-    private final ReusableStream<ProjectModule> automaticOrRequiredProvidersModulesSearchScopeCache =
+    private final ReusableStream<ProjectModule> autoInjectedOrRequiredProvidersModulesSearchScopeCache =
             ReusableStream.concat(
                             transitiveProjectModulesWithoutImplicitProvidersCache,
                             ReusableStream.create(() -> ReusableStream.concat(
@@ -320,9 +320,9 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                     .distinct()
                     .cache();
     /**
-     * Returns the automatic modules required for this executable module (returns nothing if this module is not executable).
+     * Returns the auto-injected modules required for this executable module (returns nothing if this module is not executable).
      */
-    private final ReusableStream<ProjectModule> executableAutomaticModulesCaches =
+    private final ReusableStream<ProjectModule> executableAutoInjectedModulesCaches =
             ReusableStream.create(this::collectExecutableAutoInjectedModules)
                     .cache();
 
@@ -332,14 +332,14 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private final ReusableStream<ProjectModule> optionalProvidersModulesSearchScopeCache =
             ReusableStream.concat(
                     transitiveProjectModulesWithoutImplicitProvidersCache,
-                    executableAutomaticModulesCaches
+                    executableAutoInjectedModulesCaches
             ).cache();
 
     /**
      * Defines the project modules scope to use when searching required providers.
      */
     private final ReusableStream<ProjectModule> requiredProvidersModulesSearchScopeCache =
-            automaticOrRequiredProvidersModulesSearchScopeCache;
+            autoInjectedOrRequiredProvidersModulesSearchScopeCache;
 
     /**
      * Resolves and returns all implicit providers required by this executable module (returns nothing if this
@@ -645,9 +645,9 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     private ReusableStream<ProjectModule> collectExecutableAutoInjectedModules() {
         if (isExecutable())
-            return automaticOrRequiredProvidersModulesSearchScopeCache
+            return autoInjectedOrRequiredProvidersModulesSearchScopeCache
                     .filter(ProjectModule::hasAutoInjectionConditions)
-                    .filter(am -> am.getWebFxModuleFile().getPackagesAutoInjectionConditions().allMatch(p -> usesJavaPackage(p) || transitiveProjectModulesWithoutImplicitProvidersCache.anyMatch(tm -> tm.usesJavaPackage(p))))
+                    .filter(am -> am.getWebFxModuleFile().getUsesPackagesAutoInjectionConditions().allMatch(p -> usesJavaPackage(p) || transitiveProjectModulesWithoutImplicitProvidersCache.anyMatch(tm -> tm.usesJavaPackage(p))))
                     ;
         return ReusableStream.empty();
     }

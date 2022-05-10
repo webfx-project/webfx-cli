@@ -25,7 +25,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default boolean hasAutoInjectionConditions() {
-        return lookupNode("auto-conditions") != null;
+        return lookupNode("module-auto-injection-conditions") != null;
     }
 
     default boolean isAggregate() {
@@ -96,8 +96,8 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("required-libraries//library"), LibraryModule::createThirdPartyLibraryModule);
     }
 
-    default ReusableStream<String> getPackagesAutoInjectionConditions() {
-        return lookupNodeListTextContent("auto-conditions/if-uses-java-package");
+    default ReusableStream<String> getUsesPackagesAutoInjectionConditions() {
+        return lookupNodeListTextContent("module-auto-injection-conditions/if-uses-java-package");
     }
 
     default ReusableStream<String> getEmbedResources() {
