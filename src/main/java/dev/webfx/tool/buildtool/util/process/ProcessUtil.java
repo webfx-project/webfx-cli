@@ -13,7 +13,7 @@ import java.util.function.Predicate;
 public class ProcessUtil {
 
     public static int executeAndConsume(String command, Consumer<String> outputConsumer) {
-        Logger.log(command);
+        Logger.log("Calling: " + command);
         long t0 = System.currentTimeMillis();
         try {
             Process process = new ProcessBuilder()
@@ -21,7 +21,7 @@ public class ProcessUtil {
                     .start();
             Executors.newSingleThreadExecutor().submit(new StreamGobbler(process.getInputStream(), outputConsumer));
             int exitCode = process.waitFor();
-            Logger.log("Executed in " + (System.currentTimeMillis() - t0) + "ms");
+            Logger.log("Call duration: " + (System.currentTimeMillis() - t0) + " ms");
             return exitCode;
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
