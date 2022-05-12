@@ -252,11 +252,11 @@ public interface ProjectModule extends Module {
     }
 
     private ReusableStream<ProjectModule> getRegisteredProjectModuleSearchScope(boolean resume) {
-        return getProjectModuleSearchScope(resume ? getModuleRegistry().getProjectModuleRegistrationResume() : getModuleRegistry().getProjectModuleRegistrationStream());
+        return getProjectModuleSearchScope(resume ? getModuleRegistry().getProjectModuleRegistrationResumableStream() : getModuleRegistry().getProjectModuleRegistrationStream());
     }
 
     private ReusableStream<Module> getRegisteredModuleSearchScope(boolean resume) {
-        return getModuleSearchScope(resume ? getModuleRegistry().getModuleRegistrationResume() : getModuleRegistry().getModuleRegistrationStream());
+        return getModuleSearchScope(resume ? getModuleRegistry().getModuleRegistrationResumableStream() : getModuleRegistry().getModuleRegistrationStream());
     }
 
     private ReusableStream<ProjectModule> getDeclaredProjectModuleSearchScope(boolean resume) {
@@ -264,7 +264,7 @@ public interface ProjectModule extends Module {
     }
 
     private ReusableStream<Module> getDeclaredModuleSearchScope(boolean resume) {
-        return getModuleSearchScope(resume ? getModuleRegistry().getModuleDeclarationResume() : getModuleRegistry().getModuleDeclarationStream());
+        return getModuleSearchScope(resume ? getModuleRegistry().getModuleDeclarationResumableStream() : getModuleRegistry().getModuleDeclarationStream());
     }
 
     private ReusableStream<ProjectModule> getProjectModuleSearchScope(ReusableStream<ProjectModule> globalProjectModuleSearchScope) {

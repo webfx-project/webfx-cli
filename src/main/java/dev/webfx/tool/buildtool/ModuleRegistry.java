@@ -37,8 +37,8 @@ final public class ModuleRegistry {
     private final Map<Path, DevProjectModule> devProjectModulesPathMap = new HashMap<>();
 
     private final ArrayDeque<ReusableStream<ProjectModule>> listOfRootModuleAndChildrenToRegister = new ArrayDeque<>();
-    private final ReusableStream<ProjectModule> projectModuleRegistrationResume = ReusableStream.resumeFromIterator(new Iterator<>() {
-        ReusableStream<ProjectModule> rootModuleAndChildrenToRegisterResume;
+    private final ReusableStream<ProjectModule> projectModuleRegistrationResumableStream = ReusableStream.resumeFromIterator(new Iterator<>() {
+        ReusableStream<ProjectModule> rootModuleAndChildrenToRegisterResumableStream;
         ProjectModule nextProjectModuleToRegister;
 
         @Override
@@ -57,33 +57,33 @@ final public class ModuleRegistry {
 
         private ProjectModule getOrIncrementNextProjectModuleToRegister() {
             while (nextProjectModuleToRegister == null) {
-                if (rootModuleAndChildrenToRegisterResume == null) { // Indicates that we need to go to the next module and children stream
+                if (rootModuleAndChildrenToRegisterResumableStream == null) { // Indicates that we need to go to the next module and children stream
                     // But what if there is no more ?
                     while (listOfRootModuleAndChildrenToRegister.isEmpty() && lastImportedProjectModuleIndex < registeredProjectModules.size() - 1) {
                         // Let's try to import more libraries
                         importProjectModuleRequiredLibraries(registeredProjectModules.get(++lastImportedProjectModuleIndex));
                     }
                     // Now let's try to pool the next module and children stream
-                    rootModuleAndChildrenToRegisterResume = listOfRootModuleAndChildrenToRegister.poll();
+                    rootModuleAndChildrenToRegisterResumableStream = listOfRootModuleAndChildrenToRegister.poll();
                     // If we reached the end,
-                    if (rootModuleAndChildrenToRegisterResume == null)
+                    if (rootModuleAndChildrenToRegisterResumableStream == null)
                         break; // we exit with next = null
-                    // We got the next stream :) We need to call the resume operator, so we can take one element after the other
-                    rootModuleAndChildrenToRegisterResume = rootModuleAndChildrenToRegisterResume.resume();
+                    // We got the next stream :) We need to call the resumable operator, so we can take one element after the other
+                    rootModuleAndChildrenToRegisterResumableStream = rootModuleAndChildrenToRegisterResumableStream.resumable();
                 }
                 // Taking the next children from the current stream
-                nextProjectModuleToRegister = rootModuleAndChildrenToRegisterResume.findFirst().orElse(null);
+                nextProjectModuleToRegister = rootModuleAndChildrenToRegisterResumableStream.findFirst().orElse(null);
                 if (nextProjectModuleToRegister == null) // null means that the stream has no more children,
-                    rootModuleAndChildrenToRegisterResume = null; // This reset is to go to the next module and children stream on next loop
+                    rootModuleAndChildrenToRegisterResumableStream = null; // This reset is to go to the next module and children stream on next loop
             }
             return nextProjectModuleToRegister;
         }
     });
     private final ReusableStream<ProjectModule> projectModuleRegistrationStream =
-            replayProcessingResume(projectModuleRegistrationResume, registeredProjectModules);
+            replayProcessingResume(projectModuleRegistrationResumableStream, registeredProjectModules);
     // Stream for project modules registration
-    private final ReusableStream<Module> moduleRegistrationResume =
-            projectModuleRegistrationResume
+    private final ReusableStream<Module> moduleRegistrationResumableStream =
+            projectModuleRegistrationResumableStream
                     .map(Module.class::cast)
                     .concat(registeredLibraryModules);
     private final ReusableStream<Module> moduleRegistrationStream =
@@ -91,16 +91,16 @@ final public class ModuleRegistry {
                     .map(Module.class::cast)
                     .concat(registeredLibraryModules);
 
-    public ReusableStream<ProjectModule> getProjectModuleRegistrationResume() {
-        return projectModuleRegistrationResume;
+    public ReusableStream<ProjectModule> getProjectModuleRegistrationResumableStream() {
+        return projectModuleRegistrationResumableStream;
     }
 
     public ReusableStream<ProjectModule> getProjectModuleRegistrationStream() {
         return projectModuleRegistrationStream;
     }
 
-    public ReusableStream<Module> getModuleRegistrationResume() {
-        return moduleRegistrationResume;
+    public ReusableStream<Module> getModuleRegistrationResumableStream() {
+        return moduleRegistrationResumableStream;
     }
 
     public ReusableStream<Module> getModuleRegistrationStream() {
@@ -241,7 +241,7 @@ final public class ModuleRegistry {
     private final Map<String /* package name */, List<Module>> packagesModulesNameMap = new HashMap<>();
 
     // Stream for project modules declaration
-    private final ReusableStream<Module> moduleDeclarationResume =
+    private final ReusableStream<Module> moduleDeclarationResumableStream =
             ReusableStream.resumeFromIterator(new Iterator<>() {
                 Module nextModuleToDeclare;
 
@@ -267,7 +267,7 @@ final public class ModuleRegistry {
                             nextModuleToDeclare = registeredLibraryModules.get(++lastDeclaredLibraryModuleIndex);
                         else if (lastDeclaredProjectModuleIndex < registeredProjectModules.size() - 1)
                             nextModuleToDeclare = registeredProjectModules.get(++lastDeclaredProjectModuleIndex);
-                        else if (projectModuleRegistrationResume.findFirst().orElse(null) == null
+                        else if (projectModuleRegistrationResumableStream.findFirst().orElse(null) == null
                                 && lastDeclaredLibraryModuleIndex >= registeredLibraryModules.size() - 1
                                 && lastDeclaredProjectModuleIndex >= registeredProjectModules.size() - 1)
                             break;
@@ -276,18 +276,18 @@ final public class ModuleRegistry {
                 }
             });
     private final ReusableStream<Module> moduleDeclarationStream =
-            replayProcessingResume(moduleDeclarationResume, declaredModules);
+            replayProcessingResume(moduleDeclarationResumableStream, declaredModules);
 
     public ReusableStream<ProjectModule> getProjectModuleDeclarationResume() {
-        return ProjectModule.filterProjectModules(moduleDeclarationResume);
+        return ProjectModule.filterProjectModules(moduleDeclarationResumableStream);
     }
 
     public ReusableStream<ProjectModule> getProjectModuleDeclarationStream() {
         return ProjectModule.filterProjectModules(moduleDeclarationStream);
     }
 
-    public ReusableStream<Module> getModuleDeclarationResume() {
-        return moduleDeclarationResume;
+    public ReusableStream<Module> getModuleDeclarationResumableStream() {
+        return moduleDeclarationResumableStream;
     }
 
     public ReusableStream<Module> getModuleDeclarationStream() {
@@ -436,8 +436,8 @@ final public class ModuleRegistry {
                     .filter(m2 -> m2.getName().equals(m2.getWebFxModuleFile().lookupExportedSnapshotFirstProjectName()))
                     // Registering the export snapshot usages on the fly while pulling this stream
                     .map(this::registerExportSnapshotUsages)
-                    // This stream is for an on the fly registration, so no need to pass the same modules again
-                    .resume();
+                    // This stream is for an on the fly registration, so no need to repeat and process the same modules again
+                    .resumable();
 
     private final Map<String /* package or class name */, List<SnapshotUsages>> registeredSnapshotUsages = new HashMap<>();
 
