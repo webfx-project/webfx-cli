@@ -53,7 +53,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                         : buildInfo.isForTeaVm ? "pom_teavm_executable.xml"
                         : buildInfo.isForGluon ? "pom_gluon_executable.xml"
                         : buildInfo.isForVertx ? "pom_vertx_executable.xml"
-                        : "pom_javafx_executable.xml";
+                        : "pom_openjfx_executable.xml";
         String template = ResourceTextFileReader.readTemplate(templateFileName)
                 .replace("${groupId}", ArtifactResolver.getGroupId(projectModule))
                 .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
@@ -138,14 +138,18 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             if (!gas.isEmpty() && dependenciesNode.getParentNode() == null)
                 appendIndentNode(dependenciesNode, true);
         }
+        // Getting the GAV for this module
         String groupId = ArtifactResolver.getGroupId(module);
+        String artifactId = ArtifactResolver.getArtifactId(module);
         String version = ArtifactResolver.getVersion(module);
-        Module parentModule = module.fetchParentModule();
-        String parentGroupId = ArtifactResolver.getGroupId(parentModule);
-        String parentVersion = ArtifactResolver.getVersion(parentModule);
+        // Getting the GAV for the parent module
+        Module parentModule = module instanceof DevRootModule && !module.getMavenModuleFile().fileExists() ? null // This happens on first pom.xml creation with "webfx init" => no parent yet
+                : module.fetchParentModule(); // Otherwise, we fetch the parent module (this may invoke mvn)
+        String parentGroupId = parentModule == null ? null : ArtifactResolver.getGroupId(parentModule);
+        String parentVersion = parentModule == null ? null : ArtifactResolver.getVersion(parentModule);
         if (version != null && !version.equals(parentVersion))
             prependElementWithTextContentIfNotAlreadyExists("version", version, true);
-        prependElementWithTextContentIfNotAlreadyExists("artifactId", ArtifactResolver.getArtifactId(module), true);
+        prependElementWithTextContentIfNotAlreadyExists("artifactId", artifactId, true);
         if (groupId != null && !groupId.equals(parentGroupId))
             prependElementWithTextContentIfNotAlreadyExists("groupId", groupId, true);
         if (parentModule != null && lookupNode("parent/artifactId") == null) {

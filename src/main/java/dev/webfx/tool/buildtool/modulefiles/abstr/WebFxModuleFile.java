@@ -1,9 +1,7 @@
 package dev.webfx.tool.buildtool.modulefiles.abstr;
 
-import dev.webfx.tool.buildtool.LibraryModule;
-import dev.webfx.tool.buildtool.ModuleDependency;
-import dev.webfx.tool.buildtool.ModuleProperty;
-import dev.webfx.tool.buildtool.ServiceProvider;
+import dev.webfx.tool.buildtool.*;
+import dev.webfx.tool.buildtool.modulefiles.ArtifactResolver;
 import dev.webfx.tool.buildtool.util.textfile.ResourceTextFileReader;
 import dev.webfx.tool.buildtool.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
@@ -186,7 +184,12 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
 
     @Override
     default Document createInitialDocument() {
-        return XmlUtil.parseXmlString(ResourceTextFileReader.readTemplate("webfx.xml"));
+        return XmlUtil.parseXmlString(
+                ResourceTextFileReader.readTemplate(getModule() instanceof DevRootModule ? "webfx-root.xml" : "webfx.xml")
+                        .replace("${groupId}",    ArtifactResolver.getGroupId(getModule()))
+                        .replace("${artifactId}", ArtifactResolver.getArtifactId(getModule()))
+                        .replace("${version}",    ArtifactResolver.getVersion(getModule()))
+        );
     }
 
     default void setExecutable(boolean executable) {

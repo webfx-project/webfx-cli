@@ -135,6 +135,10 @@ class CommonCommand {
         return workspaceDirectoryPath;
     }
 
+    public void setWorkspaceDirectoryPath(Path workspaceDirectoryPath) {
+        this.workspaceDirectoryPath = workspaceDirectoryPath;
+    }
+
     protected ModuleRegistry getModuleRegistry() {
         if (moduleRegistry == null)
             moduleRegistry = new ModuleRegistry(getWorkspaceDirectoryPath());

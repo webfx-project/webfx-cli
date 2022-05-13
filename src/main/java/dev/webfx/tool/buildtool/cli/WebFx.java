@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
         "   \\ V  V |  __| |_) |  _|  /  \\\n" +
         "    \\_/\\_/ \\___|_.__/|_|   /_/\\_\\\n",
         subcommands = {
+                Init.class,
                 Create.class,
                 Build.class,
                 Run.class,
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
                 Watch.class,
         },
         mixinStandardHelpOptions = true,
-        version = "2021-04-02")
+        version = "0.1.0-SNAPSHOT-2022-05-13")
 public final class WebFx extends CommonCommand {
 
     public static void main(String... args) {

@@ -38,11 +38,11 @@ public interface XmlNodeApi {
     }
 
     default Element appendElementWithTextContentIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
-        return XmlUtil.appendElementWithTextContentIfNotAlreadyExists(getXmlNode(), xpath, text, linefeeds);
+        return XmlUtil.appendElementWithTextContentIfNotAlreadyExists(getOrCreateXmlNode(), xpath, text, linefeeds);
     }
 
     default Element prependElementWithTextContentIfNotAlreadyExists(String xpath, String text, boolean... linefeeds) {
-        return XmlUtil.prependElementWithTextContentIfNotAlreadyExists(getXmlNode(), xpath, text, linefeeds);
+        return XmlUtil.prependElementWithTextContentIfNotAlreadyExists(getOrCreateXmlNode(), xpath, text, linefeeds);
     }
 
     default Node lookupNodeWithTextContent(String xpath, String text) {
