@@ -182,7 +182,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     private static void invokeMavenGoal(String goal) {
         if (!USE_MAVEN_INVOKER) {
-            ProcessUtil.execute("mvn " + goal, line -> line.startsWith("Downloading"));
+            ProcessUtil.execute("mvn " + goal, line -> line.startsWith("Downloading") || line.startsWith("[ERROR]"));
         } else {
             Logger.log("Invoking maven goal: " + goal);
             InvocationRequest request = new DefaultInvocationRequest();

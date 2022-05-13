@@ -25,7 +25,7 @@ subcommands = {
         Create.Application.class,
         Create.Module.class,
 })
-class Create extends CommonSubcommand {
+final class Create extends CommonSubcommand {
 
     static abstract class CreateSubCommand extends CommonSubcommand implements Callable<Void> {
 
@@ -140,7 +140,7 @@ class Create extends CommonSubcommand {
             parentDevMavenModuleFile.writeFile();
     }
 
-    @Command(name = "application", description = "Create modules for a WebFX application.")
+    @Command(name = "application", description = "Create modules for a new WebFX application.")
     static class Application extends CreateSubCommand {
         @Option(names = {"-g", "--gluon"}, description = "Also create the gluon module.")
         private boolean gluon;
@@ -164,16 +164,17 @@ class Create extends CommonSubcommand {
                 else
                     prefix = getModuleRegistry().getOrCreateDevProjectModule(getProjectDirectoryPath()).getName();
             }
-            DevProjectModule applicationModule = createTagModule(null);
-            createTagModule(TargetTag.OPENJFX);
-            createTagModule(TargetTag.GWT);
+            DevProjectModule applicationModule = createTagApplicationModule(null);
+            createTagApplicationModule(TargetTag.OPENJFX);
+            createTagApplicationModule(TargetTag.GWT);
             if (gluon)
-                createTagModule(TargetTag.GLUON);
+                createTagApplicationModule(TargetTag.GLUON);
             writeParentMavenModuleFile(applicationModule);
+            new Update().run();
             return null;
         }
 
-        private DevProjectModule createTagModule(TargetTag targetTag) throws IOException {
+        private DevProjectModule createTagApplicationModule(TargetTag targetTag) throws IOException {
             if (targetTag == null)
                 return createSourceModule(prefix + "-application", helloWorld ? "JavaFxHelloWorldApplication.java" : "JavaFxApplication.java", javaFxApplication, false);
             return createSourceModule(prefix + "-application-" + targetTag.name().toLowerCase(), null, null, true);

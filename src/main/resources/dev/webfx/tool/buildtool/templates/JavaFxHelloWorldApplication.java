@@ -10,7 +10,7 @@ public class ${class} extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setScene(new Scene(new StackPane(new Text("Hello world!"))));
+        primaryStage.setScene(new Scene(new StackPane(new Text("Hello world!")), 800, 600));
         primaryStage.show();
     }
 
