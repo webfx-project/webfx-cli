@@ -1,6 +1,6 @@
 // File managed by WebFX (DO NOT EDIT MANUALLY)
 
-module webfx.buildtool {
+module webfx.cli {
 
     // Direct dependencies modules
     requires info.picocli;
