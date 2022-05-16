@@ -10,20 +10,21 @@ module webfx.buildtool {
     requires webfx.lib.reusablestream;
 
     // Exported packages
-    exports dev.webfx.tool.buildtool;
-    exports dev.webfx.tool.buildtool.cli;
-    exports dev.webfx.tool.buildtool.modulefiles;
-    exports dev.webfx.tool.buildtool.modulefiles.abstr;
-    exports dev.webfx.tool.buildtool.sourcegenerators;
-    exports dev.webfx.tool.buildtool.util.javacode;
-    exports dev.webfx.tool.buildtool.util.process;
-    exports dev.webfx.tool.buildtool.util.splitfiles;
-    exports dev.webfx.tool.buildtool.util.textfile;
-    exports dev.webfx.tool.buildtool.util.xml;
+    exports dev.webfx.tool.cli;
+    exports dev.webfx.tool.cli.core;
+    exports dev.webfx.tool.cli.modulefiles;
+    exports dev.webfx.tool.cli.modulefiles.abstr;
+    exports dev.webfx.tool.cli.sourcegenerators;
+    exports dev.webfx.tool.cli.subcommands;
+    exports dev.webfx.tool.cli.util.javacode;
+    exports dev.webfx.tool.cli.util.process;
+    exports dev.webfx.tool.cli.util.splitfiles;
+    exports dev.webfx.tool.cli.util.textfile;
+    exports dev.webfx.tool.cli.util.xml;
 
     // Resources packages
-    opens dev.webfx.tool.buildtool.cli;
-    opens dev.webfx.tool.buildtool.jdk;
-    opens dev.webfx.tool.buildtool.templates;
+    opens dev.webfx.tool.cli.jdk;
+    opens dev.webfx.tool.cli.subcommands;
+    opens dev.webfx.tool.cli.templates;
 
 }

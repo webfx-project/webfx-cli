@@ -3,9 +3,9 @@
 
     <exported-packages>
         <source-packages/>
-        <resource-package>dev.webfx.tool.buildtool.cli</resource-package>
-        <resource-package>dev.webfx.tool.buildtool.jdk</resource-package>
-        <resource-package>dev.webfx.tool.buildtool.templates</resource-package>
+        <resource-package>dev.webfx.tool.cli.subcommands</resource-package>
+        <resource-package>dev.webfx.tool.cli.jdk</resource-package>
+        <resource-package>dev.webfx.tool.cli.templates</resource-package>
     </exported-packages>
 
     <dependencies>
