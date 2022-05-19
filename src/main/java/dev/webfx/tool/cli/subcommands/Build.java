@@ -11,6 +11,6 @@ public final class Build extends CommonSubcommand implements Runnable {
 
     @Override
     public void run() {
-        MavenCaller.invokeMavenGoal("install -Pgwt-compile");
+        MavenCaller.invokeMavenGoal("package -P gwt-compile -P openjfx-fatjar");
     }
 }

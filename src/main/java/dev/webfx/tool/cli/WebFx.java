@@ -1,7 +1,7 @@
 package dev.webfx.tool.cli;
 
+import dev.webfx.tool.cli.core.WebFxCliException;
 import dev.webfx.tool.cli.subcommands.*;
-import dev.webfx.tool.cli.core.BuildException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help;
@@ -48,8 +48,8 @@ public final class WebFx extends CommonCommand {
         return new CommandLine(new WebFx())
                 .setHelpFactory(new HelpFactory())
                 .setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
-                    // Removing the stack trace if this happens in the cli package (just reporting a wrong user input)
-                    if (ex instanceof BuildException)
+                    // Removing the stack trace if this is raised by the cli tool (just showing the short message)
+                    if (ex instanceof WebFxCliException)
                         ex.setStackTrace(new StackTraceElement[0]);
                     throw ex;
                 })

@@ -5,6 +5,7 @@ module webfx.cli {
     // Direct dependencies modules
     requires info.picocli;
     requires java.base;
+    requires java.desktop;
     requires java.xml;
     requires maven.invoker;
     requires webfx.lib.reusablestream;

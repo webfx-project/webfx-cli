@@ -63,7 +63,61 @@
 
         <library name="java.compiler"/>
         <library name="java.datatransfer"/>
-        <library name="java.desktop"/>
+
+        <library name="java.desktop">
+            <exported-packages>
+                <package>java.applet</package>
+                <package>java.awt</package>
+                <package>java.awt.color</package>
+                <package>java.awt.desktop</package>
+                <package>java.awt.dnd</package>
+                <package>java.awt.event</package>
+                <package>java.awt.font</package>
+                <package>java.awt.geom</package>
+                <package>java.awt.im</package>
+                <package>java.awt.im.spi</package>
+                <package>java.awt.image</package>
+                <package>java.awt.image.renderable</package>
+                <package>java.awt.print</package>
+                <package>java.beans</package>
+                <package>java.beans.beancontext</package>
+                <package>javax.accessibility</package>
+                <package>javax.imageio</package>
+                <package>javax.imageio.event</package>
+                <package>javax.imageio.metadata</package>
+                <package>javax.imageio.plugins.bmp</package>
+                <package>javax.imageio.plugins.jpeg</package>
+                <package>javax.imageio.plugins.tiff</package>
+                <package>javax.imageio.spi</package>
+                <package>javax.imageio.stream</package>
+                <package>javax.print</package>
+                <package>javax.print.attribute</package>
+                <package>javax.print.attribute.standard</package>
+                <package>javax.print.event</package>
+                <package>javax.sound.midi</package>
+                <package>javax.sound.sampled</package>
+                <package>javax.sound.sampled.spi</package>
+                <package>javax.swing</package>
+                <package>javax.swing.border</package>
+                <package>javax.swing.colorchooser</package>
+                <package>javax.swing.event</package>
+                <package>javax.swing.filechooser</package>
+                <package>javax.swing.plaf</package>
+                <package>javax.swing.plaf.basic</package>
+                <package>javax.swing.plaf.metal</package>
+                <package>javax.swing.plaf.multi</package>
+                <package>javax.swing.plaf.nimbus</package>
+                <package>javax.swing.plaf.synth</package>
+                <package>javax.swing.table</package>
+                <package>javax.swing.text</package>
+                <package>javax.swing.text.html</package>
+                <package>javax.swing.text.html.parser</package>
+                <package>javax.swing.text.rtf</package>
+                <package>javax.swing.tree</package>
+                <package>javax.swing.undo</package>
+            </exported-packages>
+        </library>
+
         <library name="java.instrument"/>
 
         <library name="java.logging">
