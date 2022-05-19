@@ -31,9 +31,9 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
         processSection(sb, "Direct dependencies modules", "requires",
                 ReusableStream.fromIterable(
                         module.getDirectDependencies()
-                        // Modules with "runtime" scope must not have a "requires" clause (since they are invisible for the module).
+                        // Modules with "runtime" or "test" scope must not have a "requires" clause (since they are invisible for the source module).
                         // Exception is made however for JDK modules (since they are always visible) and may be needed (ex: java.sql for Vert.x)
-                        .filter(d -> !"runtime".equals(d.getScope()) || ModuleRegistry.isJdkModule(d.getDestinationModule()))
+                        .filter(d -> (!"runtime".equals(d.getScope()) && !"test".equals(d.getScope())) || ModuleRegistry.isJdkModule(d.getDestinationModule()))
                         // Grouping by destination module
                         .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                 )
