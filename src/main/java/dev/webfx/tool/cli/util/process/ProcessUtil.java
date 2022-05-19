@@ -12,8 +12,12 @@ import java.util.function.Predicate;
  */
 public class ProcessUtil {
 
+    private static final boolean WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
+
     public static int executeAndConsume(String command, Consumer<String> outputConsumer) {
         Logger.log("Calling: " + command);
+        if (WINDOWS)
+            command = "cmd /c " + command; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
         long t0 = System.currentTimeMillis();
         try {
             Process process = new ProcessBuilder()
