@@ -14,6 +14,10 @@ public class ProcessUtil {
 
     private static final boolean WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
 
+    public static boolean isWindows() {
+        return WINDOWS;
+    }
+
     public static int executeAndConsume(String command, Consumer<String> outputConsumer) {
         Logger.log("Calling: " + command);
         if (WINDOWS)
