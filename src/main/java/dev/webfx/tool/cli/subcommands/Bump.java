@@ -34,9 +34,10 @@ public final class Bump extends CommonSubcommand {
                         .setLogsCall(false, false)
                         .executeAndWait()
                         .onLastResultLine(gitResultLine -> {
-                            Logger.log("Git result line: " + gitResultLine);
+                            //Logger.log("Git result line: " + gitResultLine);
                             if (gitResultLine == null) {
                                 Logger.log("A new version is available!");
+                                String versionBeforeUpdate = WebFx.getVersion();
                                 new ProcessCall("mvn package")
                                         .setWorkingDirectory(cliRepo)
                                         .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))
@@ -44,12 +45,13 @@ public final class Bump extends CommonSubcommand {
                                         .setLogsCall(false, false)
                                         .executeAndWait()
                                         .onLastResultLine(mvnResultLine -> {
-                                            Logger.log("Maven result line: " + mvnResultLine);
+                                            //Logger.log("Maven result line: " + mvnResultLine);
                                             if (mvnResultLine != null) {
                                                 Logger.log("The new version has been successfully built.");
-                                                Logger.log("Old version: " + WebFx.getVersion());
+                                                Logger.log("Old version: " + versionBeforeUpdate);
                                                 Logger.log("New version: " +
                                                         new ProcessCall("java -jar " + jarPath.toAbsolutePath() + " --version")
+                                                                .setLogLineFilter(line -> false)
                                                                 .setLogsCall(false, false)
                                                                 .executeAndWait()
                                                                 .getLastResultLine()
