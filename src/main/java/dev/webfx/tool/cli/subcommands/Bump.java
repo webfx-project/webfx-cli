@@ -37,7 +37,7 @@ public final class Bump extends CommonSubcommand {
                             //Logger.log("Git result line: " + gitResultLine);
                             if (gitResultLine == null) {
                                 Logger.log("A new version is available!");
-                                String versionBeforeUpdate = WebFx.getVersion();
+                                Logger.log("Old version: " + WebFx.getVersion());
                                 new ProcessCall("mvn package")
                                         .setWorkingDirectory(cliRepo)
                                         .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))
@@ -47,8 +47,6 @@ public final class Bump extends CommonSubcommand {
                                         .onLastResultLine(mvnResultLine -> {
                                             //Logger.log("Maven result line: " + mvnResultLine);
                                             if (mvnResultLine != null) {
-                                                Logger.log("The new version has been successfully built.");
-                                                Logger.log("Old version: " + versionBeforeUpdate);
                                                 Logger.log("New version: " +
                                                         new ProcessCall("java -jar " + jarPath.toAbsolutePath() + " --version")
                                                                 .setLogLineFilter(line -> false)
