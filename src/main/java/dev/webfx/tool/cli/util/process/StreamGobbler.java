@@ -9,17 +9,17 @@ import java.util.function.Consumer;
  * @author Bruno Salmon
  */
 class StreamGobbler implements Runnable {
-    private InputStream inputStream;
-    private Consumer<String> consumer;
+    private final InputStream inputStream;
+    private final Consumer<String> outputLineConsumer;
 
-    public StreamGobbler(InputStream inputStream, Consumer<String> consumer) {
+    public StreamGobbler(InputStream inputStream, Consumer<String> outputLineConsumer) {
         this.inputStream = inputStream;
-        this.consumer = consumer;
+        this.outputLineConsumer = outputLineConsumer;
     }
 
     @Override
     public void run() {
         new BufferedReader(new InputStreamReader(inputStream)).lines()
-                .forEach(consumer);
+                .forEach(outputLineConsumer);
     }
 }

@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
                 Build.class,
                 Run.class,
                 Update.class,
+                Bump.class,
                 //STream.class,
                 //Rename.class,
                 //Move.class,
@@ -105,11 +106,17 @@ public final class WebFx extends CommonCommand {
     public static class DevVersionProvider implements CommandLine.IVersionProvider {
         @Override
         public String[] getVersion() throws Exception {
-            try (InputStream pis = getClass().getClassLoader().getResourceAsStream("dev/webfx/tool/cli/version/dev/version.ini")) {
-                Properties devVersionProperties = new Properties();
-                devVersionProperties.load(pis);
-                return new String[]{devVersionProperties.getProperty("version") + " ~ " + devVersionProperties.getProperty("build.timestamp") + " GMT"};
-            }
+            return new String[] { WebFx.getVersion() };
+        }
+    }
+
+    public static String getVersion() {
+        try (InputStream pis = WebFx.class.getClassLoader().getResourceAsStream("dev/webfx/tool/cli/version/dev/version.ini")) {
+            Properties devVersionProperties = new Properties();
+            devVersionProperties.load(pis);
+            return devVersionProperties.getProperty("version") + " ~ " + devVersionProperties.getProperty("build.timestamp") + " GMT";
+        } catch (Exception e) {
+            throw new WebFxCliException(e.getMessage());
         }
     }
 
