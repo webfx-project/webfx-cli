@@ -12,9 +12,9 @@ import java.nio.file.Path;
  * @author Bruno Salmon
  */
 @Command(name = "bump", description = "Bump to a new version if available.",
-    subcommands = {
-        Bump.Cli.class
-    })
+        subcommands = {
+                Bump.Cli.class
+        })
 public final class Bump extends CommonSubcommand {
 
     @Command(name = "cli", description = "Bump the CLI to a new version if available.")
@@ -31,6 +31,7 @@ public final class Bump extends CommonSubcommand {
                         .setWorkingDirectory(cliRepo)
                         .setResultLineFilter(line -> line.contains("up-to-date"))
                         .setLogLineFilter(line -> line.contains("up-to-date") || line.toLowerCase().contains("error"))
+                        .setLogsCall(false, false)
                         .executeAndWait()
                         .onLastResultLine(gitResultLine -> {
                             if (gitResultLine == null) {
@@ -39,15 +40,17 @@ public final class Bump extends CommonSubcommand {
                                         .setWorkingDirectory(cliRepo)
                                         .setResultLineFilter(line -> line.startsWith("[INFO]") && line.contains("BUILD SUCCESS"))
                                         .setLogLineFilter(line -> line.startsWith("[ERROR]"))
+                                        .setLogsCall(false, false)
                                         .executeAndWait()
                                         .onLastResultLine(mvnResultLine -> {
                                             if (mvnResultLine != null) {
-                                                Logger.log("WebFX CLI has been successfully updated");
+                                                Logger.log("The new version has been successfully built.");
                                                 Logger.log("Old version: " + WebFx.getVersion());
                                                 Logger.log("New version: " +
                                                         new ProcessCall("java -jar " + jarPath.toAbsolutePath() + " --version")
-                                                        .executeAndWait()
-                                                        .getLastResultLine()
+                                                                .setLogsCall(false, false)
+                                                                .executeAndWait()
+                                                                .getLastResultLine()
                                                 );
                                                 // We exit now because otherwise it's very likely we will get a runtime
                                                 // exception due to the fat jar update.

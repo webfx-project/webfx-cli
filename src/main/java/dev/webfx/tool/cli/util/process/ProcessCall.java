@@ -25,6 +25,10 @@ public class ProcessCall {
 
     private String lastResultLine;
 
+    private boolean logsCalling = true;
+
+    private boolean logsCallDuration = true;
+
     private int exitCode;
 
     private long callDurationMillis;
@@ -53,6 +57,12 @@ public class ProcessCall {
 
     public ProcessCall setResultLineFilter(Predicate<String> resultLineFilter) {
         this.resultLineFilter = resultLineFilter;
+        return this;
+    }
+
+    public ProcessCall setLogsCall(boolean logsCalling, boolean logsCallDuration) {
+        this.logsCalling = logsCalling;
+        this.logsCallDuration = logsCallDuration;
         return this;
     }
 
@@ -85,7 +95,8 @@ public class ProcessCall {
     }
 
     private void executeAndConsume(Consumer<String> outputLineConsumer) {
-        Logger.log("Calling: " + command);
+        if (logsCalling)
+            Logger.log("Calling: " + command);
         if (WINDOWS)
             command = "cmd /c " + command; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
         long t0 = System.currentTimeMillis();
@@ -97,7 +108,8 @@ public class ProcessCall {
             Executors.newSingleThreadExecutor().submit(new StreamGobbler(process.getInputStream(), outputLineConsumer));
             exitCode = process.waitFor();
             callDurationMillis = System.currentTimeMillis() - t0;
-            logCallDuration();
+            if (logsCallDuration)
+                logCallDuration();
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
