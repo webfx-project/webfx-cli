@@ -116,7 +116,7 @@ public final class WebFx extends CommonCommand {
             devVersionProperties.load(pis);
             return devVersionProperties.getProperty("version") + " ~ " + devVersionProperties.getProperty("build.timestamp") + " GMT";
         } catch (Exception e) {
-            throw new WebFxCliException(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 

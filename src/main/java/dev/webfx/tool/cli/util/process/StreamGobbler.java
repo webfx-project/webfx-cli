@@ -12,6 +12,8 @@ class StreamGobbler implements Runnable {
     private final InputStream inputStream;
     private final Consumer<String> outputLineConsumer;
 
+    private boolean completed;
+
     public StreamGobbler(InputStream inputStream, Consumer<String> outputLineConsumer) {
         this.inputStream = inputStream;
         this.outputLineConsumer = outputLineConsumer;
@@ -21,5 +23,10 @@ class StreamGobbler implements Runnable {
     public void run() {
         new BufferedReader(new InputStreamReader(inputStream)).lines()
                 .forEach(outputLineConsumer);
+        completed = true;
+    }
+
+    public boolean isCompleted() {
+        return completed;
     }
 }

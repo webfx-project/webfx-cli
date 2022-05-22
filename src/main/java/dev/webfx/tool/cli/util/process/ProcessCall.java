@@ -29,6 +29,8 @@ public class ProcessCall {
 
     private boolean logsCallDuration = true;
 
+    private StreamGobbler streamGobbler;
+
     private int exitCode;
 
     private long callDurationMillis;
@@ -82,6 +84,7 @@ public class ProcessCall {
     }
 
     public ProcessCall onLastResultLine(Consumer<String> lastResultLineConsumer) {
+        waitForStreamGobblerCompleted();
         lastResultLineConsumer.accept(lastResultLine);
         return this;
     }
@@ -91,6 +94,7 @@ public class ProcessCall {
     }
 
     public String getLastResultLine() {
+        waitForStreamGobblerCompleted();
         return lastResultLine;
     }
 
@@ -105,7 +109,8 @@ public class ProcessCall {
                     .command(command.split(" "))
                     .directory(workingDirectory)
                     .start();
-            Executors.newSingleThreadExecutor().submit(new StreamGobbler(process.getInputStream(), outputLineConsumer));
+            streamGobbler = new StreamGobbler(process.getInputStream(), outputLineConsumer);
+            Executors.newSingleThreadExecutor().submit(streamGobbler);
             exitCode = process.waitFor();
             callDurationMillis = System.currentTimeMillis() - t0;
             if (logsCallDuration)
@@ -113,6 +118,17 @@ public class ProcessCall {
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void waitForStreamGobblerCompleted() {
+        while (streamGobbler != null && !streamGobbler.isCompleted())
+            try {
+                synchronized (streamGobbler) {
+                    streamGobbler.wait(1);
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
     }
 
     public static boolean isWindows() {
