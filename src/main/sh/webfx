@@ -1,2 +1,0 @@
-#!/bin/sh
-/home/bruno/.jdks/openjdk-15.0.2/bin/java -Dfile.encoding=UTF-8 -p /home/bruno/dev/git-repos/webfx-buildtool/target/classes:/home/bruno/.m2/repository/info/picocli/picocli/4.6.1/picocli-4.6.1.jar:/home/bruno/dev/git-repos/webfx-lib-reusablestream/target/classes -m webfx.buildtool/dev.webfx.buildtool.cli.WebFx "$@"
