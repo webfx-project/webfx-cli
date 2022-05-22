@@ -34,15 +34,17 @@ public final class Bump extends CommonSubcommand {
                         .setLogsCall(false, false)
                         .executeAndWait()
                         .onLastResultLine(gitResultLine -> {
+                            Logger.log("Git result line: " + gitResultLine);
                             if (gitResultLine == null) {
                                 Logger.log("A new version is available!");
                                 new ProcessCall("mvn package")
                                         .setWorkingDirectory(cliRepo)
-                                        .setResultLineFilter(line -> line.startsWith("[INFO]") && line.contains("BUILD SUCCESS"))
+                                        .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))
                                         .setLogLineFilter(line -> line.startsWith("[ERROR]"))
                                         .setLogsCall(false, false)
                                         .executeAndWait()
                                         .onLastResultLine(mvnResultLine -> {
+                                            Logger.log("Maven result line: " + mvnResultLine);
                                             if (mvnResultLine != null) {
                                                 Logger.log("The new version has been successfully built.");
                                                 Logger.log("Old version: " + WebFx.getVersion());
