@@ -11,8 +11,10 @@ import picocli.CommandLine.Model.ArgSpec;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -37,7 +39,7 @@ import java.util.stream.Collectors;
                 Watch.class,
         },
         mixinStandardHelpOptions = true,
-        version = "0.1.0-SNAPSHOT-2022-05-13")
+        versionProvider = WebFx.DevVersionProvider.class)
 public final class WebFx extends CommonCommand {
 
     public static void main(String... args) {
@@ -99,4 +101,16 @@ public final class WebFx extends CommonCommand {
             };
         }
     }
+
+    public static class DevVersionProvider implements CommandLine.IVersionProvider {
+        @Override
+        public String[] getVersion() throws Exception {
+            try (InputStream pis = getClass().getClassLoader().getResourceAsStream("dev/webfx/tool/cli/version/dev/version.ini")) {
+                Properties devVersionProperties = new Properties();
+                devVersionProperties.load(pis);
+                return new String[]{devVersionProperties.getProperty("version") + " ~ " + devVersionProperties.getProperty("build.timestamp") + " GMT"};
+            }
+        }
+    }
+
 }

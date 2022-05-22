@@ -26,5 +26,6 @@ module webfx.cli {
     opens dev.webfx.tool.cli.jdk;
     opens dev.webfx.tool.cli.subcommands;
     opens dev.webfx.tool.cli.templates;
+    opens dev.webfx.tool.cli.version.dev;
 
 }

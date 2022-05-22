@@ -50,6 +50,27 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>webfx-cli-timestamp-dev-version</id>
+            <properties>
+                <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+                <!-- Storing the timestamp in another property because using directly ${maven.build.timestamp} in the version.ini template doesn't consider the timestamp format -->
+                <build.timestamp>${maven.build.timestamp}</build.timestamp>
+            </properties>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources/dev/webfx/tool/cli/version/template</directory>
+                        <filtering>true</filtering>
+                        <!-- A bit hacky but for now the development version is stored in a resource file under git source control -->
+                        <targetPath>../../src/main/resources/dev/webfx/tool/cli/version/dev</targetPath>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+    </profiles>
+
     <dependencies>
 
         <dependency>
