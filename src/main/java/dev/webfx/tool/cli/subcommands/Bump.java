@@ -29,8 +29,8 @@ public final class Bump extends CommonSubcommand {
                 File cliRepo = jarPath.getParent().getParent().toFile();
                 new ProcessCall("git pull")
                         .setWorkingDirectory(cliRepo)
-                        .setResultLineFilter(line -> line.contains("up-to-date"))
-                        .setLogLineFilter(line -> line.contains("up-to-date") || line.toLowerCase().contains("error"))
+                        .setResultLineFilter(line -> removeSpaceAndDash(line).contains("uptodate"))
+                        .setLogLineFilter(line -> removeSpaceAndDash(line).contains("uptodate") || line.toLowerCase().contains("error"))
                         .setLogsCall(false, false)
                         .executeAndWait()
                         .onLastResultLine(gitResultLine -> {
@@ -63,5 +63,9 @@ public final class Bump extends CommonSubcommand {
                         });
             }
         }
+    }
+
+    private static String removeSpaceAndDash(String line) {
+        return line.replaceAll(" ", "").replaceAll("-", "");
     }
 }
