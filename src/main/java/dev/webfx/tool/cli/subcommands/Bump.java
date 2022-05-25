@@ -25,6 +25,9 @@ public final class Bump extends CommonSubcommand {
             String jarLocation = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
             if (jarLocation.endsWith(".jar")) {
                 jarLocation = jarLocation.replaceAll("%20", " ");
+                // Removing the starting / on Windows machines (ex: "/C:/Users/..." will become "C:/Users/...")
+                if (jarLocation.startsWith("/") && Character.isLetter(jarLocation.charAt(1)) && jarLocation.charAt(2) == ':')
+                    jarLocation = jarLocation.substring(1);
                 Path jarPath = Path.of(jarLocation);
                 File cliRepo = jarPath.getParent().getParent().toFile();
                 new ProcessCall("git pull")
