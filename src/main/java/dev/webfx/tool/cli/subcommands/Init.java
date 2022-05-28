@@ -26,7 +26,7 @@ public final class Init extends CommonSubcommand implements Callable<Void> {
         String[] split = artifact.split(":");
         int i = 0, n = split.length;
         String groupId = split[i++];
-        String artifactId = n > 1 ? split[i++] : null;
+        String artifactId = n >= 3 ? split[i++] : null;
         String version = split[i];
         if (artifactId == null)
             artifactId = projectDirectoryPath.getFileName().toString();
