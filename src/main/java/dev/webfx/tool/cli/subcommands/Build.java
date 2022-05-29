@@ -1,6 +1,7 @@
 package dev.webfx.tool.cli.subcommands;
 
 import dev.webfx.tool.cli.core.MavenCaller;
+import dev.webfx.tool.cli.util.process.ProcessCall;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -10,23 +11,26 @@ import picocli.CommandLine.Command;
 @Command(name = "build", description = "Invoke Maven build.")
 public final class Build extends CommonSubcommand implements Runnable {
 
-    @CommandLine.Option(names = {"--fatjar"}, description = "Creates a fat jar for the OpenJFX version", defaultValue = "true")
+    @CommandLine.Option(names = {"--openjfx-fatjar"}, description = "Creates a fat jar for the OpenJFX version")
     private boolean fatjar;
 
-    @CommandLine.Option(names = {"--gwt"}, description = "Includes the GWT compilation", defaultValue = "true")
+    @CommandLine.Option(names = {"--gwt-compile"}, description = "Includes the GWT compilation")
     private boolean gwt;
 
-    @CommandLine.Option(names = {"--desktop"}, description = "Includes the GWT compilation", defaultValue = "false")
+    @CommandLine.Option(names = {"--gluon-desktop"}, description = "Includes the Gluon native desktop compilation")
     private boolean desktop;
 
 
     @Override
     public void run() {
-        MavenCaller.invokeMavenGoal("package " +
+        if (!fatjar && !gwt && !desktop)
+            fatjar = gwt = true;
+        ProcessCall processCall = new ProcessCall().setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory());
+        MavenCaller.invokeMavenGoal(desktop ? "install " : "package " +
                 (fatjar ? "-P openjfx-fatjar " : "") +
-                (gwt ? "-P gwt-compile " : "") +
-                (desktop ? "-P gluon-desktop " : "") +
-                ""
-        );
+                (gwt ? "-P gwt-compile " : "")
+                , processCall);
+        if (desktop)
+            MavenCaller.invokeMavenGoal("-P 'gluon-desktop' gluonfx:build gluonfx:package", processCall);
     }
 }

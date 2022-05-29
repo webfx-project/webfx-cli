@@ -4,6 +4,7 @@ import dev.webfx.tool.cli.core.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -45,6 +46,10 @@ public class ProcessCall {
     public ProcessCall setCommand(String command) {
         this.command = command;
         return this;
+    }
+
+    public ProcessCall setWorkingDirectory(Path workingDirectory) {
+        return setWorkingDirectory(workingDirectory.toFile());
     }
 
     public ProcessCall setWorkingDirectory(File workingDirectory) {

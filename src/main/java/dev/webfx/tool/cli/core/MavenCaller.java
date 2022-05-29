@@ -22,16 +22,16 @@ public final class MavenCaller {
     private static Invoker MAVEN_INVOKER; // Will be initialised later if needed
 
     public static void invokeMavenGoal(String goal) {
-        invokeMavenGoal(goal, null);
+        invokeMavenGoal(goal, new ProcessCall());
     }
 
     public static void invokeDownloadMavenGoal(String goal) {
-        invokeMavenGoal(goal, line -> line.startsWith("Downloading") || line.startsWith("[ERROR]"));
+        invokeMavenGoal(goal, new ProcessCall().setLogLineFilter(line -> line.startsWith("Downloading") || line.startsWith("[ERROR]")));
     }
 
-    public static void invokeMavenGoal(String goal, Predicate<String> lineFilter) {
+    public static void invokeMavenGoal(String goal, ProcessCall processCall) {
         if (!USE_MAVEN_INVOKER) {
-            new ProcessCall("mvn " + goal).setLogLineFilter(lineFilter).executeAndWait();
+            processCall.setCommand("mvn " + goal).executeAndWait();
         } else {
             Logger.log("Invoking maven goal: " + goal);
             InvocationRequest request = new DefaultInvocationRequest();
