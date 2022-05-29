@@ -12,7 +12,7 @@ import java.util.function.Predicate;
  * @author Bruno Salmon
  */
 public final class MavenCaller {
-    private final static boolean USE_MAVEN_INVOKER = false; // if false, just using shell invocation
+    private final static boolean USE_MAVEN_INVOKER = true; // if false, just using shell invocation
     private final static boolean ASK_MAVEN_LOCAL_REPOSITORY = false; // if false, we will use the default path: ${user.home}/.m2/repository
     final static Path M2_LOCAL_REPOSITORY = ASK_MAVEN_LOCAL_REPOSITORY ?
             // Maven invocation (advantage: returns the correct path 100% sure / disadvantage: takes a few seconds to execute)
@@ -30,11 +30,12 @@ public final class MavenCaller {
     }
 
     public static void invokeMavenGoal(String goal, ProcessCall processCall) {
+        processCall.setCommand("mvn " + goal);
         if (!USE_MAVEN_INVOKER) {
-            processCall.setCommand("mvn " + goal).executeAndWait();
+            processCall.executeAndWait();
         } else {
-            Logger.log("Invoking maven goal: " + goal);
-            InvocationRequest request = new DefaultInvocationRequest();
+            processCall.logCallCommand();
+            InvocationRequest request = new DefaultInvocationRequest().setBaseDirectory(processCall.getWorkingDirectory());
             request.setGoals(Collections.singletonList(goal));
             if (MAVEN_INVOKER == null) {
                 MAVEN_INVOKER = new DefaultInvoker();

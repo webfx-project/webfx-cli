@@ -30,7 +30,7 @@ public final class Build extends CommonSubcommand implements Runnable {
                 (gwt ? "-P gwt-compile " : "")
                 , new ProcessCall().setWorkingDirectory(getProjectDirectoryPath()));
         if (desktop)
-            MavenCaller.invokeMavenGoal("-X -P 'gluon-desktop' gluonfx:build gluonfx:package"
+            MavenCaller.invokeMavenGoal("-P 'gluon-desktop' gluonfx:build gluonfx:package"
                     , new ProcessCall().setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory()));
     }
 }

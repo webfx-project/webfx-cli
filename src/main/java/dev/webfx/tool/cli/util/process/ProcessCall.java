@@ -57,6 +57,10 @@ public class ProcessCall {
         return this;
     }
 
+    public File getWorkingDirectory() {
+        return workingDirectory;
+    }
+
     public ProcessCall setLogLineFilter(Predicate<String> logLineFilter) {
         this.logLineFilter = logLineFilter;
         return this;
@@ -83,6 +87,11 @@ public class ProcessCall {
         return this;
     }
 
+    public ProcessCall logCallCommand() {
+        Logger.log((workingDirectory == null ? "" : workingDirectory) + "$ " + command);
+        return this;
+    }
+
     public ProcessCall logCallDuration() {
         Logger.log("Call duration: " + callDurationMillis + " ms");
         return this;
@@ -105,7 +114,7 @@ public class ProcessCall {
 
     private void executeAndConsume(Consumer<String> outputLineConsumer) {
         if (logsCalling)
-            Logger.log((workingDirectory == null ? "" : workingDirectory) + "$ " + command);
+            logCallCommand();
         if (WINDOWS)
             command = "cmd /c " + command; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
         long t0 = System.currentTimeMillis();
