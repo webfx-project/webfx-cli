@@ -20,6 +20,8 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * @author Bruno Salmon
@@ -81,7 +83,7 @@ public final class Bump extends CommonSubcommand {
     @Command(name = "graalvm", description = "Bump GraalVM to a new version if available.")
     static class GraalVm extends CommonSubcommand implements Runnable {
 
-        private final static String LINUX_AMD64_GRAALVM_URL = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.1.0/graalvm-ce-java17-linux-amd64-22.1.0.tar.gz";
+        private final static String LINUX_AMD64_GRAALVM_URL = "https://github.com/gluonhq/graal/releases/download/gluon-22.0.0.3-Final/graalvm-svm-java17-linux-gluon-22.0.0.3-Final.zip";
         private final static String LINUX_AARCH64_GRAALVM_URL = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.1.0/graalvm-ce-java17-linux-aarch64-22.1.0.tar.gz";
         private final static String MACOS_AMD64_GRAALVM_URL = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.1.0/graalvm-ce-java17-darwin-amd64-22.1.0.tar.gz";
         private final static String MACOS_AAECH64M1_GRAALVM_URL = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.1.0/graalvm-ce-java17-darwin-aarch64-22.1.0.tar.gz";
@@ -94,9 +96,6 @@ public final class Bump extends CommonSubcommand {
             String vmUrl = LINUX_AMD64_GRAALVM_URL;
             String vmArchiveFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
             Path vmArchivePath = hiddenVmFolder.resolve(vmArchiveFileName);
-            Path vmPath = hiddenVmFolder.resolve(vmArchiveFileName.substring(0, vmArchiveFileName.indexOf(".tar.gz")));
-            if (Files.exists(vmPath))
-                return;
 
             // Downloading the archive file
             if (!Files.exists(vmArchivePath)) {
@@ -112,29 +111,59 @@ public final class Bump extends CommonSubcommand {
 
             // Uncompressing the archive
             Logger.log("Uncompressing " + vmArchivePath.getFileName());
-            Path destinationFolder = hiddenVmFolder;
-            try (FileInputStream fis = new FileInputStream(vmArchivePath.toFile());
-                 GZIPInputStream gzipInputStream = new GZIPInputStream(new BufferedInputStream(fis));
-                 TarArchiveInputStream tis = new TarArchiveInputStream(gzipInputStream)) {
-                TarArchiveEntry tarEntry;
-                while ((tarEntry = tis.getNextTarEntry()) != null) {
-                    //System.out.println(" tar entry- " + tarEntry.getName());
-                    if (tarEntry.isFile()) {
-                        File outputFile = destinationFolder.resolve(tarEntry.getName()).toFile();
-                        outputFile.getParentFile().mkdirs();
-                        if (outputFile.getParentFile().getName().equals("bin")) {
-                            Set<PosixFilePermission> ownerWritable = PosixFilePermissions.fromString("rwxr-xr-x");
-                            FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(ownerWritable);
-                            Files.createFile(outputFile.toPath(), permissions);
-                        }
-                        IOUtils.copy(tis, new FileOutputStream(outputFile));
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+
+            if (vmArchivePath.endsWith(".tar.gz"))
+                uncompressTarGz(vmArchivePath, hiddenVmFolder);
+            else
+                uncompressZip(vmArchivePath, hiddenVmFolder);
 
             //vmArchivePath.toFile().delete();
+        }
+    }
+
+    private static void uncompressZip(Path archivePath, Path destinationFolder) {
+        try (FileInputStream fis = new FileInputStream(archivePath.toFile());
+             ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(fis));
+             ) {
+            ZipEntry zipEntry;
+            while ((zipEntry = zipInputStream.getNextEntry()) != null) {
+                System.out.println("zip entry: " + zipEntry.getName());
+                if (!zipEntry.isDirectory()) {
+                    File outputFile = destinationFolder.resolve(zipEntry.getName()).toFile();
+                    outputFile.getParentFile().mkdirs();
+                    if (outputFile.getParentFile().getName().equals("bin")) {
+                        Set<PosixFilePermission> ownerWritable = PosixFilePermissions.fromString("rwxr-xr-x");
+                        FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(ownerWritable);
+                        Files.createFile(outputFile.toPath(), permissions);
+                    }
+                    IOUtils.copy(zipInputStream, new FileOutputStream(outputFile));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void uncompressTarGz(Path archivePath, Path destinationFolder) {
+        try (FileInputStream fis = new FileInputStream(archivePath.toFile());
+             GZIPInputStream gzipInputStream = new GZIPInputStream(new BufferedInputStream(fis));
+             TarArchiveInputStream tis = new TarArchiveInputStream(gzipInputStream)) {
+            TarArchiveEntry tarEntry;
+            while ((tarEntry = tis.getNextTarEntry()) != null) {
+                //System.out.println(" tar entry- " + tarEntry.getName());
+                if (tarEntry.isFile()) {
+                    File outputFile = destinationFolder.resolve(tarEntry.getName()).toFile();
+                    outputFile.getParentFile().mkdirs();
+                    if (outputFile.getParentFile().getName().equals("bin")) {
+                        Set<PosixFilePermission> ownerWritable = PosixFilePermissions.fromString("rwxr-xr-x");
+                        FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(ownerWritable);
+                        Files.createFile(outputFile.toPath(), permissions);
+                    }
+                    IOUtils.copy(tis, new FileOutputStream(outputFile));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
