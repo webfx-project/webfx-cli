@@ -1,12 +1,12 @@
 package dev.webfx.tool.cli.core;
 
+import dev.webfx.tool.cli.subcommands.Bump;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import org.apache.maven.shared.invoker.*;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.function.Predicate;
 
 /**
  * @author Bruno Salmon
@@ -35,7 +35,11 @@ public final class MavenCaller {
             processCall.executeAndWait();
         } else {
             processCall.logCallCommand();
-            InvocationRequest request = new DefaultInvocationRequest().setBaseDirectory(processCall.getWorkingDirectory());
+            InvocationRequest request = new DefaultInvocationRequest();
+            request.setBaseDirectory(processCall.getWorkingDirectory());
+            Path graalVmHome = Bump.getGraalVmHome();
+            if (graalVmHome != null)
+                request.addShellEnvironment("GRAALVM_HOME", graalVmHome.toString());
             request.setGoals(Collections.singletonList(goal));
             if (MAVEN_INVOKER == null) {
                 MAVEN_INVOKER = new DefaultInvoker();
