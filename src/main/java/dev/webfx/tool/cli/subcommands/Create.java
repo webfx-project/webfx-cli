@@ -142,14 +142,12 @@ public final class Create extends CommonSubcommand {
 
     @Command(name = "application", description = "Create modules for a new WebFX application.")
     static class Application extends CreateSubCommand {
-        @Option(names = {"-g", "--gluon"}, description = "Also create the gluon module.")
-        private boolean gluon;
 
-        @Parameters(paramLabel = "prefix", arity = "0..1", description = "Prefix of the modules that will be created.")
-        private String prefix;
-
-        @Option(names={"-c", "--class"}, description = "Fully qualified JavaFX Application class name.")
+        @Parameters(paramLabel = "class", arity = "0..1", description = "Fully qualified JavaFX Application class name.")
         private String javaFxApplication;
+
+        @Option(names = {"--prefix"}, description = "Prefix of the application modules that will be created.")
+        private String prefix;
 
         @Option(names = {"-w", "--helloWorld"}, description = "Use hello world code template.")
         private boolean helloWorld;
@@ -167,8 +165,7 @@ public final class Create extends CommonSubcommand {
             DevProjectModule applicationModule = createTagApplicationModule(null);
             createTagApplicationModule(TargetTag.OPENJFX);
             createTagApplicationModule(TargetTag.GWT);
-            if (gluon)
-                createTagApplicationModule(TargetTag.GLUON);
+            createTagApplicationModule(TargetTag.GLUON);
             writeParentMavenModuleFile(applicationModule);
             new Update().run();
             return null;
