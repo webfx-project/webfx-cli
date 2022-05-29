@@ -105,7 +105,7 @@ public class ProcessCall {
 
     private void executeAndConsume(Consumer<String> outputLineConsumer) {
         if (logsCalling)
-            Logger.log("Calling: " + command);
+            Logger.log((workingDirectory == null ? "" : workingDirectory) + "$ " + command);
         if (WINDOWS)
             command = "cmd /c " + command; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
         long t0 = System.currentTimeMillis();

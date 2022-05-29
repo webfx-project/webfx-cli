@@ -25,12 +25,12 @@ public final class Build extends CommonSubcommand implements Runnable {
     public void run() {
         if (!fatjar && !gwt && !desktop)
             fatjar = gwt = true;
-        ProcessCall processCall = new ProcessCall().setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory());
         MavenCaller.invokeMavenGoal(desktop ? "install " : "package " +
                 (fatjar ? "-P openjfx-fatjar " : "") +
                 (gwt ? "-P gwt-compile " : "")
-                , processCall);
+                , new ProcessCall().setWorkingDirectory(getProjectDirectoryPath()));
         if (desktop)
-            MavenCaller.invokeMavenGoal("-P 'gluon-desktop' gluonfx:build gluonfx:package", processCall);
+            MavenCaller.invokeMavenGoal("-P 'gluon-desktop' gluonfx:build gluonfx:package"
+                    , new ProcessCall().setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory()));
     }
 }
