@@ -1,7 +1,7 @@
 package dev.webfx.tool.cli;
 
 import dev.webfx.tool.cli.core.WebFxCliException;
-import dev.webfx.tool.cli.subcommands.*;
+import dev.webfx.tool.cli.commands.*;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Help;

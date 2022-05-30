@@ -1,6 +1,6 @@
 package dev.webfx.tool.cli.core;
 
-import dev.webfx.tool.cli.subcommands.Bump;
+import dev.webfx.tool.cli.commands.Bump;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import org.apache.maven.shared.invoker.*;
 

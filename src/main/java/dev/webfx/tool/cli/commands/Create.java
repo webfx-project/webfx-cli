@@ -1,4 +1,4 @@
-package dev.webfx.tool.cli.subcommands;
+package dev.webfx.tool.cli.commands;
 
 import dev.webfx.tool.cli.core.TargetTag;
 import dev.webfx.tool.cli.modulefiles.DevMavenPomModuleFile;

@@ -1,4 +1,4 @@
-package dev.webfx.tool.cli.subcommands;
+package dev.webfx.tool.cli.commands;
 
 /**
  * @author Bruno Salmon

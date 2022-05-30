@@ -1,4 +1,4 @@
-package dev.webfx.tool.cli.subcommands;
+package dev.webfx.tool.cli.commands;
 
 import dev.webfx.tool.cli.core.DevProjectModule;
 import dev.webfx.tool.cli.core.Platform;

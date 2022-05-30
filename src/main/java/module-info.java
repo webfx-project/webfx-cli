@@ -12,11 +12,11 @@ module webfx.cli {
 
     // Exported packages
     exports dev.webfx.tool.cli;
+    exports dev.webfx.tool.cli.commands;
     exports dev.webfx.tool.cli.core;
     exports dev.webfx.tool.cli.modulefiles;
     exports dev.webfx.tool.cli.modulefiles.abstr;
     exports dev.webfx.tool.cli.sourcegenerators;
-    exports dev.webfx.tool.cli.subcommands;
     exports dev.webfx.tool.cli.util.javacode;
     exports dev.webfx.tool.cli.util.process;
     exports dev.webfx.tool.cli.util.splitfiles;
@@ -24,8 +24,8 @@ module webfx.cli {
     exports dev.webfx.tool.cli.util.xml;
 
     // Resources packages
+    opens dev.webfx.tool.cli.commands;
     opens dev.webfx.tool.cli.jdk;
-    opens dev.webfx.tool.cli.subcommands;
     opens dev.webfx.tool.cli.templates;
     opens dev.webfx.tool.cli.version.dev;
 

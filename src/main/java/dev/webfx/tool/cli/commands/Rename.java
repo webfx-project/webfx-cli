@@ -1,4 +1,4 @@
-package dev.webfx.tool.cli.subcommands;
+package dev.webfx.tool.cli.commands;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;

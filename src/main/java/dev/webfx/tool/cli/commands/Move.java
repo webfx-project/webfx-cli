@@ -1,6 +1,6 @@
-package dev.webfx.tool.cli.subcommands;
+package dev.webfx.tool.cli.commands;
 
-import dev.webfx.tool.cli.subcommands.Keywords.UnderKeyword;
+import dev.webfx.tool.cli.commands.Keywords.UnderKeyword;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
