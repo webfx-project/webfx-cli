@@ -1,6 +1,7 @@
 package dev.webfx.tool.cli.util.process;
 
 import dev.webfx.tool.cli.core.Logger;
+import dev.webfx.tool.cli.util.os.OperatingSystem;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,8 +14,6 @@ import java.util.function.Predicate;
  * @author Bruno Salmon
  */
 public class ProcessCall {
-
-    private static final boolean WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
 
     private File workingDirectory;
 
@@ -115,7 +114,7 @@ public class ProcessCall {
     private void executeAndConsume(Consumer<String> outputLineConsumer) {
         if (logsCalling)
             logCallCommand();
-        if (WINDOWS)
+        if (OperatingSystem.isWindows())
             command = "cmd /c " + command; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
         long t0 = System.currentTimeMillis();
         try {
@@ -143,10 +142,6 @@ public class ProcessCall {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-    }
-
-    public static boolean isWindows() {
-        return WINDOWS;
     }
 
     public static int execute(String command) {

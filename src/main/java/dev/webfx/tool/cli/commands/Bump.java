@@ -3,6 +3,7 @@ package dev.webfx.tool.cli.commands;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.tool.cli.WebFx;
 import dev.webfx.tool.cli.core.Logger;
+import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import dev.webfx.tool.cli.util.splitfiles.SplitFiles;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -17,8 +18,11 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.Spliterators;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -83,31 +87,44 @@ public final class Bump extends CommonSubcommand {
     @Command(name = "graalvm", description = "Bump GraalVM to a new version if available.")
     static class GraalVm extends CommonSubcommand implements Runnable {
 
-        private final static String LINUX_AMD64_GRAALVM_URL = "https://github.com/gluonhq/graal/releases/download/gluon-22.0.0.3-Final/graalvm-svm-java17-linux-gluon-22.0.0.3-Final.zip";
-        private final static String LINUX_AARCH64_GRAALVM_URL = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.1.0/graalvm-ce-java17-linux-aarch64-22.1.0.tar.gz";
-        private final static String MACOS_AMD64_GRAALVM_URL = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.1.0/graalvm-ce-java17-darwin-amd64-22.1.0.tar.gz";
-        private final static String MACOS_AAECH64M1_GRAALVM_URL = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.1.0/graalvm-ce-java17-darwin-aarch64-22.1.0.tar.gz";
-        private final static String WINDOWS_AMD64_GRAALVM_URL = "https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.1.0/graalvm-ce-java17-windows-amd64-22.1.0.zip";
+        private final static String GITHUB_GRAAL_RELEASE_PAGE_URL = "https://github.com/gluonhq/graal/releases/latest";
 
         @Override
         public void run() {
+            String osToken = null;
+            switch (OperatingSystem.getOsFamily()) {
+                case WINDOWS: osToken = "windows"; break;
+                case MAC_OS: osToken = "darwin"; break;
+                case LINUX: osToken = "linux"; break;
+            }
+            Pattern pattern = Pattern.compile("href=\"(.*/gluonhq/graal/releases/download/.*-java17-" + osToken + "-.*.zip)\"", 1);
+            Matcher matcher = pattern.matcher(downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL));
+            if (!matcher.find())
+                return;
+
+            String vmUrl = matcher.group(1);
+            if (vmUrl.startsWith("/"))
+                vmUrl = "https://github.com" + vmUrl;
+
             Path cliRepositoryPath = getCliRepositoryPath();
             Path hiddenVmFolder = cliRepositoryPath.resolve(".graalvm");
-            String vmUrl = LINUX_AMD64_GRAALVM_URL;
             String vmArchiveFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
             Path vmArchivePath = hiddenVmFolder.resolve(vmArchiveFileName);
 
             // Downloading the archive file
-            if (!Files.exists(vmArchivePath)) {
-                hiddenVmFolder.toFile().mkdirs();
-                Logger.log("Downloading " + vmUrl);
-                try (BufferedInputStream in = new BufferedInputStream(new URL(LINUX_AMD64_GRAALVM_URL).openStream());
-                     FileOutputStream fileOutputStream = new FileOutputStream(vmArchivePath.toFile())) {
-                    IOUtils.copy(in, fileOutputStream);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+            if (Files.exists(vmArchivePath)) {
+                Logger.log("Already up-to-date (" + vmArchiveFileName.substring(0, vmArchiveFileName.lastIndexOf('.')) + ")");
+                return;
             }
+
+            // Deleting all files to clear up space
+            ReusableStream.create(() -> SplitFiles.uncheckedWalk(hiddenVmFolder))
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+
+            // Downloading the GraalVM file
+            downloadFile(vmUrl, vmArchivePath);
 
             // Uncompressing the archive
             Logger.log("Uncompressing " + vmArchivePath.getFileName());
@@ -117,7 +134,37 @@ public final class Bump extends CommonSubcommand {
             else
                 uncompressZip(vmArchivePath, hiddenVmFolder);
 
-            //vmArchivePath.toFile().delete();
+            // Deleting the archive files to free space
+            vmArchivePath.toFile().delete();
+
+            // Recreating a file with the same name but empty (will be used for version checking on next pass)
+            try {
+                vmArchivePath.toFile().createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static String downloadPage(String fileUrl) {
+        Logger.log("Downloading page " + fileUrl);
+        try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream());
+             ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            IOUtils.copy(in, os);
+            return os.toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void downloadFile(String fileUrl, Path filePath) {
+        filePath.getParent().toFile().mkdirs();
+        Logger.log("Downloading file " + fileUrl);
+        try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream());
+             FileOutputStream os = new FileOutputStream(filePath.toFile())) {
+            IOUtils.copy(in, os);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -127,7 +174,6 @@ public final class Bump extends CommonSubcommand {
              ) {
             ZipEntry zipEntry;
             while ((zipEntry = zipInputStream.getNextEntry()) != null) {
-                System.out.println("zip entry: " + zipEntry.getName());
                 if (!zipEntry.isDirectory()) {
                     File outputFile = destinationFolder.resolve(zipEntry.getName()).toFile();
                     outputFile.getParentFile().mkdirs();
