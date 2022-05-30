@@ -118,10 +118,11 @@ public final class Bump extends CommonSubcommand {
             }
 
             // Deleting all files to clear up space
-            ReusableStream.create(() -> SplitFiles.uncheckedWalk(hiddenVmFolder))
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
+            if (Files.exists(hiddenVmFolder))
+                ReusableStream.create(() -> SplitFiles.uncheckedWalk(hiddenVmFolder))
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
 
             // Downloading the GraalVM file
             downloadFile(vmUrl, vmArchivePath);
