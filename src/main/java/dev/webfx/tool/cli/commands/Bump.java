@@ -226,7 +226,7 @@ public final class Bump extends CommonSubcommand {
 
     private static Path getCliJarPath() {
         Path cliCodePath = getCliCodePath();
-        return cliCodePath.endsWith(".jar") ? cliCodePath : null;
+        return cliCodePath.toString().endsWith(".jar") ? cliCodePath : null;
     }
 
     private static Path getCliRepositoryPath() {
