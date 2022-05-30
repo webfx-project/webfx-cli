@@ -12,7 +12,7 @@ import java.util.Collections;
  * @author Bruno Salmon
  */
 public final class MavenCaller {
-    private final static boolean USE_MAVEN_INVOKER = true; // if false, just using shell invocation
+    private final static boolean USE_MAVEN_INVOKER = false; // if false, just using shell invocation
     private final static boolean ASK_MAVEN_LOCAL_REPOSITORY = false; // if false, we will use the default path: ${user.home}/.m2/repository
     final static Path M2_LOCAL_REPOSITORY = ASK_MAVEN_LOCAL_REPOSITORY ?
             // Maven invocation (advantage: returns the correct path 100% sure / disadvantage: takes a few seconds to execute)
@@ -31,8 +31,8 @@ public final class MavenCaller {
 
     public static void invokeMavenGoal(String goal, ProcessCall processCall) {
         processCall.setCommand("mvn " + goal);
-        if (!USE_MAVEN_INVOKER) {
-            processCall.executeAndWait();
+        if (!USE_MAVEN_INVOKER && processCall.getWorkingDirectory() == null) { // We don't call mvn this way when another working directory is set due to a bug (ex: activating "gluon-desktop" profile from another directory doesn't set the target to "host" -> stays to "TBD" which makes the Gluon plugin fail)
+            processCall.executeAndWait(); // Preferred way as
         } else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();
