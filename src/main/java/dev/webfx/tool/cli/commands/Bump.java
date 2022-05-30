@@ -171,7 +171,7 @@ public final class Bump extends CommonSubcommand {
              ) {
             ZipEntry zipEntry;
             while ((zipEntry = zipInputStream.getNextEntry()) != null) {
-                Logger.log(zipEntry.getName());
+                //Logger.log(zipEntry.getName());
                 if (!zipEntry.isDirectory()) {
                     File outputFile = destinationFolder.resolve(zipEntry.getName()).toFile();
                     outputFile.getParentFile().mkdirs();
@@ -208,10 +208,11 @@ public final class Bump extends CommonSubcommand {
     public static Path getGraalVmHome() {
         Path cliRepositoryPath = getCliRepositoryPath();
         Path hiddenVmFolder = cliRepositoryPath.resolve(".graalvm");
-        return ReusableStream.create(() -> Files.exists(hiddenVmFolder) ? SplitFiles.uncheckedWalk(hiddenVmFolder) : Spliterators.emptySpliterator())
-                .filter(path -> !path.equals(hiddenVmFolder) && path.toFile().isDirectory())
+        Path binPath = ReusableStream.create(() -> Files.exists(hiddenVmFolder) ? SplitFiles.uncheckedWalk(hiddenVmFolder) : Spliterators.emptySpliterator())
+                .filter(path -> path.toFile().isDirectory() && "bin".equals(path.getFileName().toString()))
                 .findFirst()
                 .orElse(null);
+        return binPath == null ? null : binPath.getParent();
     }
 
     private static Path getCliCodePath() {
