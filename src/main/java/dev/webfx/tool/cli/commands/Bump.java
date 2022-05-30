@@ -15,11 +15,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Comparator;
-import java.util.Set;
 import java.util.Spliterators;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -175,15 +171,13 @@ public final class Bump extends CommonSubcommand {
              ) {
             ZipEntry zipEntry;
             while ((zipEntry = zipInputStream.getNextEntry()) != null) {
+                Logger.log(zipEntry.getName());
                 if (!zipEntry.isDirectory()) {
                     File outputFile = destinationFolder.resolve(zipEntry.getName()).toFile();
                     outputFile.getParentFile().mkdirs();
-                    if (outputFile.getParentFile().getName().equals("bin")) {
-                        Set<PosixFilePermission> ownerWritable = PosixFilePermissions.fromString("rwxr-xr-x");
-                        FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(ownerWritable);
-                        Files.createFile(outputFile.toPath(), permissions);
-                    }
                     IOUtils.copy(zipInputStream, new FileOutputStream(outputFile));
+                    if (outputFile.getParentFile().getName().equals("bin"))
+                        outputFile.setExecutable(true);
                 }
             }
         } catch (Exception e) {
@@ -201,12 +195,9 @@ public final class Bump extends CommonSubcommand {
                 if (tarEntry.isFile()) {
                     File outputFile = destinationFolder.resolve(tarEntry.getName()).toFile();
                     outputFile.getParentFile().mkdirs();
-                    if (outputFile.getParentFile().getName().equals("bin")) {
-                        Set<PosixFilePermission> ownerWritable = PosixFilePermissions.fromString("rwxr-xr-x");
-                        FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(ownerWritable);
-                        Files.createFile(outputFile.toPath(), permissions);
-                    }
                     IOUtils.copy(tis, new FileOutputStream(outputFile));
+                    if (outputFile.getParentFile().getName().equals("bin"))
+                        outputFile.setExecutable(true);
                 }
             }
         } catch (Exception e) {
