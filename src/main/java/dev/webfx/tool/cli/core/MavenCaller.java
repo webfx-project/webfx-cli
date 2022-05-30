@@ -38,8 +38,11 @@ public final class MavenCaller {
             InvocationRequest request = new DefaultInvocationRequest();
             request.setBaseDirectory(processCall.getWorkingDirectory());
             Path graalVmHome = Bump.getGraalVmHome();
-            if (graalVmHome != null)
-                request.addShellEnvironment("GRAALVM_HOME", graalVmHome.toString());
+            if (graalVmHome != null) {
+                String home = graalVmHome.toString();
+                request.addShellEnvironment("GRAALVM_HOME", home);
+                request.addShellEnvironment("JAVA_HOME", home);
+            }
             request.setGoals(Collections.singletonList(goal));
             if (MAVEN_INVOKER == null) {
                 MAVEN_INVOKER = new DefaultInvoker();
