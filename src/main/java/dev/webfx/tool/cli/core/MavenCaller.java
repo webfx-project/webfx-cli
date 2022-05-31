@@ -31,8 +31,9 @@ public final class MavenCaller {
 
     public static void invokeMavenGoal(String goal, ProcessCall processCall) {
         processCall.setCommand("mvn " + goal);
-        if (!USE_MAVEN_INVOKER && processCall.getWorkingDirectory() == null) { // We don't call mvn this way when another working directory is set due to a bug (ex: activating "gluon-desktop" profile from another directory doesn't set the target to "host" -> stays to "TBD" which makes the Gluon plugin fail)
-            processCall.executeAndWait(); // Preferred way as
+        boolean directoryChanged = processCall.getWorkingDirectory() != null && !processCall.getWorkingDirectory().getAbsolutePath().equals(System.getProperty("user.dir"));
+        if (!USE_MAVEN_INVOKER && directoryChanged) { // We don't call mvn this way from another directory due to a bug (ex: activating "gluon-desktop" profile from another directory doesn't set the target to "host" -> stays to "TBD" which makes the Gluon plugin fail)
+            processCall.executeAndWait(); // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
         } else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();
