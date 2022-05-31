@@ -32,17 +32,20 @@ public final class MavenCaller {
     public static void invokeMavenGoal(String goal, ProcessCall processCall) {
         processCall.setCommand("mvn " + goal);
         boolean directoryChanged = processCall.getWorkingDirectory() != null && !processCall.getWorkingDirectory().getAbsolutePath().equals(System.getProperty("user.dir"));
-        if (!USE_MAVEN_INVOKER && directoryChanged) { // We don't call mvn this way from another directory due to a bug (ex: activating "gluon-desktop" profile from another directory doesn't set the target to "host" -> stays to "TBD" which makes the Gluon plugin fail)
+        boolean gluonPluginCall = goal.contains("gluonfx:");
+        if (!USE_MAVEN_INVOKER && !directoryChanged && !gluonPluginCall) { // We don't call mvn this way from another directory due to a bug (ex: activating "gluon-desktop" profile from another directory doesn't set the target to "host" -> stays to "TBD" which makes the Gluon plugin fail)
             processCall.executeAndWait(); // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
         } else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();
             request.setBaseDirectory(processCall.getWorkingDirectory());
-            Path graalVmHome = Bump.getGraalVmHome();
-            if (graalVmHome != null) {
-                String home = graalVmHome.toString();
-                request.addShellEnvironment("GRAALVM_HOME", home);
-                request.addShellEnvironment("JAVA_HOME", home);
+            if (gluonPluginCall) {
+                Path graalVmHome = Bump.getGraalVmHome();
+                if (graalVmHome != null) {
+                    String home = graalVmHome.toString();
+                    request.addShellEnvironment("GRAALVM_HOME", home);
+                    //request.addShellEnvironment("JAVA_HOME", home);
+                }
             }
             request.setGoals(Collections.singletonList(goal));
             if (MAVEN_INVOKER == null) {

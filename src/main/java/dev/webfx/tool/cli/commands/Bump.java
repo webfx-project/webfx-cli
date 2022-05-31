@@ -93,10 +93,14 @@ public final class Bump extends CommonSubcommand {
                 case MAC_OS: osToken = "darwin"; break;
                 case LINUX: osToken = "linux"; break;
             }
+            Logger.log("Checking for update on " + GITHUB_GRAAL_RELEASE_PAGE_URL);
+            String pageContent = downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL);
             Pattern pattern = Pattern.compile("href=\"(.*/gluonhq/graal/releases/download/.*-java17-" + osToken + "-.*.zip)\"", 1);
-            Matcher matcher = pattern.matcher(downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL));
-            if (!matcher.find())
+            Matcher matcher = pattern.matcher(pageContent);
+            if (!matcher.find()) {
+                Logger.log("No GraalVM found for your system!");
                 return;
+            }
 
             String vmUrl = matcher.group(1);
             if (vmUrl.startsWith("/"))
@@ -104,47 +108,52 @@ public final class Bump extends CommonSubcommand {
 
             Path cliRepositoryPath = getCliRepositoryPath();
             Path hiddenVmFolder = cliRepositoryPath.resolve(".graalvm");
-            String vmArchiveFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
-            Path vmArchivePath = hiddenVmFolder.resolve(vmArchiveFileName);
+            String vmDownloadFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
+            Path vmDownloadFilePath = hiddenVmFolder.resolve(vmDownloadFileName);
+            String vmName = vmDownloadFileName.substring(0, vmDownloadFileName.lastIndexOf('.')); // removing .zip extension
+            Path vmTagFilePath = hiddenVmFolder.resolve(vmName + ".tag");
 
             // Downloading the archive file
-            if (Files.exists(vmArchivePath)) {
-                Logger.log("Already up-to-date (" + vmArchiveFileName.substring(0, vmArchiveFileName.lastIndexOf('.')) + ")");
+            if (Files.exists(vmTagFilePath)) {
+                Logger.log("Already up-to-date (" + vmName + ")");
                 return;
             }
 
+
             // Deleting all files to clear up space
-            if (Files.exists(hiddenVmFolder))
+            if (Files.exists(hiddenVmFolder)) {
+                Logger.log("New version available!: " + vmName);
                 ReusableStream.create(() -> SplitFiles.uncheckedWalk(hiddenVmFolder))
                         .sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
+            } else
+                Logger.log("Latest version: " + vmName);
 
             // Downloading the GraalVM file
-            downloadFile(vmUrl, vmArchivePath);
+            Logger.log("Downloading " + vmUrl);
+            downloadFile(vmUrl, vmDownloadFilePath);
 
             // Uncompressing the archive
-            Logger.log("Uncompressing " + vmArchivePath.getFileName());
-
-            if (vmArchivePath.endsWith(".tar.gz"))
-                uncompressTarGz(vmArchivePath, hiddenVmFolder);
+            Logger.log("Uncompressing " + vmDownloadFilePath.getFileName());
+            if (vmDownloadFilePath.endsWith(".tar.gz"))
+                uncompressTarGz(vmDownloadFilePath, hiddenVmFolder);
             else
-                uncompressZip(vmArchivePath, hiddenVmFolder);
+                uncompressZip(vmDownloadFilePath, hiddenVmFolder);
 
             // Deleting the archive files to free space
-            vmArchivePath.toFile().delete();
+            vmDownloadFilePath.toFile().delete();
 
-            // Recreating a file with the same name but empty (will be used for version checking on next pass)
+            // Recreating the tag file (used to know which graalvm version is installed)
             try {
-                vmArchivePath.toFile().createNewFile();
+                vmTagFilePath.toFile().createNewFile();
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
     }
 
     private static String downloadPage(String fileUrl) {
-        Logger.log("Downloading page " + fileUrl);
         try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream());
              ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             IOUtils.copy(in, os);
@@ -156,7 +165,6 @@ public final class Bump extends CommonSubcommand {
 
     private static void downloadFile(String fileUrl, Path filePath) {
         filePath.getParent().toFile().mkdirs();
-        Logger.log("Downloading file " + fileUrl);
         try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream());
              FileOutputStream os = new FileOutputStream(filePath.toFile())) {
             IOUtils.copy(in, os);
@@ -176,8 +184,8 @@ public final class Bump extends CommonSubcommand {
                     File outputFile = destinationFolder.resolve(zipEntry.getName()).toFile();
                     outputFile.getParentFile().mkdirs();
                     IOUtils.copy(zipInputStream, new FileOutputStream(outputFile));
-                    if (outputFile.getParentFile().getName().equals("bin"))
-                        outputFile.setExecutable(true);
+                    // Some files are executable files, so setting the executable flag
+                    outputFile.setExecutable(true); // Doing it for all files (not beautiful but simple)
                 }
             }
         } catch (Exception e) {
@@ -196,8 +204,8 @@ public final class Bump extends CommonSubcommand {
                     File outputFile = destinationFolder.resolve(tarEntry.getName()).toFile();
                     outputFile.getParentFile().mkdirs();
                     IOUtils.copy(tis, new FileOutputStream(outputFile));
-                    if (outputFile.getParentFile().getName().equals("bin"))
-                        outputFile.setExecutable(true);
+                    // Some files are executable files, so setting the executable flag
+                    outputFile.setExecutable(true); // Doing it for all files (not beautiful but simple)
                 }
             }
         } catch (Exception e) {
