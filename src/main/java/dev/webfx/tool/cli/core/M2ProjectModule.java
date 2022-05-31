@@ -134,7 +134,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
             try {
                 sourceDirectory = FileSystems.newFileSystem(m2SourcesJarPath).getPath("/");
             } catch (IOException e) {
-                //e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
         return sourceDirectory;

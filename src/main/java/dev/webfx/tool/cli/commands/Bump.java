@@ -6,22 +6,18 @@ import dev.webfx.tool.cli.core.Logger;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import dev.webfx.tool.cli.util.splitfiles.SplitFiles;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.utils.IOUtils;
 import picocli.CommandLine.Command;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.Comparator;
 import java.util.Spliterators;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.stream.Stream;
 
 /**
  * @author Bruno Salmon
@@ -119,7 +115,6 @@ public final class Bump extends CommonSubcommand {
                 return;
             }
 
-
             // Deleting all files to clear up space
             if (Files.exists(hiddenVmFolder)) {
                 Logger.log("New version available!: " + vmName);
@@ -134,12 +129,9 @@ public final class Bump extends CommonSubcommand {
             Logger.log("Downloading " + vmUrl);
             downloadFile(vmUrl, vmDownloadFilePath);
 
-            // Uncompressing the archive
+            // Uncompressing the zip archive
             Logger.log("Uncompressing " + vmDownloadFilePath.getFileName());
-            if (vmDownloadFilePath.endsWith(".tar.gz"))
-                uncompressTarGz(vmDownloadFilePath, hiddenVmFolder);
-            else
-                uncompressZip(vmDownloadFilePath, hiddenVmFolder);
+            unzip(vmDownloadFilePath, hiddenVmFolder);
 
             // Deleting the archive files to free space
             vmDownloadFilePath.toFile().delete();
@@ -154,10 +146,8 @@ public final class Bump extends CommonSubcommand {
     }
 
     private static String downloadPage(String fileUrl) {
-        try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream());
-             ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            IOUtils.copy(in, os);
-            return os.toString();
+        try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream())) {
+            return new String(in.readAllBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -165,50 +155,29 @@ public final class Bump extends CommonSubcommand {
 
     private static void downloadFile(String fileUrl, Path filePath) {
         filePath.getParent().toFile().mkdirs();
-        try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream());
-             FileOutputStream os = new FileOutputStream(filePath.toFile())) {
-            IOUtils.copy(in, os);
+        try (BufferedInputStream in = new BufferedInputStream(new URL(fileUrl).openStream())) {
+            Files.copy(in, filePath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void uncompressZip(Path archivePath, Path destinationFolder) {
-        try (FileInputStream fis = new FileInputStream(archivePath.toFile());
-             ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(fis));
-             ) {
-            ZipEntry zipEntry;
-            while ((zipEntry = zipInputStream.getNextEntry()) != null) {
-                //Logger.log(zipEntry.getName());
-                if (!zipEntry.isDirectory()) {
-                    File outputFile = destinationFolder.resolve(zipEntry.getName()).toFile();
-                    outputFile.getParentFile().mkdirs();
-                    IOUtils.copy(zipInputStream, new FileOutputStream(outputFile));
-                    // Some files are executable files, so setting the executable flag
-                    outputFile.setExecutable(true); // Doing it for all files (not beautiful but simple)
-                }
-            }
-        } catch (Exception e) {
+    private static void unzip(Path archivePath, Path destinationFolder) {
+        try (FileSystem zipFs = FileSystems.newFileSystem(archivePath);
+             Stream<Path> walk = Files.walk(zipFs.getPath("/"))) {
+            walk.filter(path -> !path.toString().equals("/"))
+                    .forEach(path -> unzipFile(path, destinationFolder.resolve(path.toString().substring(1))));
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void uncompressTarGz(Path archivePath, Path destinationFolder) {
-        try (FileInputStream fis = new FileInputStream(archivePath.toFile());
-             GZIPInputStream gzipInputStream = new GZIPInputStream(new BufferedInputStream(fis));
-             TarArchiveInputStream tis = new TarArchiveInputStream(gzipInputStream)) {
-            TarArchiveEntry tarEntry;
-            while ((tarEntry = tis.getNextTarEntry()) != null) {
-                //System.out.println(" tar entry- " + tarEntry.getName());
-                if (tarEntry.isFile()) {
-                    File outputFile = destinationFolder.resolve(tarEntry.getName()).toFile();
-                    outputFile.getParentFile().mkdirs();
-                    IOUtils.copy(tis, new FileOutputStream(outputFile));
-                    // Some files are executable files, so setting the executable flag
-                    outputFile.setExecutable(true); // Doing it for all files (not beautiful but simple)
-                }
-            }
-        } catch (Exception e) {
+    private static void unzipFile(Path srcPath, Path dstPath) {
+        try {
+            Files.copy(srcPath, dstPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.REPLACE_EXISTING);
+            // Some files are executable files, so setting the executable flag
+            dstPath.toFile().setExecutable(true); // Doing it for all files (not beautiful but simple)
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
