@@ -174,7 +174,7 @@ public final class Bump extends CommonSubcommand {
 
     private static void unzipFile(Path srcPath, Path dstPath) {
         try {
-            Files.copy(srcPath, dstPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(srcPath, dstPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
             // Some files are executable files, so setting the executable flag
             dstPath.toFile().setExecutable(true); // Doing it for all files (not beautiful but simple)
         } catch (IOException e) {

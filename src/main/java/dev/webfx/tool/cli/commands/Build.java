@@ -1,6 +1,7 @@
 package dev.webfx.tool.cli.commands;
 
 import dev.webfx.tool.cli.core.MavenCaller;
+import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -20,19 +21,42 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"--gluon-desktop"}, description = "Includes the Gluon native desktop compilation")
     private boolean desktop;
 
+    @CommandLine.Option(names = {"--gluon-mobile"}, description = "Includes the Gluon native mobile compilation")
+    private boolean mobile;
+
+    @CommandLine.Option(names = {"--gluon-android"}, description = "Includes the Gluon native android compilation")
+    private boolean android;
+
+    @CommandLine.Option(names = {"--gluon-ios"}, description = "Includes the Gluon native isOS compilation")
+    private boolean ios;
 
     @Override
     public void run() {
-        if (!fatjar && !gwt && !desktop)
+        if (mobile) {
+            if (OperatingSystem.isMacOs())
+                ios = true;
+            else
+                android = true;
+        }
+        boolean gluon = desktop || android || ios;
+        if (!fatjar && !gwt && !gluon)
             fatjar = gwt = true;
-        MavenCaller.invokeMavenGoal(desktop ? "install " : "package " +
+        MavenCaller.invokeMavenGoal(gluon ? "install " : "package " +
                         (fatjar ? "-P openjfx-fatjar " : "") +
                         (gwt ? "-P gwt-compile " : "")
                 , new ProcessCall().setWorkingDirectory(getProjectDirectoryPath()));
         if (desktop)
-            MavenCaller.invokeMavenGoal("-P 'gluon-desktop' gluonfx:build gluonfx:package"
-                    , new ProcessCall()
-                            .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
-            );
+            invokeGluonGoal("gluon-desktop");
+        if (android)
+            invokeGluonGoal("gluon-android");
+        if (ios)
+            invokeGluonGoal("gluon-ios");
+    }
+
+    private void invokeGluonGoal(String gluonProfile) {
+        MavenCaller.invokeMavenGoal("-P '" + gluonProfile + "' gluonfx:build gluonfx:package"
+                , new ProcessCall()
+                        .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
+        );
     }
 }
