@@ -163,6 +163,8 @@ public class CommonCommand {
 
     protected Module getWorkingModule() {
         if (moduleProject == null) {
+            if (topRootDirectoryPath == null)
+                throw new WebFxCliException("Not a WebFX repository (or any of the parent directories): no webfx.xml");
             String moduleName = getModuleName();
             if (moduleName == null)
                 return getModuleRegistry().getOrCreateDevProjectModule(projectDirectoryPath);
