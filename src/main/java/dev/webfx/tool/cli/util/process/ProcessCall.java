@@ -21,6 +21,10 @@ public class ProcessCall {
 
     private Predicate<String> logLineFilter;
 
+    private Predicate<String> errorLineFilter;
+
+    private String lastErrorLine;
+
     private Predicate<String> resultLineFilter;
 
     private String lastResultLine;
@@ -70,6 +74,11 @@ public class ProcessCall {
         return this;
     }
 
+    public ProcessCall setErrorLineFilter(Predicate<String> errorLineFilter) {
+        this.errorLineFilter = errorLineFilter;
+        return this;
+    }
+
     public ProcessCall setLogsCall(boolean logsCalling, boolean logsCallDuration) {
         this.logsCalling = logsCalling;
         this.logsCallDuration = logsCallDuration;
@@ -78,10 +87,17 @@ public class ProcessCall {
 
     public ProcessCall executeAndWait() {
         executeAndConsume(line -> {
+            boolean log = false;
+            if (errorLineFilter != null && errorLineFilter.test(line)) {
+                lastErrorLine = line;
+                log = true;
+            }
             if (logLineFilter == null || logLineFilter.test(line))
-                Logger.log(line);
+                log = true;
             if (resultLineFilter == null || resultLineFilter.test(line))
                 lastResultLine = line;
+            if (log)
+                Logger.log(line);
         });
         return this;
     }
@@ -109,6 +125,11 @@ public class ProcessCall {
     public String getLastResultLine() {
         waitForStreamGobblerCompleted();
         return lastResultLine;
+    }
+
+    public String getLastErrorLine() {
+        waitForStreamGobblerCompleted();
+        return lastErrorLine;
     }
 
     private void executeAndConsume(Consumer<String> outputLineConsumer) {

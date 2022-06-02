@@ -26,7 +26,7 @@ public final class MavenCaller {
     }
 
     public static void invokeDownloadMavenGoal(String goal) {
-        invokeMavenGoal(goal, new ProcessCall().setLogLineFilter(line -> line.startsWith("Downloading") || line.startsWith("[ERROR]")));
+        invokeMavenGoal(goal, new ProcessCall().setLogLineFilter(line -> line.startsWith("Downloading")));
     }
 
     public static void invokeMavenGoal(String goal, ProcessCall processCall) {
@@ -34,7 +34,11 @@ public final class MavenCaller {
         boolean directoryChanged = processCall.getWorkingDirectory() != null && !processCall.getWorkingDirectory().getAbsolutePath().equals(System.getProperty("user.dir"));
         boolean gluonPluginCall = goal.contains("gluonfx:");
         if (!USE_MAVEN_INVOKER && !directoryChanged && !gluonPluginCall) { // We don't call mvn this way from another directory due to a bug (ex: activating "gluon-desktop" profile from another directory doesn't set the target to "host" -> stays to "TBD" which makes the Gluon plugin fail)
-            processCall.executeAndWait(); // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
+            // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
+            processCall.setErrorLineFilter(line -> line.contains("ERROR"))
+                .executeAndWait();
+            if (processCall.getLastErrorLine() != null)
+                throw new WebFxCliException("An error during Maven invocation");
         } else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();
@@ -62,7 +66,7 @@ public final class MavenCaller {
             try {
                 MAVEN_INVOKER.execute(request);
             } catch (MavenInvocationException e) {
-                throw new RuntimeException(e);
+                throw new WebFxCliException("An error during Maven invocation: " + e.getMessage());
             }
         }
     }
