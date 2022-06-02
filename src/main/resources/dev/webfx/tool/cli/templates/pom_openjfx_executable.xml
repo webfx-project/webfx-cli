@@ -9,18 +9,8 @@
     <properties>
         <plugin.javapackager.name>${parent.artifactId}</plugin.javapackager.name>
         <plugin.javapackager.displayName>${parent.artifactId}</plugin.javapackager.displayName>
-        <plugin.javapackager.url></plugin.javapackager.url>
+        <plugin.javapackager.url/>
     </properties>
-
-    <build>
-        <plugins>
-            <!-- This plugin is run only explicitly by invoking mvn javafx:jlink -->
-            <plugin>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 
     <profiles>
         <!-- profile to make a fat standalone executable jar with all dependencies included inside -->
@@ -33,7 +23,7 @@
             <build>
                 <plugins>
 
-                    <!-- Calling Shade with the configuration defined in the parent pom -->
+                    <!-- Generating the fat jar using the Shade plugin -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-shade-plugin</artifactId>
@@ -49,6 +39,13 @@
             <build>
                 <plugins>
 
+                    <!-- Generating the fat jar using the Shade plugin (will be passed to JavaPackager) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                    </plugin>
+
+                    <!-- Generating the desktop executables using the JavaPackager plugin -->
                     <plugin>
                         <groupId>io.github.fvarrui</groupId>
                         <artifactId>javapackager</artifactId>
