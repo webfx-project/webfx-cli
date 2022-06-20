@@ -38,7 +38,7 @@ public final class MavenCaller {
             processCall.setErrorLineFilter(line -> line.contains("ERROR"))
                 .executeAndWait();
             if (processCall.getLastErrorLine() != null)
-                throw new WebFxCliException("An error during Maven invocation");
+                throw new WebFxCliException("An error occurred during Maven invocation: " + processCall.getLastErrorLine());
         } else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();
@@ -66,7 +66,7 @@ public final class MavenCaller {
             try {
                 MAVEN_INVOKER.execute(request);
             } catch (MavenInvocationException e) {
-                throw new WebFxCliException("An error during Maven invocation: " + e.getMessage());
+                throw new WebFxCliException("An error occurred during Maven invocation: " + e.getMessage());
             }
         }
     }
