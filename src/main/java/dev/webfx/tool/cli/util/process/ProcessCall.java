@@ -6,6 +6,8 @@ import dev.webfx.tool.cli.util.os.OperatingSystem;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -23,7 +25,7 @@ public class ProcessCall {
 
     private Predicate<String> errorLineFilter;
 
-    private String lastErrorLine;
+    private List<String> errorLines = new ArrayList<>();
 
     private Predicate<String> resultLineFilter;
 
@@ -89,7 +91,7 @@ public class ProcessCall {
         executeAndConsume(line -> {
             boolean log = false;
             if (errorLineFilter != null && errorLineFilter.test(line)) {
-                lastErrorLine = line;
+                errorLines.add(line);
                 log = true;
             }
             if (logLineFilter == null || logLineFilter.test(line))
@@ -127,9 +129,13 @@ public class ProcessCall {
         return lastResultLine;
     }
 
-    public String getLastErrorLine() {
+    public List<String> getErrorLines() {
         waitForStreamGobblerCompleted();
-        return lastErrorLine;
+        return errorLines;
+    }
+
+    public String getLastErrorLine() {
+        return getErrorLines().isEmpty() ? null : errorLines.get(errorLines.size()  - 1);
     }
 
     private void executeAndConsume(Consumer<String> outputLineConsumer) {

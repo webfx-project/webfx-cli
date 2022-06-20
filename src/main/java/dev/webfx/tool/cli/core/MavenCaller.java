@@ -38,7 +38,7 @@ public final class MavenCaller {
             processCall.setErrorLineFilter(line -> line.contains("ERROR"))
                 .executeAndWait();
             if (processCall.getLastErrorLine() != null)
-                throw new WebFxCliException("An error was detected during Maven invocation:\n" + processCall.getLastErrorLine());
+                throw new WebFxCliException("Error(s) detected during Maven invocation:\n" + String.join("\n", processCall.getErrorLines()));
         } else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();
