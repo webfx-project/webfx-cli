@@ -3,7 +3,9 @@ package dev.webfx.tool.cli.commands;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.tool.cli.WebFx;
 import dev.webfx.tool.cli.core.Logger;
+import dev.webfx.tool.cli.core.WebFxCliException;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
+import dev.webfx.tool.cli.util.os.OsFamily;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import dev.webfx.tool.cli.util.splitfiles.SplitFiles;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -28,7 +30,8 @@ import java.util.zip.GZIPInputStream;
 @Command(name = "bump", description = "Bump to a new version if available.",
         subcommands = {
                 Bump.Cli.class,
-                Bump.GraalVm.class
+                Bump.GraalVm.class,
+                Bump.VsTools.class
         })
 public final class Bump extends CommonSubcommand {
 
@@ -157,6 +160,33 @@ public final class Bump extends CommonSubcommand {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    @Command(name = "vstools", description = "Download and start the Visual Studio Build Tools installer.")
+    static class VsTools extends CommonSubcommand implements Runnable {
+
+        private final static String VS_BUILD_TOOLS_URL = "https://aka.ms/vs/17/release/vs_buildtools.exe";
+
+        @Override
+        public void run() {
+            if (OperatingSystem.getOsFamily() != OsFamily.WINDOWS)
+                throw new WebFxCliException("This command is to be executed on Windows machines only.");
+            Path cliRepositoryPath = getCliRepositoryPath();
+            Path hiddenVsFolder = cliRepositoryPath.resolve(".vs");
+            String vsUrl = VS_BUILD_TOOLS_URL;
+            String vsDownloadFileName = vsUrl.substring(vsUrl.lastIndexOf('/') + 1);
+            Path vsDownloadFilePath = hiddenVsFolder.resolve(vsDownloadFileName);
+
+            // Downloading the installation wizard
+            Logger.log("Downloading " + vsUrl);
+            if (!Files.exists(vsDownloadFilePath))
+                downloadFile(vsUrl, vsDownloadFilePath);
+
+            new ProcessCall()
+                    .setWorkingDirectory(hiddenVsFolder)
+                    .setCommand(vsDownloadFileName)
+                    .executeAndWait();
         }
     }
 
