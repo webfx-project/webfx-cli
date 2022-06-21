@@ -7,10 +7,11 @@ import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import dev.webfx.tool.cli.util.splitfiles.SplitFiles;
 import picocli.CommandLine.Command;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.utils.IOUtils;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.*;
 import java.util.Comparator;
@@ -18,6 +19,7 @@ import java.util.Spliterators;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 /**
  * @author Bruno Salmon
@@ -91,7 +93,7 @@ public final class Bump extends CommonSubcommand {
             }
             Logger.log("Checking for update on " + GITHUB_GRAAL_RELEASE_PAGE_URL);
             String pageContent = downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL);
-            Pattern pattern = Pattern.compile("href=\"(.*/gluonhq/graal/releases/download/.*-java17-" + osToken + "-.*.zip)\"", 1);
+            Pattern pattern = Pattern.compile("href=\"(.*/gluonhq/graal/releases/download/.*-java17-" + osToken + "-\\S*)\"", 1);
             Matcher matcher = pattern.matcher(pageContent);
             if (!matcher.find()) {
                 Logger.log("No GraalVM found for your system!");
@@ -106,7 +108,11 @@ public final class Bump extends CommonSubcommand {
             Path hiddenVmFolder = cliRepositoryPath.resolve(".graalvm");
             String vmDownloadFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
             Path vmDownloadFilePath = hiddenVmFolder.resolve(vmDownloadFileName);
-            String vmName = vmDownloadFileName.substring(0, vmDownloadFileName.lastIndexOf('.')); // removing .zip extension
+            boolean isZip = vmDownloadFileName.endsWith(".zip");
+            boolean isTarGz = vmDownloadFileName.endsWith(".tar.gz");
+            String vmName = vmDownloadFileName.substring(0, vmDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
+            if (isTarGz)
+                vmName = vmName.substring(0, vmName.lastIndexOf('.')); // removing .tar extension
             Path vmTagFilePath = hiddenVmFolder.resolve(vmName + ".tag");
 
             // Downloading the archive file
@@ -130,11 +136,19 @@ public final class Bump extends CommonSubcommand {
             downloadFile(vmUrl, vmDownloadFilePath);
 
             // Uncompressing the zip archive
-            Logger.log("Uncompressing " + vmDownloadFilePath.getFileName());
-            unzip(vmDownloadFilePath, hiddenVmFolder);
+            if (!isZip && !isTarGz)
+                Logger.log("Unknown compression format. Please manually uncompress " + vmDownloadFilePath);
+            else {
+                Logger.log("Uncompressing " + vmDownloadFilePath.getFileName());
 
-            // Deleting the archive files to free space
-            vmDownloadFilePath.toFile().delete();
+                if (isZip)
+                    unzip(vmDownloadFilePath, hiddenVmFolder);
+                else
+                    uncompressTarGz(vmDownloadFilePath, hiddenVmFolder);
+
+                // Deleting the archive files to free space
+                vmDownloadFilePath.toFile().delete();
+            }
 
             // Recreating the tag file (used to know which graalvm version is installed)
             try {
@@ -178,6 +192,25 @@ public final class Bump extends CommonSubcommand {
             // Some files are executable files, so setting the executable flag
             dstPath.toFile().setExecutable(true); // Doing it for all files (not beautiful but simple)
         } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void uncompressTarGz(Path archivePath, Path destinationFolder) {
+        try (FileInputStream fis = new FileInputStream(archivePath.toFile());
+             GZIPInputStream gzipInputStream = new GZIPInputStream(new BufferedInputStream(fis));
+             TarArchiveInputStream tis = new TarArchiveInputStream(gzipInputStream)) {
+            TarArchiveEntry tarEntry;
+            while ((tarEntry = tis.getNextTarEntry()) != null) {
+                if (tarEntry.isFile()) {
+                    File outputFile = destinationFolder.resolve(tarEntry.getName()).toFile();
+                    outputFile.getParentFile().mkdirs();
+                    IOUtils.copy(tis, new FileOutputStream(outputFile));
+                    // Some files are executable files, so setting the executable flag
+                    outputFile.setExecutable(true); // Doing it for all files (not beautiful but simple)
+                }
+            }
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

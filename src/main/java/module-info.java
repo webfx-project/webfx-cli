@@ -7,6 +7,7 @@ module webfx.cli {
     requires java.base;
     requires java.xml;
     requires maven.invoker;
+    requires org.apache.commons.compress;
     requires webfx.lib.reusablestream;
 
     // Exported packages
