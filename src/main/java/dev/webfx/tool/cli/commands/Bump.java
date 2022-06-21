@@ -6,13 +6,14 @@ import dev.webfx.tool.cli.core.Logger;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import dev.webfx.tool.cli.util.splitfiles.SplitFiles;
-import picocli.CommandLine.Command;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.utils.IOUtils;
+import picocli.CommandLine.Command;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.FileSystem;
 import java.nio.file.*;
 import java.util.Comparator;
 import java.util.Spliterators;
@@ -203,11 +204,16 @@ public final class Bump extends CommonSubcommand {
             TarArchiveEntry tarEntry;
             while ((tarEntry = tis.getNextTarEntry()) != null) {
                 if (tarEntry.isFile()) {
-                    File outputFile = destinationFolder.resolve(tarEntry.getName()).toFile();
+                    Path outputPath = destinationFolder.resolve(tarEntry.getName());
+                    File outputFile = outputPath.toFile();
                     outputFile.getParentFile().mkdirs();
-                    IOUtils.copy(tis, new FileOutputStream(outputFile));
-                    // Some files are executable files, so setting the executable flag
-                    outputFile.setExecutable(true); // Doing it for all files (not beautiful but simple)
+                    if (tarEntry.isSymbolicLink())
+                        Files.createSymbolicLink(outputPath, outputPath.getParent().resolve(tarEntry.getLinkName()));
+                    else {
+                        IOUtils.copy(tis, new FileOutputStream(outputFile));
+                        // Some files are executable files, so setting the executable flag
+                        outputFile.setExecutable(true); // Doing it for all files (not beautiful but simple)
+                    }
                 }
             }
         } catch (Exception e) {
