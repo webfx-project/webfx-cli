@@ -179,13 +179,14 @@ public final class Bump extends CommonSubcommand {
             Path vsDownloadFilePath = hiddenVsFolder.resolve(vsDownloadFileName);
 
             // Downloading the installation wizard
-            Logger.log("Downloading " + vsUrl);
-            if (!Files.exists(vsDownloadFilePath))
+            if (!Files.exists(vsDownloadFilePath)) {
+                Logger.log("Downloading " + vsUrl);
                 downloadFile(vsUrl, vsDownloadFilePath);
+            }
 
             new ProcessCall()
                     .setWorkingDirectory(hiddenVsFolder)
-                    .setCommand(vsDownloadFileName)
+                    .setCommand(vsDownloadFileName + " --addProductLang En-us --passive --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Workload.UniversalBuildTools")
                     .executeAndWait();
         }
     }
