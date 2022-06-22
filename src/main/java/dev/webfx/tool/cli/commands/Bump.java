@@ -186,7 +186,7 @@ public final class Bump extends CommonSubcommand {
 
             new ProcessCall()
                     .setWorkingDirectory(hiddenVsFolder)
-                    .setCommand(vsDownloadFileName + " --passive --addProductLang En-us --add Microsoft.VisualStudio.Component.VC.CLI.Support --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64 --add Microsoft.Component.VC.Runtime.UCRTSDK --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --add Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Llvm.Clang")
+                    .setCommand(vsDownloadFileName + " --passive --addProductLang En-us --add Microsoft.VisualStudio.Component.VC.CLI.Support --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64 --add Microsoft.Component.VC.Runtime.UCRTSDK --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64")
                     .executeAndWait();
         }
     }
