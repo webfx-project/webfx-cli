@@ -53,6 +53,13 @@ public class ProcessCall {
         return this;
     }
 
+    private String[] splitCommand() {
+        String[] tokens = command.split(" ");
+        for (int i = 0; i < tokens.length; i++)
+            tokens[i] = tokens[i].replace('°', ' ');
+        return tokens;
+    }
+
     public ProcessCall setWorkingDirectory(Path workingDirectory) {
         return setWorkingDirectory(workingDirectory.toFile());
     }
@@ -105,7 +112,7 @@ public class ProcessCall {
     }
 
     public ProcessCall logCallCommand() {
-        Logger.log((workingDirectory == null ? "" : workingDirectory) + "$ " + command);
+        Logger.log((workingDirectory == null ? "" : workingDirectory) + "$ " + command.replace('°', ' '));
         return this;
     }
 
@@ -146,7 +153,7 @@ public class ProcessCall {
         long t0 = System.currentTimeMillis();
         try {
             Process process = new ProcessBuilder()
-                    .command(command.split(" "))
+                    .command(splitCommand())
                     .directory(workingDirectory)
                     .start();
             streamGobbler = new StreamGobbler(process.getInputStream(), outputLineConsumer);
