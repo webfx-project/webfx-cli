@@ -1,6 +1,7 @@
 package dev.webfx.tool.cli.util.process;
 
 import dev.webfx.tool.cli.core.Logger;
+import dev.webfx.tool.cli.util.os.OperatingSystem;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,9 +54,11 @@ public class ProcessCall {
     }
 
     private String[] splitCommand() {
-        String[] tokens = command.split(" ");
-        for (int i = 0; i < tokens.length; i++)
-            tokens[i] = tokens[i].replace('°', ' ');
+        String[] tokens;
+        if (OperatingSystem.isWindows())
+            tokens = new String[] {"powershell", "-Command", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
+        else
+            tokens = command.split(" ");
         return tokens;
     }
 
@@ -147,10 +150,6 @@ public class ProcessCall {
     private void executeAndConsume(Consumer<String> outputLineConsumer) {
         if (logsCalling)
             logCallCommand();
-        /*
-        if (OperatingSystem.isWindows())
-            command = "cmd /c " + command; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
-         */
         long t0 = System.currentTimeMillis();
         try {
             Process process = new ProcessBuilder()
