@@ -31,6 +31,7 @@ import java.util.zip.GZIPInputStream;
         subcommands = {
                 Bump.Cli.class,
                 Bump.GraalVm.class,
+                Bump.Wix.class,
                 Bump.VsTools.class
         })
 public final class Bump extends CommonSubcommand {
@@ -82,7 +83,7 @@ public final class Bump extends CommonSubcommand {
     }
 
 
-    @Command(name = "graalvm", description = "Bump GraalVM to a new version if available.")
+    @Command(name = "graalvm", description = "Install GraalVM or bump it to a newer version if available.")
     static class GraalVm extends CommonSubcommand implements Runnable {
 
         private final static String GITHUB_GRAAL_RELEASE_PAGE_URL = "https://github.com/gluonhq/graal/releases/latest";
@@ -163,6 +164,63 @@ public final class Bump extends CommonSubcommand {
         }
     }
 
+    @Command(name = "wix", description = "Install WiX Toolset or bump it to a newer version if available.")
+    static class Wix extends CommonSubcommand implements Runnable {
+
+        private final static String GITHUB_WIX_RELEASE_PAGE_URL = "https://github.com/wixtoolset/wix3/releases";
+
+        @Override
+        public void run() {
+            if (OperatingSystem.getOsFamily() != OsFamily.WINDOWS)
+                throw new WebFxCliException("This command is to be executed on Windows machines only.");
+
+            Logger.log("Checking for update on " + GITHUB_WIX_RELEASE_PAGE_URL);
+            String pageContent = downloadPage(GITHUB_WIX_RELEASE_PAGE_URL);
+            Pattern pattern = Pattern.compile("href=\"(.*wix.*\\.exe)\"", 1);
+            Matcher matcher = pattern.matcher(pageContent);
+            if (!matcher.find()) {
+                Logger.log("No WiX version found!");
+                return;
+            }
+
+            String wixUrl = matcher.group(1);
+            if (wixUrl.startsWith("/"))
+                wixUrl = "https://github.com" + wixUrl;
+
+            Path cliRepositoryPath = getCliRepositoryPath();
+            Path hiddenWixFolder = cliRepositoryPath.resolve(".wix");
+            String wixDownloadFileName = wixUrl.substring(wixUrl.lastIndexOf('/') + 1);
+            Path wixDownloadFilePath = hiddenWixFolder.resolve(wixDownloadFileName);
+            String wixName = wixDownloadFileName.substring(0, wixDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
+            Path wixTagFilePath = wixDownloadFilePath;
+
+            // Downloading the archive file
+            if (Files.exists(wixTagFilePath)) {
+                Logger.log("Already up-to-date (" + wixName + ")");
+                return;
+            }
+
+            // Deleting all files to clear up space
+            if (Files.exists(hiddenWixFolder)) {
+                Logger.log("New version available!: " + wixName);
+                ReusableStream.create(() -> SplitFiles.uncheckedWalk(hiddenWixFolder))
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } else
+                Logger.log("Latest version: " + wixName);
+
+            // Downloading the GraalVM file
+            Logger.log("Downloading " + wixUrl);
+            downloadFile(wixUrl, wixDownloadFilePath);
+
+            new ProcessCall()
+                    .setWorkingDirectory(hiddenWixFolder)
+                    .setCommand("Start-Process powershell -Verb runAs 'Enable-WindowsOptionalFeature -Online -FeatureName \"NetFx3\"' -Wait; " + wixDownloadFileName)
+                    .executeAndWait();
+        }
+    }
+
     @Command(name = "vstools", description = "Download and start the Visual Studio Build Tools installer.")
     static class VsTools extends CommonSubcommand implements Runnable {
 
@@ -172,6 +230,7 @@ public final class Bump extends CommonSubcommand {
         public void run() {
             if (OperatingSystem.getOsFamily() != OsFamily.WINDOWS)
                 throw new WebFxCliException("This command is to be executed on Windows machines only.");
+
             Path cliRepositoryPath = getCliRepositoryPath();
             Path hiddenVsFolder = cliRepositoryPath.resolve(".vs");
             String vsUrl = VS_BUILD_TOOLS_URL;
@@ -186,7 +245,15 @@ public final class Bump extends CommonSubcommand {
 
             new ProcessCall()
                     .setWorkingDirectory(hiddenVsFolder)
-                    .setCommand(vsDownloadFileName + " --passive --addProductLang En-us --add Microsoft.VisualStudio.Component.VC.CLI.Support --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64 --add Microsoft.Component.VC.Runtime.UCRTSDK --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64")
+                    .setCommand(vsDownloadFileName + " --passive" + // Display the installer user interface to show progress bars but in automatic mode (doesn't interact with the user)
+                            " --addProductLang En-us" + // Mentioned in Gluon doc
+                            " --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" + // Not mentioned in Gluon doc => install cl.exe (called by Gluon toolchain)
+                            " --add Microsoft.VisualStudio.Component.Windows10SDK.19041" + // Mentioned in Gluon doc => if not installed, the Gluon toolchain raises this error: launcher.c(28): fatal error C1083: Cannot open include file: 'stdio.h': No such file or directory
+                            " --add Microsoft.VisualStudio.Component.VC.CLI.Support" + // Mentioned in Gluon doc (but not sure what it is for)
+                            " --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64" + // Mentioned in Gluon doc (but not sure what it is for)
+                            " --add Microsoft.Component.VC.Runtime.UCRTSDK" // Mentioned in Gluon doc (but not sure what it is for)
+
+                    )
                     .executeAndWait();
         }
     }
