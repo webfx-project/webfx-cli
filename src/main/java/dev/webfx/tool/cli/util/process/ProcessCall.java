@@ -21,11 +21,13 @@ public class ProcessCall {
 
     private String command;
 
+    private boolean powershellCommand;
+
     private Predicate<String> logLineFilter;
 
     private Predicate<String> errorLineFilter;
 
-    private List<String> errorLines = new ArrayList<>();
+    private final List<String> errorLines = new ArrayList<>();
 
     private Predicate<String> resultLineFilter;
 
@@ -53,10 +55,17 @@ public class ProcessCall {
         return this;
     }
 
+    public ProcessCall setPowershellCommand(boolean powershellCommand) {
+        this.powershellCommand = powershellCommand;
+        return this;
+    }
+
     private String[] splitCommand() {
         String[] tokens;
-        if (OperatingSystem.isWindows())
-            tokens = new String[] {"powershell", "-Command", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
+        if (powershellCommand)
+            tokens = new String[] {"powershell", "-Command", command};
+        else if (OperatingSystem.isWindows())
+            tokens = new String[] {"cmd", "/c", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
         else
             tokens = command.split(" ");
         return tokens;

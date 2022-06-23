@@ -192,10 +192,9 @@ public final class Bump extends CommonSubcommand {
             String wixDownloadFileName = wixUrl.substring(wixUrl.lastIndexOf('/') + 1);
             Path wixDownloadFilePath = hiddenWixFolder.resolve(wixDownloadFileName);
             String wixName = wixDownloadFileName.substring(0, wixDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
-            Path wixTagFilePath = wixDownloadFilePath;
 
             // Downloading the archive file
-            if (Files.exists(wixTagFilePath)) {
+            if (Files.exists(wixDownloadFilePath)) {
                 Logger.log("Already up-to-date (" + wixName + ")");
                 return;
             }
@@ -216,11 +215,8 @@ public final class Bump extends CommonSubcommand {
 
             new ProcessCall()
                     .setWorkingDirectory(hiddenWixFolder)
-                    .setCommand("Start-Process powershell -Verb runAs 'Enable-WindowsOptionalFeature -Online -FeatureName NetFx3' -Wait")
-                    .executeAndWait();
-            new ProcessCall()
-                    .setWorkingDirectory(hiddenWixFolder)
-                    .setCommand(wixDownloadFileName)
+                    .setCommand("Start-Process powershell -Verb runAs 'Enable-WindowsOptionalFeature -Online -FeatureName NetFx3' -Wait; .\\" + wixDownloadFileName)
+                    .setPowershellCommand(true)
                     .executeAndWait();
         }
     }
