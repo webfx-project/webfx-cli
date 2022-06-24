@@ -53,6 +53,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             if (OperatingSystem.isWindows()) {
                 String visualStudioShellCallCommand = new ProcessCall()
                         .setCommand("reg query HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\UFH\\SHC /f Microsoft.VisualStudio.DevShell.dll")
+                        .executeAndWait()
                         .getLastResultLine();
                 visualStudioShellCallCommand = visualStudioShellCallCommand.substring(visualStudioShellCallCommand.indexOf("&{Import-Module") + 2, visualStudioShellCallCommand.lastIndexOf('}'));
                 new ProcessCall()
