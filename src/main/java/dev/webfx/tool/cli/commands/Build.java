@@ -56,7 +56,7 @@ public final class Build extends CommonSubcommand implements Runnable {
                         .setResultLineFilter(line -> line.contains("Microsoft.VisualStudio.DevShell.dll"))
                         .executeAndWait()
                         .onLastResultLine(line -> {
-                            String visualStudioShellCallCommand = line.substring(line.indexOf("&{Import-Module") + 2, line.lastIndexOf('}')).replaceAll("\"\"\"", "\"");
+                            String visualStudioShellCallCommand = line.substring(line.indexOf("&{Import-Module") + 2, line.lastIndexOf('}')).replaceAll("\"\"\"", "'");
                             new ProcessCall()
                                     .setCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
                                             "; $env:GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
