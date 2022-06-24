@@ -52,10 +52,14 @@ public final class Build extends CommonSubcommand implements Runnable {
         if (gluonDesktop) {
             if (OperatingSystem.isWindows())
                 new ProcessCall()
-                        .setCommand("Import-Module '" + System.getenv("ProgramFiles(X86)") + "\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\Microsoft.VisualStudio.DevShell.dll'; Enter-VsDevShell a3309224 -DevCmdArguments '-arch=x64'")
+                        .setCommand("Import-Module '" + System.getenv("ProgramFiles(X86)") + "\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\Microsoft.VisualStudio.DevShell.dll'" +
+                                "; Enter-VsDevShell 3a7e2912 -DevCmdArguments '-arch=x64'" +
+                                "; $env.GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
+                                "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
                         .setPowershellCommand(true)
                         .executeAndWait();
-            invokeGluonGoal("gluon-desktop");
+            else
+                invokeGluonGoal("gluon-desktop");
         }
         if (android)
             invokeGluonGoal("gluon-android");
