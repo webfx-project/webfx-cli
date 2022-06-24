@@ -50,16 +50,19 @@ public final class Build extends CommonSubcommand implements Runnable {
                         (gwt ? "-P gwt-compile " : "")
                 , new ProcessCall().setWorkingDirectory(getProjectDirectoryPath()));
         if (gluonDesktop) {
-            if (OperatingSystem.isWindows())
+            if (OperatingSystem.isWindows()) {
+                String visualStudioShellCallCommand = new ProcessCall()
+                        .setCommand("reg query HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\UFH\\SHC /f Microsoft.VisualStudio.DevShell.dll")
+                        .getLastResultLine();
+                visualStudioShellCallCommand = visualStudioShellCallCommand.substring(visualStudioShellCallCommand.indexOf("&{Import-Module") + 2, visualStudioShellCallCommand.lastIndexOf('}'));
                 new ProcessCall()
-                        .setCommand("Import-Module '" + System.getenv("ProgramFiles(X86)") + "\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\Microsoft.VisualStudio.DevShell.dll'" +
-                                "; Enter-VsDevShell 3a7e2912 -DevCmdArguments '-arch=x64'" +
+                        .setCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
                                 "; $env:GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
                                 "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
                         .setPowershellCommand(true)
                         .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
                         .executeAndWait();
-            else
+            } else
                 invokeGluonGoal("gluon-desktop");
         }
         if (android)
