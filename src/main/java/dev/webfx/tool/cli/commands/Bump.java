@@ -215,7 +215,7 @@ public final class Bump extends CommonSubcommand {
 
             new ProcessCall()
                     .setWorkingDirectory(hiddenWixFolder)
-                    .setCommand("Start-Process powershell -Verb runAs 'Enable-WindowsOptionalFeature -Online -FeatureName NetFx3' -Wait; Start-Process .\\" + wixDownloadFileName + " -Wait; [Environment]::SetEnvironmentVariable('PATH', $Env:PATH + ';%WIX%/bin, [EnvironmentVariableTarget]::User)")
+                    .setCommand("Start-Process powershell -Verb runAs 'Enable-WindowsOptionalFeature -Online -FeatureName NetFx3' -Wait; Start-Process .\\" + wixDownloadFileName + " -Wait;")
                     .setPowershellCommand(true)
                     .executeAndWait();
         }
