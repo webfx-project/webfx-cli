@@ -55,7 +55,7 @@ public final class Build extends CommonSubcommand implements Runnable {
                         .setCommand("Import-Module '" + System.getenv("ProgramFiles(X86)") + "\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\Microsoft.VisualStudio.DevShell.dll'" +
                                 "; Enter-VsDevShell 3a7e2912 -DevCmdArguments '-arch=x64'" +
                                 "; $env:GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
-                                "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
+                                "; mvn -D'plugin.gluonfx.param.target'=host gluonfx:build gluonfx:package")
                         .setPowershellCommand(true)
                         .executeAndWait();
             else
