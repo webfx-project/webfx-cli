@@ -51,18 +51,20 @@ public final class Build extends CommonSubcommand implements Runnable {
                 , new ProcessCall().setWorkingDirectory(getProjectDirectoryPath()));
         if (gluonDesktop) {
             if (OperatingSystem.isWindows()) {
-                String visualStudioShellCallCommand = new ProcessCall()
-                        .setCommand("reg query HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\UFH\\SHC /f Microsoft.VisualStudio.DevShell.dll")
-                        .executeAndWait()
-                        .getLastResultLine();
-                visualStudioShellCallCommand = visualStudioShellCallCommand.substring(visualStudioShellCallCommand.indexOf("&{Import-Module") + 2, visualStudioShellCallCommand.lastIndexOf('}'));
                 new ProcessCall()
-                        .setCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
-                                "; $env:GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
-                                "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
-                        .setPowershellCommand(true)
-                        .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
-                        .executeAndWait();
+                        .setCommand("reg query HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\UFH\\SHC /f Microsoft.VisualStudio.DevShell.dll")
+                        .setResultLineFilter(line -> line.contains("Microsoft.VisualStudio.DevShell.dll"))
+                        .executeAndWait()
+                        .onLastResultLine(line -> {
+                            String visualStudioShellCallCommand = line.substring(line.indexOf("&{Import-Module") + 2, line.lastIndexOf('}')).replaceAll("\"\"\"", "\"");
+                            new ProcessCall()
+                                    .setCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
+                                            "; $env:GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
+                                            "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
+                                    .setPowershellCommand(true)
+                                    .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
+                                    .executeAndWait();
+                        });
             } else
                 invokeGluonGoal("gluon-desktop");
         }
