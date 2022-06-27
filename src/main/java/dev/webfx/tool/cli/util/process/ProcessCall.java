@@ -123,7 +123,7 @@ public class ProcessCall {
     }
 
     public ProcessCall logCallCommand() {
-        Logger.log((workingDirectory == null ? "" : workingDirectory) + "$ " + command.replace('°', ' '));
+        Logger.log((powershellCommand ? "PS " : "") + (workingDirectory == null ? "" : workingDirectory) + (OperatingSystem.isLinux() ? "$ " : OperatingSystem.isMacOs() ? " % " : "> "));
         return this;
     }
 
