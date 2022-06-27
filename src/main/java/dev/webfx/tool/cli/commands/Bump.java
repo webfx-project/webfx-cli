@@ -268,7 +268,7 @@ public final class Bump extends CommonSubcommand {
 
             new ProcessCall()
                     .setCommand("sudo apt install libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev")
-                    .setPowershellCommand(true)
+                    .setBashCommand(true)
                     .executeAndWait();
         }
     }
