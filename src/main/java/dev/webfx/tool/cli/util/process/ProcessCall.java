@@ -120,14 +120,18 @@ public class ProcessCall {
                 errorLines.add(line);
                 log = true;
             }
-            if (logLineFilter == null || logLineFilter.test(line))
+            if (logLineFilter == null || logLineFilter.test(removeColorCodes(line)))
                 log = true;
-            if (resultLineFilter == null || resultLineFilter.test(line))
-                lastResultLine = line;
+            if (resultLineFilter == null || resultLineFilter.test(removeColorCodes(line)))
+                lastResultLine = removeColorCodes(line);
             if (log)
                 Logger.log(line);
         });
         return this;
+    }
+
+    private static String removeColorCodes(String line) {
+        return line.replaceAll("\u001B\\[[;\\d]*m", "");
     }
 
     public ProcessCall logCallCommand() {
