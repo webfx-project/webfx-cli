@@ -27,16 +27,17 @@ import java.util.zip.GZIPInputStream;
 /**
  * @author Bruno Salmon
  */
-@Command(name = "bump", description = "Bump to a new version if available.",
+@Command(name = "bump", description = "Install a component or upgrade it to a new version if available.",
         subcommands = {
                 Bump.Cli.class,
                 Bump.GraalVm.class,
                 Bump.Wix.class,
-                Bump.VsTools.class
+                Bump.VsTools.class,
+                Bump.UbuntuDevTools.class
         })
 public final class Bump extends CommonSubcommand {
 
-    @Command(name = "cli", description = "Bump the CLI to a new version if available.")
+    @Command(name = "cli", description = "Upgrade the CLI to a new version if available.")
     static class Cli extends CommonSubcommand implements Runnable {
 
         @Override
@@ -83,7 +84,7 @@ public final class Bump extends CommonSubcommand {
     }
 
 
-    @Command(name = "graalvm", description = "Install GraalVM or bump it to a newer version if available.")
+    @Command(name = "graalvm", description = "Install or upgrade GraalVM.")
     static class GraalVm extends CommonSubcommand implements Runnable {
 
         private final static String GITHUB_GRAAL_RELEASE_PAGE_URL = "https://github.com/gluonhq/graal/releases/latest";
@@ -164,7 +165,7 @@ public final class Bump extends CommonSubcommand {
         }
     }
 
-    @Command(name = "wix", description = "Install WiX Toolset or bump it to a newer version if available.")
+    @Command(name = "wix", description = "Install or upgrade the WiX Toolset (Windows).")
     static class Wix extends CommonSubcommand implements Runnable {
 
         private final static String GITHUB_WIX_RELEASE_PAGE_URL = "https://github.com/wixtoolset/wix3/releases";
@@ -221,7 +222,7 @@ public final class Bump extends CommonSubcommand {
         }
     }
 
-    @Command(name = "vstools", description = "Download and start the Visual Studio Build Tools installer.")
+    @Command(name = "vstools", description = "Install or upgrade the Visual Studio Build Tools (Windows).")
     static class VsTools extends CommonSubcommand implements Runnable {
 
         private final static String VS_BUILD_TOOLS_URL = "https://aka.ms/vs/17/release/vs_buildtools.exe";
@@ -253,6 +254,21 @@ public final class Bump extends CommonSubcommand {
                             // + " --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64" // Mentioned in Gluon doc (but not sure what it is for)
                             // + " --add Microsoft.Component.VC.Runtime.UCRTSDK" // Mentioned in Gluon doc (but not sure what it is for)
                     )
+                    .executeAndWait();
+        }
+    }
+
+    @Command(name = "ubuntu-devtools", description = "Install the dev tools required by Gluon (Ubuntu).")
+    static class UbuntuDevTools extends CommonSubcommand implements Runnable {
+
+        @Override
+        public void run() {
+            if (OperatingSystem.getOsFamily() != OsFamily.LINUX)
+                throw new CliException("This command is to be executed on Ubuntu machines only.");
+
+            new ProcessCall()
+                    .setCommand("sudo apt install libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev")
+                    .setPowershellCommand(true)
                     .executeAndWait();
         }
     }

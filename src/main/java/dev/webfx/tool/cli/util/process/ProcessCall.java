@@ -22,6 +22,7 @@ public class ProcessCall {
     private String command;
 
     private boolean powershellCommand;
+    private boolean bashCommand;
 
     private Predicate<String> logLineFilter;
 
@@ -60,9 +61,16 @@ public class ProcessCall {
         return this;
     }
 
+    public ProcessCall setBashCommand(boolean bashCommand) {
+        this.bashCommand = bashCommand;
+        return this;
+    }
+
     private String[] splitCommand() {
         String[] tokens;
-        if (powershellCommand)
+        if (bashCommand)
+            tokens = new String[] {"bash", "-c", command};
+        else if (powershellCommand)
             tokens = new String[] {"powershell", "-Command", command};
         else if (OperatingSystem.isWindows())
             tokens = new String[] {"cmd", "/c", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
