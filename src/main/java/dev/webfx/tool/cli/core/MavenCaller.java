@@ -58,7 +58,7 @@ public final class MavenCaller {
                 if (mavenHome == null)
                     // Invoking mvn -version through the shell to get the maven home (takes about 300ms)
                     mavenHome = new ProcessCall("mvn -version")
-                            .setResultLineFilter(line -> line.contains("Maven home:"))
+                            .setResultLineFilter(line -> line.contains(" home:"))
                             .executeAndWait()
                             .getLastResultLine().substring(11).trim();
                 MAVEN_INVOKER.setMavenHome(new File(mavenHome));
