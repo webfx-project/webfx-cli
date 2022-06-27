@@ -55,14 +55,15 @@ public final class Build extends CommonSubcommand implements Runnable {
                         .setCommand("reg query HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\UFH\\SHC /f Microsoft.VisualStudio.DevShell.dll")
                         .setResultLineFilter(line -> line.contains("Microsoft.VisualStudio.DevShell.dll"))
                         .executeAndWait()
-                        .onLastResultLine(line -> {
-                            String visualStudioShellCallCommand = line.substring(line.indexOf("&{Import-Module") + 2, line.lastIndexOf('}')).replaceAll("\"\"\"", "'");
+                        .onLastResultLine(resultLine -> {
+                            String visualStudioShellCallCommand = resultLine.substring(resultLine.indexOf("&{Import-Module") + 2, resultLine.lastIndexOf('}')).replaceAll("\"\"\"", "'");
                             new ProcessCall()
                                     .setCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
                                             "; $env:GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
                                             "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
                                     .setPowershellCommand(true)
                                     .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
+                                    .setLogLineFilter(line -> !line.startsWith("Progress") && !line.startsWith("Downloaded"))
                                     .executeAndWait();
                         });
             } else
