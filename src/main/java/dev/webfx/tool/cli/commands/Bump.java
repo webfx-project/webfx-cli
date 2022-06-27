@@ -3,7 +3,7 @@ package dev.webfx.tool.cli.commands;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.tool.cli.WebFx;
 import dev.webfx.tool.cli.core.Logger;
-import dev.webfx.tool.cli.core.WebFxCliException;
+import dev.webfx.tool.cli.core.CliException;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.os.OsFamily;
 import dev.webfx.tool.cli.util.process.ProcessCall;
@@ -172,7 +172,7 @@ public final class Bump extends CommonSubcommand {
         @Override
         public void run() {
             if (OperatingSystem.getOsFamily() != OsFamily.WINDOWS)
-                throw new WebFxCliException("This command is to be executed on Windows machines only.");
+                throw new CliException("This command is to be executed on Windows machines only.");
 
             Logger.log("Checking for update on " + GITHUB_WIX_RELEASE_PAGE_URL);
             String pageContent = downloadPage(GITHUB_WIX_RELEASE_PAGE_URL);
@@ -229,7 +229,7 @@ public final class Bump extends CommonSubcommand {
         @Override
         public void run() {
             if (OperatingSystem.getOsFamily() != OsFamily.WINDOWS)
-                throw new WebFxCliException("This command is to be executed on Windows machines only.");
+                throw new CliException("This command is to be executed on Windows machines only.");
 
             Path cliRepositoryPath = getCliRepositoryPath();
             Path hiddenVsFolder = cliRepositoryPath.resolve(".vs");

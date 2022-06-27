@@ -3,9 +3,10 @@ package dev.webfx.tool.cli.core;
 /**
  * @author Bruno Salmon
  */
-public class RunException extends CliException {
+public class CliException extends RuntimeException {
 
-    public RunException(String message) {
+    public CliException(String message) {
         super(message);
     }
+
 }
