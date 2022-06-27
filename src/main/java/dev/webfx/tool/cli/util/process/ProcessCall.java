@@ -172,6 +172,9 @@ public class ProcessCall {
             Process process = new ProcessBuilder()
                     .command(splitCommand())
                     .directory(workingDirectory)
+                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                    .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                    .redirectError(ProcessBuilder.Redirect.INHERIT)
                     .start();
             streamGobbler = new StreamGobbler(process.getInputStream(), outputLineConsumer);
             Executors.newSingleThreadExecutor().submit(streamGobbler);
