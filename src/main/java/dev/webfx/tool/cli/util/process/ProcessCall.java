@@ -69,11 +69,11 @@ public class ProcessCall {
     private String[] splitCommand() {
         String[] tokens;
         if (bashCommand)
-            tokens = new String[] {"bash", "-c", command};
+            tokens = new String[]{"bash", "-c", command};
         else if (powershellCommand)
-            tokens = new String[] {"powershell", "-Command", command};
+            tokens = new String[]{"powershell", "-Command", command};
         else if (OperatingSystem.isWindows())
-            tokens = new String[] {"cmd", "/c", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
+            tokens = new String[]{"cmd", "/c", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
         else
             tokens = command.split(" ");
         return tokens;
@@ -165,7 +165,7 @@ public class ProcessCall {
     }
 
     public String getLastErrorLine() {
-        return getErrorLines().isEmpty() ? null : errorLines.get(errorLines.size()  - 1);
+        return getErrorLines().isEmpty() ? null : errorLines.get(errorLines.size() - 1);
     }
 
     private void executeAndConsume(Consumer<String> outputLineConsumer) {
@@ -173,13 +173,18 @@ public class ProcessCall {
             logCallCommand();
         long t0 = System.currentTimeMillis();
         try {
-            Process process = new ProcessBuilder()
+            ProcessBuilder processBuilder = new ProcessBuilder()
                     .command(splitCommand())
-                    .directory(workingDirectory)
-                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
-                    .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-                    .redirectError(ProcessBuilder.Redirect.INHERIT)
-                    .start();
+                    .directory(workingDirectory);
+            // Using inherited i/o when no filter are required (which may display ANSI colors)
+            // Note 1: it is necessary to use them to display "Do you want to continue? [Y/n]" on Linux bach
+            // Note 2: this prevents the StreamGobbler working (no output lines)
+            if (logLineFilter == null && lastResultLine == null)
+                processBuilder
+                        .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                        .redirectError(ProcessBuilder.Redirect.INHERIT);
+            Process process = processBuilder.start();
             streamGobbler = new StreamGobbler(process.getInputStream(), outputLineConsumer);
             Executors.newSingleThreadExecutor().submit(streamGobbler);
             exitCode = process.waitFor();
