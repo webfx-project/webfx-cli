@@ -116,22 +116,22 @@ public class ProcessCall {
     public ProcessCall executeAndWait() {
         executeAndConsume(line -> {
             boolean log = false;
-            if (errorLineFilter != null && errorLineFilter.test(line)) {
+            if (errorLineFilter != null && errorLineFilter.test(removeEscapeSequences(line))) {
                 errorLines.add(line);
                 log = true;
             }
-            if (logLineFilter == null || logLineFilter.test(removeColorCodes(line)))
+            if (logLineFilter == null || logLineFilter.test(removeEscapeSequences(line)))
                 log = true;
-            if (resultLineFilter == null || resultLineFilter.test(removeColorCodes(line)))
-                lastResultLine = removeColorCodes(line);
+            if (resultLineFilter == null || resultLineFilter.test(removeEscapeSequences(line)))
+                lastResultLine = removeEscapeSequences(line);
             if (log)
                 Logger.log(line);
         });
         return this;
     }
 
-    private static String removeColorCodes(String line) {
-        return line.replaceAll("\u001B\\[[;\\d]*m", "");
+    private static String removeEscapeSequences(String line) {
+        return line.replaceAll("\u001B\\[[;\\d]*[ -/]*[@-~]", "");
     }
 
     public ProcessCall logCallCommand() {
