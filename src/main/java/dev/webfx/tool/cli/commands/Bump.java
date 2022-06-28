@@ -267,7 +267,7 @@ public final class Bump extends CommonSubcommand {
                 throw new CliException("This command is to be executed on Ubuntu machines only.");
 
             new ProcessCall()
-                    .setCommand("sudo apt install gcc libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev")
+                    .setCommand("sudo apt install g++ libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev")
                     .setBashCommand(true)
                     .executeAndWait();
         }
