@@ -58,7 +58,7 @@ public final class Build extends CommonSubcommand implements Runnable {
                     .executeAndWait()
                     .getLastResultLine();
             if (innoResultLine != null) {
-                innoResultLine = innoResultLine.substring(innoResultLine.indexOf("REG_SZ") + 6, innoResultLine.lastIndexOf(".exe")).trim();
+                innoResultLine = innoResultLine.substring(innoResultLine.indexOf("REG_SZ") + 6, innoResultLine.lastIndexOf('\\')).trim();
                 if (innoResultLine.startsWith("\""))
                     innoResultLine = innoResultLine.substring(1);
             }
