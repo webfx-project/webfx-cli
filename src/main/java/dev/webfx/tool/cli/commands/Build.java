@@ -53,7 +53,7 @@ public final class Build extends CommonSubcommand implements Runnable {
         ProcessCall processCall = new ProcessCall();
         if (openJfxDesktop && OperatingSystem.isWindows()) { // Ensuring WiX and Inno is in the environment path (usually not done by the installer)
             String innoResultLine = new ProcessCall()
-                    .setCommand("reg query HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\InnoSetupScriptFile /f 'Inno Setup*.exe'")
+                    .setCommand("reg query HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\InnoSetupScriptFile /f \"Inno Setup*.exe\" /s")
                     .executeAndWait()
                     .getLastResultLine();
             if (innoResultLine != null) {
