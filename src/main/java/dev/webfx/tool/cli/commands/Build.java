@@ -51,9 +51,18 @@ public final class Build extends CommonSubcommand implements Runnable {
                 (openJfxDesktop ? "-P openjfx-desktop " : "") +
                 (gwt ? "-P gwt-compile " : "");
         ProcessCall processCall = new ProcessCall();
-        if (openJfxDesktop && OperatingSystem.isWindows()) // Ensuring WiX is in the environment path (not always the case after WiX installation)
-            processCall.setPowershellCommand("$env:PATH += \";$env:WIX\\bin\"; " + command);
-        else
+        if (openJfxDesktop && OperatingSystem.isWindows()) { // Ensuring WiX and Inno is in the environment path (usually not done by the installer)
+            String innoResultLine = new ProcessCall()
+                    .setCommand("reg query HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\InnoSetupScriptFile /f 'Inno Setup*.exe'")
+                    .executeAndWait()
+                    .getLastResultLine();
+            if (innoResultLine != null) {
+                innoResultLine = innoResultLine.substring(innoResultLine.indexOf("REG_SZ") + 6, innoResultLine.lastIndexOf(".exe")).trim();
+                if (innoResultLine.startsWith("\""))
+                    innoResultLine = innoResultLine.substring(1);
+            }
+            processCall.setPowershellCommand("$env:PATH += \";$env:WIX\\bin" + (innoResultLine != null ? ";" + innoResultLine : "") + "\"; " + command);
+        } else
             processCall.setCommand(command);
         processCall
                 .setWorkingDirectory(getProjectDirectoryPath())
