@@ -32,6 +32,7 @@ import java.util.zip.GZIPInputStream;
                 Bump.Cli.class,
                 Bump.GraalVm.class,
                 Bump.Wix.class,
+                Bump.Inno.class,
                 Bump.VsTools.class,
                 Bump.UbuntuDevTools.class
         })
@@ -217,6 +218,62 @@ public final class Bump extends CommonSubcommand {
             new ProcessCall()
                     .setWorkingDirectory(hiddenWixFolder)
                     .setPowershellCommand("Start-Process powershell -Verb runAs 'Enable-WindowsOptionalFeature -Online -FeatureName NetFx3' -Wait; Start-Process .\\" + wixDownloadFileName + " -Wait")
+                    .executeAndWait();
+        }
+    }
+
+    @Command(name = "inno", description = "Install or upgrade Inno Setup (Windows).")
+    static class Inno extends CommonSubcommand implements Runnable {
+
+        private final static String INNO_RELEASE_PAGE_URL = "https://jrsoftware.org/isdl.php";
+
+        @Override
+        public void run() {
+            if (OperatingSystem.getOsFamily() != OsFamily.WINDOWS)
+                throw new CliException("This command is to be executed on Windows machines only.");
+
+            Logger.log("Checking for update on " + INNO_RELEASE_PAGE_URL);
+            String pageContent = downloadPage(INNO_RELEASE_PAGE_URL);
+            Pattern pattern = Pattern.compile("href=\"(.*is.*\\.exe)\"", 1);
+            Matcher matcher = pattern.matcher(pageContent);
+            if (!matcher.find()) {
+                Logger.log("No Inno Setup version found!");
+                return;
+            }
+
+            String innoUrl = matcher.group(1);
+            if (innoUrl.startsWith("/"))
+                innoUrl = "https://jrsoftware.org" + innoUrl;
+
+            Path cliRepositoryPath = getCliRepositoryPath();
+            Path hiddenInnoFolder = cliRepositoryPath.resolve(".inno");
+            String innoDownloadFileName = innoUrl.substring(innoUrl.lastIndexOf('/') + 1);
+            Path innoDownloadFilePath = hiddenInnoFolder.resolve(innoDownloadFileName);
+            String innoName = innoDownloadFileName.substring(0, innoDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
+
+            // Downloading the archive file
+            if (Files.exists(innoDownloadFilePath)) {
+                Logger.log("Already up-to-date (" + innoName + ")");
+                return;
+            }
+
+            // Deleting all files to clear up space
+            if (Files.exists(hiddenInnoFolder)) {
+                Logger.log("New version available!: " + innoName);
+                ReusableStream.create(() -> SplitFiles.uncheckedWalk(hiddenInnoFolder))
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } else
+                Logger.log("Latest version: " + innoName);
+
+            // Downloading the GraalVM file
+            Logger.log("Downloading " + innoUrl);
+            downloadFile(innoUrl, innoDownloadFilePath);
+
+            new ProcessCall()
+                    .setWorkingDirectory(hiddenInnoFolder)
+                    .setCommand(innoDownloadFileName)
                     .executeAndWait();
         }
     }
