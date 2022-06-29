@@ -216,8 +216,7 @@ public final class Bump extends CommonSubcommand {
 
             new ProcessCall()
                     .setWorkingDirectory(hiddenWixFolder)
-                    .setCommand("Start-Process powershell -Verb runAs 'Enable-WindowsOptionalFeature -Online -FeatureName NetFx3' -Wait; Start-Process .\\" + wixDownloadFileName + " -Wait")
-                    .setPowershellCommand(true)
+                    .setPowershellCommand("Start-Process powershell -Verb runAs 'Enable-WindowsOptionalFeature -Online -FeatureName NetFx3' -Wait; Start-Process .\\" + wixDownloadFileName + " -Wait")
                     .executeAndWait();
         }
     }
@@ -267,8 +266,7 @@ public final class Bump extends CommonSubcommand {
                 throw new CliException("This command is to be executed on Ubuntu machines only.");
 
             new ProcessCall()
-                    .setCommand("sudo apt install g++ libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev")
-                    .setBashCommand(true)
+                    .setBashCommand("sudo apt install g++ libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev")
                     .executeAndWait();
         }
     }

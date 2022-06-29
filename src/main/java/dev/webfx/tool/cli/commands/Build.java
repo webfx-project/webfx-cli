@@ -12,14 +12,14 @@ import picocli.CommandLine.Command;
 @Command(name = "build", description = "Invoke Maven build.")
 public final class Build extends CommonSubcommand implements Runnable {
 
+    @CommandLine.Option(names = {"--gwt"}, description = "Includes the GWT compilation")
+    private boolean gwt;
+
     @CommandLine.Option(names = {"--openjfx-fatjar"}, description = "Creates a fat jar for the OpenJFX version")
     private boolean fatjar;
 
-    @CommandLine.Option(names = {"--gwt-compile"}, description = "Includes the GWT compilation")
-    private boolean gwt;
-
     @CommandLine.Option(names = {"--openjfx-desktop"}, description = "Includes the OpenJFX desktop build")
-    private boolean ojfxDesktop;
+    private boolean openJfxDesktop;
 
     @CommandLine.Option(names = {"--gluon-desktop"}, description = "Includes the Gluon native desktop build")
     private boolean gluonDesktop;
@@ -42,11 +42,11 @@ public final class Build extends CommonSubcommand implements Runnable {
                 android = true;
         }
         boolean gluon = gluonDesktop || android || ios;
-        if (!fatjar && !gwt && !ojfxDesktop && !gluon)
+        if (!fatjar && !gwt && !openJfxDesktop && !gluon)
             fatjar = gwt = true;
         MavenCaller.invokeMavenGoal(gluon ? "install " : "package " +
                         (fatjar ? "-P openjfx-fatjar " : "") +
-                        (ojfxDesktop ? "-P openjfx-desktop " : "") +
+                        (openJfxDesktop ? "-P openjfx-desktop " : "") +
                         (gwt ? "-P gwt-compile " : "")
                 , new ProcessCall().setWorkingDirectory(getProjectDirectoryPath()));
         if (gluonDesktop) {
@@ -58,10 +58,9 @@ public final class Build extends CommonSubcommand implements Runnable {
                         .onLastResultLine(resultLine -> {
                             String visualStudioShellCallCommand = resultLine.substring(resultLine.indexOf("&{Import-Module") + 2, resultLine.lastIndexOf('}')).replaceAll("\"\"\"", "'");
                             new ProcessCall()
-                                    .setCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
+                                    .setPowershellCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
                                             "; $env:GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
                                             "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
-                                    .setPowershellCommand(true)
                                     .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
                                     .setLogLineFilter(line -> !line.startsWith("Progress") && !line.startsWith("Downloaded"))
                                     .executeAndWait();

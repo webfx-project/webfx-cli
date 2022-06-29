@@ -56,14 +56,14 @@ public class ProcessCall {
         return this;
     }
 
-    public ProcessCall setPowershellCommand(boolean powershellCommand) {
-        this.powershellCommand = powershellCommand;
-        return this;
+    public ProcessCall setPowershellCommand(String command) {
+        powershellCommand = true;
+        return setCommand(command);
     }
 
-    public ProcessCall setBashCommand(boolean bashCommand) {
-        this.bashCommand = bashCommand;
-        return this;
+    public ProcessCall setBashCommand(String command) {
+        bashCommand = true;
+        return setCommand(command);
     }
 
     private String[] splitCommand() {
