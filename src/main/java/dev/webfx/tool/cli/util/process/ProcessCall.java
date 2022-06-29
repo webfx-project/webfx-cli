@@ -71,7 +71,7 @@ public class ProcessCall {
         if (bashCommand)
             tokens = new String[]{"bash", "-c", command};
         else if (powershellCommand)
-            tokens = new String[]{"powershell", "-Command", command};
+            tokens = new String[]{"powershell", "-Command", command.replaceAll("\"", "\\\"")};
         else if (OperatingSystem.isWindows())
             tokens = new String[]{"cmd", "/c", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
         else
