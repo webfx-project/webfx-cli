@@ -1,5 +1,6 @@
 package dev.webfx.tool.cli.commands;
 
+import dev.webfx.tool.cli.core.CliException;
 import dev.webfx.tool.cli.core.MavenCaller;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
@@ -43,12 +44,20 @@ public final class Build extends CommonSubcommand implements Runnable {
         }
         boolean gluon = gluonDesktop || android || ios;
         if (!fatjar && !gwt && !openJfxDesktop && !gluon)
-            fatjar = gwt = true;
-        MavenCaller.invokeMavenGoal(gluon ? "install " : "package " +
-                        (fatjar ? "-P openjfx-fatjar " : "") +
-                        (openJfxDesktop ? "-P openjfx-desktop " : "") +
-                        (gwt ? "-P gwt-compile " : "")
-                , new ProcessCall().setWorkingDirectory(getProjectDirectoryPath()));
+            throw new CliException("No build flag");
+        String command = "mvn " +
+                (gluon ? "install " : "package ") +
+                (fatjar ? "-P openjfx-fatjar " : "") +
+                (openJfxDesktop ? "-P openjfx-desktop " : "") +
+                (gwt ? "-P gwt-compile " : "");
+        ProcessCall processCall = new ProcessCall();
+        if (openJfxDesktop && OperatingSystem.isWindows()) // Ensuring WiX is in the environment path (not always the case after WiX installation)
+            processCall.setPowershellCommand("$env:PATH += \";$env:WIX\\bin\"; " + command);
+        else
+            processCall.setCommand(command);
+        processCall
+                .setWorkingDirectory(getProjectDirectoryPath())
+                .executeAndWait();
         if (gluonDesktop) {
             if (OperatingSystem.isWindows()) {
                 new ProcessCall()
