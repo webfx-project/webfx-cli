@@ -24,13 +24,13 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"--gluon-desktop"}, description = "Includes the Gluon native desktop build")
     private boolean gluonDesktop;
 
-    @CommandLine.Option(names = {"--gluon-mobile"}, description = "Includes the Gluon native mobile build")
+    @CommandLine.Option(names = {"--gluon-mobile"}, description = "= --gluon-android on Linux, --gluon-ios on macOS")
     private boolean mobile;
 
-    @CommandLine.Option(names = {"--gluon-android"}, description = "Includes the Gluon native android build")
+    @CommandLine.Option(names = {"--gluon-android"}, description = "Includes the Gluon native Android build")
     private boolean android;
 
-    @CommandLine.Option(names = {"--gluon-ios"}, description = "Includes the Gluon native isOS build")
+    @CommandLine.Option(names = {"--gluon-ios"}, description = "Includes the Gluon native iOS build")
     private boolean ios;
 
     @Override
