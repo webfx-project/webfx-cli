@@ -147,7 +147,7 @@ final public class ModuleRegistry {
         DevProjectModule module = getRegisteredDevProjectModule(projectDirectory);
         if (module == null) {
             if (projectDirectory.equals(workspaceDirectory) || !projectDirectory.startsWith(workspaceDirectory))
-                throw new BuildException("projectDirectory (" + projectDirectory + ") must be under workspace directory (" + workspaceDirectory + ")");
+                throw new CliException("projectDirectory (" + projectDirectory + ") must be under workspace directory (" + workspaceDirectory + ")");
             Path parentDirectory = projectDirectory.getParent();
             DevProjectModule parentModule = parentDirectory.equals(workspaceDirectory) ? null : getOrCreateDevProjectModule(parentDirectory);
             module = createDevProjectModule(projectDirectory, parentModule);

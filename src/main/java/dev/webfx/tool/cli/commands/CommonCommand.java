@@ -115,7 +115,9 @@ public class CommonCommand {
     private Path projectDirectoryPath;
     private Path topRootDirectoryPath;
     private Path workspaceDirectoryPath;
-    private Module moduleProject;
+    private Module workingModule;
+
+    private DevProjectModule topRootModule;
 
     public Path getProjectDirectoryPath() {
         if (projectDirectoryPath == null)
@@ -162,31 +164,37 @@ public class CommonCommand {
     }
 
     protected Module getWorkingModule() {
-        if (moduleProject == null) {
+        if (workingModule == null) {
             if (getTopRootDirectoryPath() == null)
                 throw new CliException("Not a WebFX repository (or any of the parent directories): no webfx.xml");
             String moduleName = getModuleName();
             if (moduleName == null)
                 return getModuleRegistry().getOrCreateDevProjectModule(projectDirectoryPath);
-            ProjectModule topProjectModule = getModuleRegistry().getOrCreateDevProjectModule(topRootDirectoryPath);
+            DevProjectModule topProjectModule = getTopRootModule();
             if (moduleName.equals("top") || moduleName.equals(topProjectModule.getName()) )
                 return topProjectModule;
-            moduleProject = topProjectModule.searchRegisteredModule(moduleName, false);
+            workingModule = topProjectModule.searchRegisteredModule(moduleName, false);
         }
-        return moduleProject;
+        return workingModule;
     }
 
     protected ProjectModule getWorkingProjectModule() {
         Module workingModule = getWorkingModule();
         if (workingModule instanceof ProjectModule)
             return (ProjectModule) workingModule;
-        throw new BuildException(workingModule.getName() + " is not a project module.");
+        throw new CliException(workingModule.getName() + " is not a project module.");
     }
 
     protected DevProjectModule getWorkingDevProjectModule() {
         Module workingModule = getWorkingModule();
         if (workingModule instanceof DevProjectModule)
             return (DevProjectModule) workingModule;
-        throw new BuildException(workingModule.getName() + " is not a project module.");
+        throw new CliException(workingModule.getName() + " is not a project module.");
+    }
+
+    protected DevProjectModule getTopRootModule() {
+        if (topRootModule == null)
+            topRootModule = getModuleRegistry().getOrCreateDevProjectModule(topRootDirectoryPath);
+        return topRootModule;
     }
 }
