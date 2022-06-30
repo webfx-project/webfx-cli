@@ -7,8 +7,8 @@
     <dependencies/>
 
     <properties>
-        <plugin.javapackager.name>${parent.artifactId}</plugin.javapackager.name>
-        <plugin.javapackager.displayName>${parent.artifactId}</plugin.javapackager.displayName>
+        <plugin.javapackager.name>${application.name}</plugin.javapackager.name>
+        <plugin.javapackager.displayName>${application.displayName}</plugin.javapackager.displayName>
         <plugin.javapackager.url/>
     </properties>
 

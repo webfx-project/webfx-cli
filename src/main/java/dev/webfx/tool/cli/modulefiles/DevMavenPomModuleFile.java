@@ -54,19 +54,17 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                         : buildInfo.isForGluon ? "pom_gluon_executable.xml"
                         : buildInfo.isForVertx ? "pom_vertx_executable.xml"
                         : "pom_openjfx_executable.xml";
+        String applicationName = projectModule.getName();
+        if (applicationName.contains("-application"))
+            applicationName = applicationName.substring(0, applicationName.indexOf("-application"));
+        String applicationDisplayName = applicationName.replace('-', ' ');
         String template = ResourceTextFileReader.readTemplate(templateFileName)
-                .replace("${groupId}", ArtifactResolver.getGroupId(projectModule))
+                .replace("${groupId}",    ArtifactResolver.getGroupId(projectModule))
                 .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
                 .replace("${version}",    ArtifactResolver.getVersion(projectModule))
+                .replace("${application.name}", applicationName)
+                .replace("${application.displayName}", applicationDisplayName)
                 ;
-        if (!isRootModule) {
-            ProjectModule parentModule = projectModule.fetchParentModule();
-            template = template
-                    .replace("${parent.groupId}", ArtifactResolver.getGroupId(parentModule))
-                    .replace("${parent.artifactId}", ArtifactResolver.getArtifactId(parentModule))
-                    .replace("${parent.version}", ArtifactResolver.getVersion(parentModule))
-            ;
-        }
         Document document = XmlUtil.parseXmlString(template);
         Element documentElement = document.getDocumentElement();
         Node webFxMavenPomProjectNode = projectModule.getWebFxModuleFile().getMavenManualNode();
