@@ -77,17 +77,20 @@ public class ProcessCall {
         else {
             tokens = command.split(" ");
             for (int i = 0; i < tokens.length; i++)
-                tokens[i] = rebreakSpaces(tokens[i]);
+                tokens[i] = decodeUnbreakableToken(tokens[i]);
         }
         return tokens;
     }
 
-    public static String unbreakSpaces(Object token) {
+    public static String encodeUnbreakableToken(Object token) {
         return token == null ? null : token.toString().replace(' ', '°');
     }
 
-    private static String rebreakSpaces(String token) {
-        return token.replace('°', ' ');
+    private static String decodeUnbreakableToken(String encodedToken) {
+        String token = encodedToken.replace('°', ' ');
+        if (OperatingSystem.isWindows())
+            token = "'" + token + "'";
+        return token;
     }
 
     public ProcessCall setWorkingDirectory(Path workingDirectory) {

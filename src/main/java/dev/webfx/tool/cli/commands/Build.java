@@ -6,6 +6,8 @@ import dev.webfx.tool.cli.util.process.ProcessCall;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
+import java.nio.file.Path;
+
 /**
  * @author Bruno Salmon
  */
@@ -75,9 +77,10 @@ public final class Build extends CommonSubcommand implements Runnable {
                         .executeAndWait()
                         .onLastResultLine(resultLine -> {
                             String visualStudioShellCallCommand = resultLine.substring(resultLine.indexOf("&{Import-Module") + 2, resultLine.lastIndexOf('}')).replaceAll("\"\"\"", "'");
+                            Path graalVmHome = Bump.getGraalVmHome();
                             new ProcessCall()
                                     .setPowershellCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
-                                            "; $env:GRAALVM_HOME = '" + Bump.getGraalVmHome() + "'" +
+                                            (graalVmHome == null ? "" : "; $env:GRAALVM_HOME = '" + graalVmHome + "'") +
                                             "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
                                     .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
                                     .setLogLineFilter(line -> !line.startsWith("Progress") && !line.startsWith("Downloaded"))
