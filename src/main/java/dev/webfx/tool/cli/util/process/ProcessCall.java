@@ -74,9 +74,20 @@ public class ProcessCall {
             tokens = new String[]{"powershell", "-Command", command.replaceAll("\"", "\\\\\"")}; // Replacing " with \" (otherwise double quotes will be removed)
         else if (OperatingSystem.isWindows())
             tokens = new String[]{"cmd", "/c", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
-        else
+        else {
             tokens = command.split(" ");
+            for (int i = 0; i < tokens.length; i++)
+                tokens[i] = rebreakSpaces(tokens[i]);
+        }
         return tokens;
+    }
+
+    public static String unbreakSpaces(Object token) {
+        return token == null ? null : token.toString().replace(' ', '°');
+    }
+
+    private static String rebreakSpaces(String token) {
+        return token.replace('°', ' ');
     }
 
     public ProcessCall setWorkingDirectory(Path workingDirectory) {
