@@ -1,6 +1,5 @@
 package dev.webfx.tool.cli.commands;
 
-import dev.webfx.tool.cli.core.CliException;
 import dev.webfx.tool.cli.core.MavenCaller;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
@@ -44,7 +43,7 @@ public final class Build extends CommonSubcommand implements Runnable {
         }
         boolean gluon = gluonDesktop || android || ios;
         if (!fatjar && !gwt && !openJfxDesktop && !gluon)
-            throw new CliException("No build flag");
+            throw new CommandLine.ParameterException(new CommandLine(this), "Missing required build option");
         String command = "mvn " +
                 (gluon ? "install " : "package ") +
                 (fatjar ? "-P openjfx-fatjar " : "") +
