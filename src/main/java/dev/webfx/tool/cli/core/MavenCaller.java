@@ -1,6 +1,7 @@
 package dev.webfx.tool.cli.core;
 
 import dev.webfx.tool.cli.commands.Bump;
+import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 import org.apache.maven.shared.invoker.*;
 
@@ -30,26 +31,29 @@ public final class MavenCaller {
     }
 
     public static void invokeMavenGoal(String goal, ProcessCall processCall) {
-        processCall.setCommand("mvn " + goal);
-        boolean directoryChanged = processCall.getWorkingDirectory() != null && !processCall.getWorkingDirectory().getAbsolutePath().equals(System.getProperty("user.dir"));
         boolean gluonPluginCall = goal.contains("gluonfx:");
-        if (!USE_MAVEN_INVOKER && !directoryChanged && !gluonPluginCall) { // We don't call mvn this way from another directory due to a bug (ex: activating "gluon-desktop" profile from another directory doesn't set the target to "host" -> stays to "TBD" which makes the Gluon plugin fail)
+        Path graalVmHome = gluonPluginCall ? Bump.getGraalVmHome() : null;
+        processCall.setCommand("mvn " + goal);
+        if (!USE_MAVEN_INVOKER) { // We don't call mvn this way from another directory due to a bug (ex: activating "gluon-desktop" profile from another directory doesn't set the target to "host" -> stays to "TBD" which makes the Gluon plugin fail)
             // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
-            processCall.setErrorLineFilter(line -> line.contains("ERROR"))
-                .executeAndWait();
+            if (graalVmHome != null)
+                if (OperatingSystem.isWindows())
+                    processCall.setPowershellCommand("$env:GRAALVM_HOME = " + ProcessCall.toShellLogCommandToken(graalVmHome.toString()) + "; mvn " + goal);
+                else
+                    processCall.setBashCommand("export GRAALVM_HOME=" + ProcessCall.toShellLogCommandToken(graalVmHome.toString()) + "; mvn " + goal);
+            processCall
+                    //.setErrorLineFilter(line -> line.contains("ERROR")) // Commented as it prevents colors
+                    .executeAndWait();
             if (processCall.getLastErrorLine() != null)
                 throw new CliException("Error(s) detected during Maven invocation:\n" + String.join("\n", processCall.getErrorLines()));
         } else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();
             request.setBaseDirectory(processCall.getWorkingDirectory());
-            if (gluonPluginCall) {
-                Path graalVmHome = Bump.getGraalVmHome();
-                if (graalVmHome != null) {
-                    String home = graalVmHome.toString();
-                    request.addShellEnvironment("GRAALVM_HOME", home);
-                    //request.addShellEnvironment("JAVA_HOME", home);
-                }
+            if (graalVmHome != null) {
+                String home = graalVmHome.toString();
+                request.addShellEnvironment("GRAALVM_HOME", home);
+                //request.addShellEnvironment("JAVA_HOME", home);
             }
             request.setGoals(Collections.singletonList(goal));
             if (MAVEN_INVOKER == null) {

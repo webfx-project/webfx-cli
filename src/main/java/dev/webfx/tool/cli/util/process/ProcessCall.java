@@ -220,7 +220,7 @@ public class ProcessCall {
         // Using inherited i/o when no filter are required (which may display ANSI colors)
         // Note 1: it is necessary to use them to display "Do you want to continue? [Y/n]" on Linux bach
         // Note 2: this prevents the StreamGobbler working (no output lines)
-        if (logLineFilter == null && resultLineFilter == null)
+        if (logLineFilter == null && resultLineFilter == null && errorLineFilter == null)
             processBuilder
                     .redirectInput(ProcessBuilder.Redirect.INHERIT)
                     .redirectOutput(ProcessBuilder.Redirect.INHERIT)
