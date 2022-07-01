@@ -70,6 +70,11 @@ public class ProcessCall {
         return setCommandTokens("bash", "-c", command);
     }
 
+    public ProcessCall setCmdCommand(String command) {
+        shellLogCommand = command;
+        return setCommandTokens("cmd", "/c", command);
+    }
+
     public ProcessCall setCommandTokens(String... commandTokens) {
         this.commandTokens = commandTokens;
         return this;
@@ -242,6 +247,10 @@ public class ProcessCall {
 
     public static int executeCommandTokens(String... commandTokens) {
         return new ProcessCall().setCommandTokens(commandTokens).executeAndWait().getExitCode();
+    }
+
+    public static int executeCmdCommand(String cmdCommand) {
+        return new ProcessCall().setCmdCommand(cmdCommand).executeAndWait().getExitCode();
     }
 
 }

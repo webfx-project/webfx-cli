@@ -118,8 +118,8 @@ public final class Run extends CommonSubcommand implements Runnable {
             ProcessCall.executeCommandTokens("open", "--reveal", filePath.toString());
         else if (OperatingSystem.isLinux())
             ProcessCall.executeCommandTokens("nautilus", filePath.toString());
-        else if (OperatingSystem.isWindows())
-            ProcessCall.executeCommandTokens("explorer", "/select," + ProcessCall.toShellLogCommandToken(filePath.toString()));
+        else if (OperatingSystem.isWindows()) // Through cmd, otherwise there is a problem when passing a file path with a space character for any reason
+            ProcessCall.executeCmdCommand("explorer /select," + ProcessCall.toShellLogCommandToken(filePath.toString()));
     }
 
 }
