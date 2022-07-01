@@ -104,9 +104,9 @@ public final class Run extends CommonSubcommand implements Runnable {
         if (!Files.exists(executableFilePath))
             throw new CliException("The file " + executableFilePath + " does not exist");
         else if (fileName.endsWith(".jar"))
-            ProcessCall.execute("java -jar " + ProcessCall.encodeUnbreakableToken(executableFilePath));
+            ProcessCall.executeCommandTokens("java", "-jar", executableFilePath.toString());
         else if (fileName.endsWith(".html"))
-            ProcessCall.execute((OperatingSystem.isWindows() ? "start " : "open ") + executableFilePath);
+            ProcessCall.executeCommandTokens((OperatingSystem.isWindows() ? "start" : "open"), executableFilePath.toString());
         else
             throw new CliException("Unsupported execution file " + executableFilePath);
     }
@@ -115,11 +115,11 @@ public final class Run extends CommonSubcommand implements Runnable {
         if (!Files.exists(filePath))
             throw new CliException("The file " + filePath + " does not exist");
         if (OperatingSystem.isMacOs())
-            ProcessCall.execute("open --reveal " + ProcessCall.encodeUnbreakableToken(filePath));
+            ProcessCall.executeCommandTokens("open", "--reveal", filePath.toString());
         else if (OperatingSystem.isLinux())
-            ProcessCall.execute("nautilus " + ProcessCall.encodeUnbreakableToken(filePath));
+            ProcessCall.executeCommandTokens("nautilus", filePath.toString());
         else if (OperatingSystem.isWindows())
-            ProcessCall.execute("explorer /select," + ProcessCall.encodeUnbreakableToken(filePath));
+            ProcessCall.executeCommandTokens("explorer", "/select," + filePath);
     }
 
 }

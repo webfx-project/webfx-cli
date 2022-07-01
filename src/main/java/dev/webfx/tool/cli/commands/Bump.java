@@ -46,7 +46,7 @@ public final class Bump extends CommonSubcommand {
             Path cliJarPath = getCliJarPath();
             if (cliJarPath != null) {
                 Path cliRepositoryPath = getCliRepositoryPath(cliJarPath);
-                new ProcessCall("git pull")
+                new ProcessCall("git", "pull")
                         .setWorkingDirectory(cliRepositoryPath)
                         .setResultLineFilter(line -> removeSpaceAndDash(line).contains("uptodate"))
                         .setLogLineFilter(line -> removeSpaceAndDash(line).contains("uptodate") || line.toLowerCase().contains("error"))
@@ -57,7 +57,7 @@ public final class Bump extends CommonSubcommand {
                             if (gitResultLine == null) {
                                 Logger.log("A new version is available!");
                                 Logger.log("Old version: " + WebFx.getVersion());
-                                new ProcessCall("mvn package")
+                                new ProcessCall("mvn", "package")
                                         .setWorkingDirectory(cliRepositoryPath)
                                         .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))
                                         .setLogLineFilter(line -> line.startsWith("[ERROR]"))
@@ -67,7 +67,7 @@ public final class Bump extends CommonSubcommand {
                                             //Logger.log("Maven result line: " + mvnResultLine);
                                             if (mvnResultLine != null) {
                                                 Logger.log("New version: " +
-                                                        new ProcessCall("java -jar " + cliJarPath.toAbsolutePath() + " --version")
+                                                        new ProcessCall("java", "-jar", cliJarPath.toAbsolutePath().toString(), "--version")
                                                                 .setLogLineFilter(line -> false)
                                                                 .setLogsCall(false, false)
                                                                 .executeAndWait()
@@ -273,7 +273,7 @@ public final class Bump extends CommonSubcommand {
 
             new ProcessCall()
                     .setWorkingDirectory(hiddenInnoFolder)
-                    .setCommand(innoDownloadFileName)
+                    .setCommandTokens(innoDownloadFileName)
                     .executeAndWait();
         }
     }
@@ -302,13 +302,14 @@ public final class Bump extends CommonSubcommand {
 
             new ProcessCall()
                     .setWorkingDirectory(hiddenVsFolder)
-                    .setCommand(vsDownloadFileName + " --passive" // Display the installer user interface to show progress bars but in automatic mode (doesn't interact with the user)
-                            + " --addProductLang En-us" // Mentioned in Gluon doc
-                            + " --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" // Not mentioned in Gluon doc => install cl.exe (called by Gluon toolchain)
-                            + " --add Microsoft.VisualStudio.Component.Windows10SDK.19041" // Mentioned in Gluon doc => if not installed, the Gluon toolchain raises this error: launcher.c(28): fatal error C1083: Cannot open include file: 'stdio.h': No such file or directory
-                            // + " --add Microsoft.VisualStudio.Component.VC.CLI.Support" // Mentioned in Gluon doc (but not sure what it is for)
-                            // + " --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64" // Mentioned in Gluon doc (but not sure what it is for)
-                            // + " --add Microsoft.Component.VC.Runtime.UCRTSDK" // Mentioned in Gluon doc (but not sure what it is for)
+                    .setCommandTokens(vsDownloadFileName
+                            , "--passive" // Display the installer user interface to show progress bars but in automatic mode (doesn't interact with the user)
+                            , "--addProductLang En-us" // Mentioned in Gluon doc
+                            , "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" // Not mentioned in Gluon doc => install cl.exe (called by Gluon toolchain)
+                            , "--add Microsoft.VisualStudio.Component.Windows10SDK.19041" // Mentioned in Gluon doc => if not installed, the Gluon toolchain raises this error: launcher.c(28): fatal error C1083: Cannot open include file: 'stdio.h': No such file or directory
+                            // , "--add Microsoft.VisualStudio.Component.VC.CLI.Support" // Mentioned in Gluon doc (but not sure what it is for)
+                            // , "--add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64" // Mentioned in Gluon doc (but not sure what it is for)
+                            // , "--add Microsoft.Component.VC.Runtime.UCRTSDK" // Mentioned in Gluon doc (but not sure what it is for)
                     )
                     .executeAndWait();
         }

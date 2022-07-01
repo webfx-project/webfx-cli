@@ -24,6 +24,8 @@ public class ProcessCall {
     private boolean powershellCommand;
     private boolean bashCommand;
 
+    private String[] commandTokens;
+
     private Predicate<String> logLineFilter;
 
     private Predicate<String> errorLineFilter;
@@ -47,8 +49,8 @@ public class ProcessCall {
     public ProcessCall() {
     }
 
-    public ProcessCall(String command) {
-        setCommand(command);
+    public ProcessCall(String... commandTokens) {
+        setCommandTokens(commandTokens);
     }
 
     public ProcessCall setCommand(String command) {
@@ -66,6 +68,17 @@ public class ProcessCall {
         return setCommand(command);
     }
 
+    public ProcessCall setCommandTokens(String... commandTokens) {
+        this.commandTokens = commandTokens;
+        return this;
+    }
+
+    public String[] getCommandTokens() {
+        if (commandTokens == null)
+            commandTokens = splitCommand();
+        return commandTokens;
+    }
+
     private String[] splitCommand() {
         String[] tokens;
         if (bashCommand)
@@ -74,23 +87,9 @@ public class ProcessCall {
             tokens = new String[]{"powershell", "-Command", command.replaceAll("\"", "\\\\\"")}; // Replacing " with \" (otherwise double quotes will be removed)
         else if (OperatingSystem.isWindows())
             tokens = new String[]{"cmd", "/c", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
-        else {
+        else
             tokens = command.split(" ");
-            for (int i = 0; i < tokens.length; i++)
-                tokens[i] = decodeUnbreakableToken(tokens[i]);
-        }
         return tokens;
-    }
-
-    public static String encodeUnbreakableToken(Object token) {
-        return token == null ? null : token.toString().replace(' ', '°');
-    }
-
-    private static String decodeUnbreakableToken(String encodedToken) {
-        String token = encodedToken.replace('°', ' ');
-        if (OperatingSystem.isWindows())
-            token = "'" + token + "'";
-        return token;
     }
 
     public ProcessCall setWorkingDirectory(Path workingDirectory) {
@@ -149,7 +148,7 @@ public class ProcessCall {
     }
 
     public ProcessCall logCallCommand() {
-        Logger.log((powershellCommand ? "PS " : "") + (workingDirectory == null ? "" : workingDirectory) + (OperatingSystem.isLinux() ? "$ " : OperatingSystem.isMacOs() ? " % " : "> ") + command);
+        Logger.log((powershellCommand ? "PS " : "") + (workingDirectory == null ? "" : workingDirectory) + (OperatingSystem.isLinux() ? "$ " : OperatingSystem.isMacOs() ? " % " : "> ") + String.join(" ", getCommandTokens()));
         return this;
     }
 
@@ -188,7 +187,7 @@ public class ProcessCall {
         long t0 = System.currentTimeMillis();
         try {
             ProcessBuilder processBuilder = new ProcessBuilder()
-                    .command(splitCommand())
+                    .command(getCommandTokens())
                     .directory(workingDirectory);
             // Using inherited i/o when no filter are required (which may display ANSI colors)
             // Note 1: it is necessary to use them to display "Do you want to continue? [Y/n]" on Linux bach
@@ -221,8 +220,8 @@ public class ProcessCall {
             }
     }
 
-    public static int execute(String command) {
-        return new ProcessCall(command).executeAndWait().getExitCode();
+    public static int executeCommandTokens(String... commandTokens) {
+        return new ProcessCall().setCommandTokens(commandTokens).executeAndWait().getExitCode();
     }
 
 }
