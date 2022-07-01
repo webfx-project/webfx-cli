@@ -81,11 +81,11 @@ public class ProcessCall {
 
     private String getShellLogCommand() {
         if (shellLogCommand == null)
-            shellLogCommand = Arrays.stream(getCommandTokens()).map(this::toShellLogCommandToken).collect(Collectors.joining(" "));
+            shellLogCommand = Arrays.stream(getCommandTokens()).map(ProcessCall::toShellLogCommandToken).collect(Collectors.joining(" "));
         return shellLogCommand;
     }
 
-    private String toShellLogCommandToken(String commandToken) {
+    public static String toShellLogCommandToken(String commandToken) {
         String shellLogCommandToken = commandToken;
         if (shellLogCommandToken.contains(" ")
                 && !shellLogCommandToken.startsWith("\"")

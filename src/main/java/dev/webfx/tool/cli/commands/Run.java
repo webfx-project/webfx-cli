@@ -119,7 +119,7 @@ public final class Run extends CommonSubcommand implements Runnable {
         else if (OperatingSystem.isLinux())
             ProcessCall.executeCommandTokens("nautilus", filePath.toString());
         else if (OperatingSystem.isWindows())
-            ProcessCall.executeCommandTokens("explorer", "/select," + filePath);
+            ProcessCall.executeCommandTokens("explorer", "/select," + ProcessCall.toShellLogCommandToken(filePath.toString()));
     }
 
 }
