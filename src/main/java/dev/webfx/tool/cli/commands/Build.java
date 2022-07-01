@@ -1,5 +1,6 @@
 package dev.webfx.tool.cli.commands;
 
+import dev.webfx.tool.cli.core.DevProjectModule;
 import dev.webfx.tool.cli.core.MavenCaller;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
@@ -43,6 +44,12 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
+        new BuildRunCommon(gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, false, false)
+                .findAndConsumeExecutableModule(getWorkingDevProjectModule(), getTopRootModule(),
+                        this::build);
+    }
+
+    private void build(DevProjectModule executableModule) {
         boolean gluon = gluonDesktop || android || ios;
         if (!fatjar && !gwt && !openJfxDesktop && !gluon)
             throw new CommandLine.ParameterException(new CommandLine(this), "Missing required build option");
@@ -67,7 +74,7 @@ public final class Build extends CommonSubcommand implements Runnable {
         } else
             processCall.setCommand(command);
         processCall
-                .setWorkingDirectory(getProjectDirectoryPath())
+                .setWorkingDirectory(getTopRootModule().getHomeDirectory())
                 .executeAndWait();
         if (gluonDesktop) {
             if (OperatingSystem.isWindows()) {
@@ -82,23 +89,22 @@ public final class Build extends CommonSubcommand implements Runnable {
                                     .setPowershellCommand(visualStudioShellCallCommand + " -DevCmdArguments '-arch=x64'" +
                                             (graalVmHome == null ? "" : "; $env:GRAALVM_HOME = '" + graalVmHome + "'") +
                                             "; mvn -P gluon-desktop gluonfx:build gluonfx:package")
-                                    .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
-                                    .setLogLineFilter(line -> !line.startsWith("Progress") && !line.startsWith("Downloaded"))
+                                    .setWorkingDirectory(executableModule.getHomeDirectory())
                                     .executeAndWait();
                         });
             } else
-                invokeGluonGoal("gluon-desktop");
+                invokeGluonGoal("gluon-desktop", executableModule);
         }
         if (android)
-            invokeGluonGoal("gluon-android");
+            invokeGluonGoal("gluon-android", executableModule);
         if (ios)
-            invokeGluonGoal("gluon-ios");
+            invokeGluonGoal("gluon-ios", executableModule);
     }
 
-    private void invokeGluonGoal(String gluonProfile) {
+    private void invokeGluonGoal(String gluonProfile, DevProjectModule workingModule) {
         MavenCaller.invokeMavenGoal("-P " + gluonProfile + " gluonfx:build gluonfx:package"
                 , new ProcessCall()
-                        .setWorkingDirectory(getWorkingDevProjectModule().getHomeDirectory())
+                        .setWorkingDirectory(workingModule.getHomeDirectory())
         );
     }
 }
