@@ -25,7 +25,4 @@ hs_err_pid*
 *.iml
 
 # WebFX CLI
-.graalvm
-.vs
-.wix
-.inno
+.webfx-cli

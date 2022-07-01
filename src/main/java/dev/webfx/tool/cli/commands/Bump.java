@@ -112,7 +112,7 @@ public final class Bump extends CommonSubcommand {
                 vmUrl = "https://github.com" + vmUrl;
 
             Path cliRepositoryPath = getCliRepositoryPath();
-            Path hiddenVmFolder = cliRepositoryPath.resolve(".graalvm");
+            Path hiddenVmFolder = cliRepositoryPath.resolve(".webfx-cli/graalvm");
             String vmDownloadFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
             Path vmDownloadFilePath = hiddenVmFolder.resolve(vmDownloadFileName);
             boolean isZip = vmDownloadFileName.endsWith(".zip");
@@ -190,7 +190,7 @@ public final class Bump extends CommonSubcommand {
                 wixUrl = "https://github.com" + wixUrl;
 
             Path cliRepositoryPath = getCliRepositoryPath();
-            Path hiddenWixFolder = cliRepositoryPath.resolve(".wix");
+            Path hiddenWixFolder = cliRepositoryPath.resolve(".webfx-cli/wix");
             String wixDownloadFileName = wixUrl.substring(wixUrl.lastIndexOf('/') + 1);
             Path wixDownloadFilePath = hiddenWixFolder.resolve(wixDownloadFileName);
             String wixName = wixDownloadFileName.substring(0, wixDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
@@ -246,7 +246,7 @@ public final class Bump extends CommonSubcommand {
                 innoUrl = "https://jrsoftware.org" + innoUrl;
 
             Path cliRepositoryPath = getCliRepositoryPath();
-            Path hiddenInnoFolder = cliRepositoryPath.resolve(".inno");
+            Path hiddenInnoFolder = cliRepositoryPath.resolve(".webfx-cli/inno");
             String innoDownloadFileName = innoUrl.substring(innoUrl.lastIndexOf('/') + 1);
             Path innoDownloadFilePath = hiddenInnoFolder.resolve(innoDownloadFileName);
             String innoName = innoDownloadFileName.substring(0, innoDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
@@ -289,7 +289,7 @@ public final class Bump extends CommonSubcommand {
                 throw new CliException("This command is to be executed on Windows machines only.");
 
             Path cliRepositoryPath = getCliRepositoryPath();
-            Path hiddenVsFolder = cliRepositoryPath.resolve(".vs");
+            Path hiddenVsFolder = cliRepositoryPath.resolve(".webfx-cli/vstools");
             String vsUrl = VS_BUILD_TOOLS_URL;
             String vsDownloadFileName = vsUrl.substring(vsUrl.lastIndexOf('/') + 1);
             Path vsDownloadFilePath = hiddenVsFolder.resolve(vsDownloadFileName);
@@ -392,7 +392,7 @@ public final class Bump extends CommonSubcommand {
 
     public static Path getGraalVmHome() {
         Path cliRepositoryPath = getCliRepositoryPath();
-        Path hiddenVmFolder = cliRepositoryPath.resolve(".graalvm");
+        Path hiddenVmFolder = cliRepositoryPath.resolve(".webfx-cli/graalvm");
         Path binPath = ReusableStream.create(() -> Files.exists(hiddenVmFolder) ? SplitFiles.uncheckedWalk(hiddenVmFolder) : Spliterators.emptySpliterator())
                 .filter(path -> path.toFile().isDirectory() && "bin".equals(path.getFileName().toString()))
                 .findFirst()
