@@ -198,15 +198,12 @@ public class ProcessCall {
             tryExecuteAndConsume(outputLineConsumer, getCommandTokens());
         } catch (Exception e) {
             // Sometimes it's because Windows doesn't find the program (like mvn), if it's not started from cmd
-            // If we are not on Windows, or it was already a cmd command, then it can't be that case, so we raise the exception
-            if (!OperatingSystem.isWindows() || "cmd".equals(commandTokens[0]))
-                throw new RuntimeException(e);
-            // Otherwise, it could be that case, so we try again through cmd
-            try {
-                tryExecuteAndConsume(outputLineConsumer, "cmd", "/c", getShellLogCommand());
-            } catch (Exception e2) {
-                throw new RuntimeException(e);
-            }
+            if (OperatingSystem.isWindows() && !"cmd".equals(commandTokens[0]) && e.getMessage().contains("CreateProcess error=2"))
+                try { // In that case, we try again through cmd
+                    tryExecuteAndConsume(outputLineConsumer, "cmd", "/c", getShellLogCommand());
+                    return; // If it works, we recovered, so we return without raising an exception
+                } catch (Exception e2) { /* if it still doesn't work, we raise the original error */ }
+            throw new RuntimeException(e);
         }
     }
 
