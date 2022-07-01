@@ -6,7 +6,6 @@ module webfx.cli {
     requires info.picocli;
     requires java.base;
     requires java.xml;
-    requires maven.invoker;
     requires org.apache.commons.compress;
     requires webfx.lib.reusablestream;
 
