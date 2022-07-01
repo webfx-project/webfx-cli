@@ -7,10 +7,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author Bruno Salmon
@@ -19,12 +21,11 @@ public class ProcessCall {
 
     private File workingDirectory;
 
-    private String command;
+    private String[] commandTokens;
+
+    private String shellLogCommand;
 
     private boolean powershellCommand;
-    private boolean bashCommand;
-
-    private String[] commandTokens;
 
     private Predicate<String> logLineFilter;
 
@@ -54,18 +55,23 @@ public class ProcessCall {
     }
 
     public ProcessCall setCommand(String command) {
-        this.command = command;
+        shellLogCommand = command;
+        if (OperatingSystem.isWindows())
+            setCommandTokens("cmd", "/c", command); // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
+        else
+            setCommandTokens(command.split(" "));
         return this;
     }
 
     public ProcessCall setPowershellCommand(String command) {
+        shellLogCommand = command;
         powershellCommand = true;
-        return setCommand(command);
+        return setCommandTokens("powershell", "-Command", command.replaceAll("\"", "\\\\\"")); // Replacing " with \" (otherwise double quotes will be removed)
     }
 
     public ProcessCall setBashCommand(String command) {
-        bashCommand = true;
-        return setCommand(command);
+        shellLogCommand = command;
+        return setCommandTokens("bash", "-c", command);
     }
 
     public ProcessCall setCommandTokens(String... commandTokens) {
@@ -74,22 +80,25 @@ public class ProcessCall {
     }
 
     public String[] getCommandTokens() {
-        if (commandTokens == null)
-            commandTokens = splitCommand();
         return commandTokens;
     }
 
-    private String[] splitCommand() {
-        String[] tokens;
-        if (bashCommand)
-            tokens = new String[]{"bash", "-c", command};
-        else if (powershellCommand)
-            tokens = new String[]{"powershell", "-Command", command.replaceAll("\"", "\\\\\"")}; // Replacing " with \" (otherwise double quotes will be removed)
-        else if (OperatingSystem.isWindows())
-            tokens = new String[]{"cmd", "/c", command}; // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
-        else
-            tokens = command.split(" ");
-        return tokens;
+    private String getShellLogCommand() {
+        if (shellLogCommand == null)
+            shellLogCommand = Arrays.stream(getCommandTokens()).map(this::toShellLogCommandToken).collect(Collectors.joining(" "));
+        return shellLogCommand;
+    }
+
+    private String toShellLogCommandToken(String commandToken) {
+        String shellLogCommandToken = commandToken;
+        if (shellLogCommandToken.contains(" "))
+            if (!OperatingSystem.isWindows())
+                shellLogCommandToken = shellLogCommandToken.replace(" ", "\\ ");
+            else if (!shellLogCommandToken.contains("\""))
+                shellLogCommandToken = "\"" + shellLogCommandToken + "\"";
+            else
+                shellLogCommandToken = "'" + shellLogCommandToken + "'";
+        return shellLogCommandToken;
     }
 
     public ProcessCall setWorkingDirectory(Path workingDirectory) {
@@ -148,7 +157,7 @@ public class ProcessCall {
     }
 
     public ProcessCall logCallCommand() {
-        Logger.log((powershellCommand ? "PS " : "") + (workingDirectory == null ? "" : workingDirectory) + (OperatingSystem.isLinux() ? "$ " : OperatingSystem.isMacOs() ? " % " : "> ") + String.join(" ", getCommandTokens()));
+        Logger.log((powershellCommand ? "PS " : "") + (workingDirectory == null ? "" : workingDirectory) + (OperatingSystem.isLinux() ? "$ " : OperatingSystem.isMacOs() ? " % " : "> ") + getShellLogCommand());
         return this;
     }
 
