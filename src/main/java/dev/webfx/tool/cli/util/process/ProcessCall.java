@@ -56,11 +56,7 @@ public class ProcessCall {
 
     public ProcessCall setCommand(String command) {
         shellLogCommand = command;
-        if (OperatingSystem.isWindows())
-            setCommandTokens("cmd", "/c", command); // Required in Windows for Path resolution (otherwise it won't find commands like mvn)
-        else
-            setCommandTokens(command.split(" "));
-        return this;
+        return setCommandTokens(command.split(" "));
     }
 
     public ProcessCall setPowershellCommand(String command) {
@@ -91,7 +87,12 @@ public class ProcessCall {
 
     private String toShellLogCommandToken(String commandToken) {
         String shellLogCommandToken = commandToken;
-        if (shellLogCommandToken.contains(" "))
+        if (shellLogCommandToken.contains(" ")
+                && !shellLogCommandToken.startsWith("\"")
+                && !shellLogCommandToken.endsWith("\"")
+                && !shellLogCommandToken.startsWith("'")
+                && !shellLogCommandToken.endsWith("'")
+        )
             if (!OperatingSystem.isWindows())
                 shellLogCommandToken = shellLogCommandToken.replace(" ", "\\ ");
             else if (!shellLogCommandToken.contains("\""))
@@ -193,29 +194,42 @@ public class ProcessCall {
     private void executeAndConsume(Consumer<String> outputLineConsumer) {
         if (logsCalling)
             logCallCommand();
-        long t0 = System.currentTimeMillis();
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder()
-                    .command(getCommandTokens())
-                    .directory(workingDirectory);
-            // Using inherited i/o when no filter are required (which may display ANSI colors)
-            // Note 1: it is necessary to use them to display "Do you want to continue? [Y/n]" on Linux bach
-            // Note 2: this prevents the StreamGobbler working (no output lines)
-            if (logLineFilter == null && resultLineFilter == null)
-                processBuilder
-                        .redirectInput(ProcessBuilder.Redirect.INHERIT)
-                        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-                        .redirectError(ProcessBuilder.Redirect.INHERIT);
-            Process process = processBuilder.start();
-            streamGobbler = new StreamGobbler(process.getInputStream(), outputLineConsumer);
-            Executors.newSingleThreadExecutor().submit(streamGobbler);
-            exitCode = process.waitFor();
-            callDurationMillis = System.currentTimeMillis() - t0;
-            if (logsCallDuration)
-                logCallDuration();
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+            tryExecuteAndConsume(outputLineConsumer, getCommandTokens());
+        } catch (Exception e) {
+            // Sometimes it's because Windows doesn't find the program (like mvn), if it's not started from cmd
+            // If we are not on Windows, or it was already a cmd command, then it can't be that case, so we raise the exception
+            if (!OperatingSystem.isWindows() || "cmd".equals(commandTokens[0]))
+                throw new RuntimeException(e);
+            // Otherwise, it could be that case, so we try again through cmd
+            try {
+                tryExecuteAndConsume(outputLineConsumer, "cmd", "/c", getShellLogCommand());
+            } catch (Exception e2) {
+                throw new RuntimeException(e);
+            }
         }
+    }
+
+    private void tryExecuteAndConsume(Consumer<String> outputLineConsumer, String... commandTokens) throws IOException, InterruptedException {
+        long t0 = System.currentTimeMillis();
+        ProcessBuilder processBuilder = new ProcessBuilder()
+                .command(commandTokens)
+                .directory(workingDirectory);
+        // Using inherited i/o when no filter are required (which may display ANSI colors)
+        // Note 1: it is necessary to use them to display "Do you want to continue? [Y/n]" on Linux bach
+        // Note 2: this prevents the StreamGobbler working (no output lines)
+        if (logLineFilter == null && resultLineFilter == null)
+            processBuilder
+                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                    .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                    .redirectError(ProcessBuilder.Redirect.INHERIT);
+        Process process = processBuilder.start();
+        streamGobbler = new StreamGobbler(process.getInputStream(), outputLineConsumer);
+        Executors.newSingleThreadExecutor().submit(streamGobbler);
+        exitCode = process.waitFor();
+        callDurationMillis = System.currentTimeMillis() - t0;
+        if (logsCallDuration)
+            logCallDuration();
     }
 
     private void waitForStreamGobblerCompleted() {
