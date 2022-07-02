@@ -8,7 +8,8 @@ import dev.webfx.tool.cli.util.process.ProcessCall;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -52,9 +53,9 @@ final class BuildRunCommon {
         }
         if (locate || reveal) {
             if (locate)
-                executableModules.map(BuildRunCommon::getExecutableFilePath).filter(Objects::nonNull).forEach(Logger::log);
+                executableModules.flatMap(this::getExecutableFilePath).forEach(Logger::log);
             if (reveal)
-                executableModules.map(BuildRunCommon::getExecutableFilePath).filter(Objects::nonNull).forEach(BuildRunCommon::revealFile);
+                executableModules.flatMap(this::getExecutableFilePath).forEach(BuildRunCommon::revealFile);
             return;
         }
         if (returnGluonModuleOnly)
@@ -78,23 +79,39 @@ final class BuildRunCommon {
                 ;
     }
 
-    private static Path getExecutableFilePath(DevProjectModule module) {
-        Path targetPath = module.getHomeDirectory().resolve("target");
-        if (module.isExecutable(Platform.GWT))
-            return targetPath.resolve(module.getName() + "-" + module.getVersion() + "/" + module.getName().replace('-', '_') + "/index.html");
-        if (module.isExecutable(Platform.JRE) && module.getTarget().hasTag(TargetTag.OPENJFX))
-            return targetPath.resolve( module.getName() + "-" + module.getVersion() + "-fat.jar");
-        if (module.isExecutable(Platform.JRE) && module.getTarget().hasTag(TargetTag.GLUON))
-            switch (OperatingSystem.getOsFamily()) {
-                case LINUX: return targetPath.resolve("gluonfx/x86_64-linux/" + DevMavenPomModuleFile.getApplicationName(module));
-                case WINDOWS: return targetPath.resolve("gluonfx/x86_64-windows/" + DevMavenPomModuleFile.getApplicationName(module) + ".exe");
-            }
+    private ReusableStream<Path> getExecutableFilePath(DevProjectModule module) {
+        List<Path> executablePaths = new ArrayList<>();
 
-        return null;
+        Path targetPath = module.getHomeDirectory().resolve("target");
+        if (module.isExecutable(Platform.GWT)) {
+            if (gwt)
+                executablePaths.add(targetPath.resolve(module.getName() + "-" + module.getVersion() + "/" + module.getName().replace('-', '_') + "/index.html"));
+        } else if (module.isExecutable(Platform.JRE)) {
+            if (module.getTarget().hasTag(TargetTag.OPENJFX)) {
+                if (fatjar)
+                    executablePaths.add(targetPath.resolve(module.getName() + "-" + module.getVersion() + "-fat.jar"));
+            } else if (module.getTarget().hasTag(TargetTag.GLUON)) {
+                String applicationName = DevMavenPomModuleFile.getApplicationName(module);
+                switch (OperatingSystem.getOsFamily()) {
+                    case LINUX:
+                        if (gluonDesktop)
+                            executablePaths.add(targetPath.resolve("gluonfx/x86_64-linux/" + applicationName));
+                        if (android)
+                            executablePaths.add(targetPath.resolve("gluonfx/aarch64-android/gvm/" + applicationName + ".apk"));
+                        break;
+                    case WINDOWS:
+                        if (gluonDesktop)
+                            executablePaths.add(targetPath.resolve("gluonfx/x86_64-windows/" + applicationName + ".exe"));
+                        break;
+                }
+            }
+        }
+
+        return ReusableStream.fromIterable(executablePaths);
     }
 
-    static void executeModule(DevProjectModule module) {
-        executeFile(getExecutableFilePath(module));
+    void executeModule(DevProjectModule module) {
+        getExecutableFilePath(module).forEach(BuildRunCommon::executeFile);
     }
 
     private static void executeFile(Path executableFilePath) {
