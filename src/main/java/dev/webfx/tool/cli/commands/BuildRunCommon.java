@@ -127,7 +127,15 @@ final class BuildRunCommon {
                 ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath.toString()));
             else
                 ProcessCall.executeCommandTokens("open", executableFilePath.toString());
-        else
+        else if (fileName.endsWith(".apk")) {
+            Path ancestor = executableFilePath.getParent();
+            while (ancestor != null && !Files.exists(ancestor.resolve("pom.xml")))
+                ancestor = ancestor.getParent();
+            if (ancestor != null)
+                new ProcessCall("mvn", "-Pandroid", "gluonfx:install", "gluonfx:nativerun")
+                        .setWorkingDirectory(ancestor)
+                        .executeAndWait();
+        } else // Everything else should be an executable file that we can call directly
             ProcessCall.executeCommandTokens(executableFilePath.toString());
     }
 
