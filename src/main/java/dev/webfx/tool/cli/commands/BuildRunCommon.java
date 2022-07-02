@@ -132,9 +132,8 @@ final class BuildRunCommon {
             while (ancestor != null && !Files.exists(ancestor.resolve("pom.xml")))
                 ancestor = ancestor.getParent();
             if (ancestor != null)
-                new ProcessCall("mvn", "-Pandroid", "gluonfx:install", "gluonfx:nativerun")
-                        .setWorkingDirectory(ancestor)
-                        .executeAndWait();
+                MavenCaller.invokeMavenGoal("-Pandroid gluonfx:install gluonfx:nativerun"
+                        , new ProcessCall().setWorkingDirectory(ancestor));
         } else // Everything else should be an executable file that we can call directly
             ProcessCall.executeCommandTokens(executableFilePath.toString());
     }
