@@ -24,8 +24,10 @@ final class BuildRunCommon {
     private final boolean ios;
     private final boolean locate;
     private final boolean reveal;
+    private final boolean raiseExceptionIfEmpty;
+    private final boolean returnGluonModuleOnly;
 
-    public BuildRunCommon(boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean reveal) {
+    public BuildRunCommon(boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean reveal, boolean raiseExceptionIfEmpty, boolean returnGluonModuleOnly) {
         this.gwt = gwt;
         this.fatjar = fatjar;
         this.openJfxDesktop = openJfxDesktop;
@@ -34,15 +36,18 @@ final class BuildRunCommon {
         this.ios = ios;
         this.locate = locate;
         this.reveal = reveal;
+        this.raiseExceptionIfEmpty = raiseExceptionIfEmpty;
+        this.returnGluonModuleOnly = returnGluonModuleOnly;
     }
 
     public void findAndConsumeExecutableModule(DevProjectModule workingModule, DevProjectModule topRootModule, Consumer<DevProjectModule> executableModuleConsumer) {
         ReusableStream<DevProjectModule> executableModules = findExecutableModules(workingModule);
         if (executableModules.isEmpty()) {
             executableModules = findExecutableModules(topRootModule);
-            if (executableModules.isEmpty())
+            if (!executableModules.isEmpty())
+                Logger.log("NOTE: No executable module under " + workingModule + " so searching over the whole repository");
+            else if (raiseExceptionIfEmpty)
                 throw new CliException("No executable module found");
-            Logger.log("NOTE: No executable module under " + workingModule + " so searching over the whole repository");
         }
         if (locate || reveal) {
             if (locate)
@@ -51,9 +56,11 @@ final class BuildRunCommon {
                 executableModules.map(BuildRunCommon::getExecutableFilePath).filter(Objects::nonNull).forEach(BuildRunCommon::revealFile);
             return;
         }
+        if (returnGluonModuleOnly)
+            executableModules = executableModules.filter(m -> m.getTarget().hasTag(TargetTag.GLUON));
         if (executableModules.count() > 1)
             throw new CliException("Ambiguous executable modules. Please add one of the following options:\n" + executableModules.map(m -> "-m " + m.getName()).collect(Collectors.joining("\n")));
-        DevProjectModule executableModule = executableModules.findFirst().orElse(workingModule);
+        DevProjectModule executableModule = executableModules.findFirst().orElse(null);
         executableModuleConsumer.accept(executableModule);
     }
 
@@ -63,10 +70,8 @@ final class BuildRunCommon {
         boolean gluon = gluonDesktop || android || ios;
         ReusableStream<ProjectModule> executableModules = startingModule
                 .getThisAndChildrenModulesInDepth()
-                .filter(ProjectModule::isExecutable);
-        if (gwt || openJfx || gluon)
-            executableModules = executableModules
-                    .filter(m -> gwt && m.isExecutable(Platform.GWT) || openJfx && m.getTarget().hasTag(TargetTag.OPENJFX) || gluon && m.getTarget().hasTag(TargetTag.GLUON));
+                .filter(ProjectModule::isExecutable)
+                .filter(m -> m.isExecutable(Platform.GWT) ? gwt : m.getTarget().hasTag(TargetTag.OPENJFX) ? openJfx : !m.getTarget().hasTag(TargetTag.GLUON) || gluon);
         return executableModules
                 .map(DevProjectModule.class::cast)
                 ;
@@ -104,8 +109,8 @@ final class BuildRunCommon {
 
     private static void revealFile(Path filePath) {
         if (!Files.exists(filePath))
-            throw new CliException("The file " + filePath + " does not exist");
-        if (OperatingSystem.isMacOs())
+            Logger.log("Can't reveal file " + filePath + " as it does not exist");
+        else if (OperatingSystem.isMacOs())
             ProcessCall.executeCommandTokens("open", "--reveal", filePath.toString());
         else if (OperatingSystem.isLinux())
             ProcessCall.executeCommandTokens("nautilus", filePath.toString());

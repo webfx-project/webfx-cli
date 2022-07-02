@@ -51,7 +51,7 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        new BuildRunCommon(gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, reveal)
+        new BuildRunCommon(gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, reveal, true, false)
                 .findAndConsumeExecutableModule(getWorkingDevProjectModule(), getTopRootModule(),
                         BuildRunCommon::executeModule);
     }
