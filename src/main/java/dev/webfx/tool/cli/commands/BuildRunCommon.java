@@ -95,7 +95,7 @@ final class BuildRunCommon {
             ProcessCall.executeCommandTokens("java", "-jar", executableFilePath.toString());
         else if (fileName.endsWith(".html"))
             if (OperatingSystem.isWindows())
-                ProcessCall.executePowershellCommand(". " + executableFilePath);
+                ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath.toString()));
             else
                 ProcessCall.executeCommandTokens("open", executableFilePath.toString());
         else
