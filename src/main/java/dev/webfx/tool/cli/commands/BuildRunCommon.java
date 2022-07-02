@@ -86,7 +86,7 @@ final class BuildRunCommon {
             return targetPath.resolve( module.getName() + "-" + module.getVersion() + "-fat.jar");
         if (module.isExecutable(Platform.JRE) && module.getTarget().hasTag(TargetTag.GLUON))
             switch (OperatingSystem.getOsFamily()) {
-                case WINDOWS: return targetPath.resolve("gluonfx/x86_64-windows/" + DevMavenPomModuleFile.getApplicationName(module) + "-.exe");
+                case WINDOWS: return targetPath.resolve("gluonfx/x86_64-windows/" + DevMavenPomModuleFile.getApplicationName(module) + ".exe");
             }
 
         return null;
