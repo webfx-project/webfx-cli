@@ -104,7 +104,7 @@ final class BuildRunCommon {
             throw new CliException("The file " + executableFilePath + " does not exist");
         else if (fileName.endsWith(".jar"))
             ProcessCall.executeCommandTokens("java", "-jar", executableFilePath.toString());
-        else if (fileName.endsWith(".html"))
+        else if (fileName.endsWith(".html") || fileName.endsWith(".exe"))
             if (OperatingSystem.isWindows())
                 ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath.toString()));
             else
