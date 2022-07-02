@@ -86,6 +86,7 @@ final class BuildRunCommon {
             return targetPath.resolve( module.getName() + "-" + module.getVersion() + "-fat.jar");
         if (module.isExecutable(Platform.JRE) && module.getTarget().hasTag(TargetTag.GLUON))
             switch (OperatingSystem.getOsFamily()) {
+                case LINUX: return targetPath.resolve("gluonfx/x86_64-linux/" + DevMavenPomModuleFile.getApplicationName(module));
                 case WINDOWS: return targetPath.resolve("gluonfx/x86_64-windows/" + DevMavenPomModuleFile.getApplicationName(module) + ".exe");
             }
 
@@ -104,13 +105,13 @@ final class BuildRunCommon {
             throw new CliException("The file " + executableFilePath + " does not exist");
         else if (fileName.endsWith(".jar"))
             ProcessCall.executeCommandTokens("java", "-jar", executableFilePath.toString());
-        else if (fileName.endsWith(".html") || fileName.endsWith(".exe"))
+        else if (fileName.endsWith(".html"))
             if (OperatingSystem.isWindows())
                 ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath.toString()));
             else
                 ProcessCall.executeCommandTokens("open", executableFilePath.toString());
         else
-            throw new CliException("Unsupported execution file " + executableFilePath);
+            ProcessCall.executeCommandTokens(executableFilePath.toString());
     }
 
     private static void revealFile(Path filePath) {
