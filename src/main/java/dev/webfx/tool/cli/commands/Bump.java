@@ -111,8 +111,7 @@ public final class Bump extends CommonSubcommand {
             if (vmUrl.startsWith("/"))
                 vmUrl = "https://github.com" + vmUrl;
 
-            Path cliRepositoryPath = getCliRepositoryPath();
-            Path hiddenVmFolder = cliRepositoryPath.resolve(".webfx-cli/graalvm");
+            Path hiddenVmFolder = getHiddenFolder("graalvm");
             String vmDownloadFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
             Path vmDownloadFilePath = hiddenVmFolder.resolve(vmDownloadFileName);
             boolean isZip = vmDownloadFileName.endsWith(".zip");
@@ -189,8 +188,7 @@ public final class Bump extends CommonSubcommand {
             if (wixUrl.startsWith("/"))
                 wixUrl = "https://github.com" + wixUrl;
 
-            Path cliRepositoryPath = getCliRepositoryPath();
-            Path hiddenWixFolder = cliRepositoryPath.resolve(".webfx-cli/wix");
+            Path hiddenWixFolder = getHiddenFolder("wix");
             String wixDownloadFileName = wixUrl.substring(wixUrl.lastIndexOf('/') + 1);
             Path wixDownloadFilePath = hiddenWixFolder.resolve(wixDownloadFileName);
             String wixName = wixDownloadFileName.substring(0, wixDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
@@ -245,8 +243,7 @@ public final class Bump extends CommonSubcommand {
             if (innoUrl.startsWith("/"))
                 innoUrl = "https://jrsoftware.org" + innoUrl;
 
-            Path cliRepositoryPath = getCliRepositoryPath();
-            Path hiddenInnoFolder = cliRepositoryPath.resolve(".webfx-cli/inno");
+            Path hiddenInnoFolder = getHiddenFolder("inno");
             String innoDownloadFileName = innoUrl.substring(innoUrl.lastIndexOf('/') + 1);
             Path innoDownloadFilePath = hiddenInnoFolder.resolve(innoDownloadFileName);
             String innoName = innoDownloadFileName.substring(0, innoDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
@@ -288,8 +285,7 @@ public final class Bump extends CommonSubcommand {
             if (OperatingSystem.getOsFamily() != OsFamily.WINDOWS)
                 throw new CliException("This command is to be executed on Windows machines only.");
 
-            Path cliRepositoryPath = getCliRepositoryPath();
-            Path hiddenVsFolder = cliRepositoryPath.resolve(".webfx-cli/vstools");
+            Path hiddenVsFolder = getHiddenFolder("vstools");
             String vsUrl = VS_BUILD_TOOLS_URL;
             String vsDownloadFileName = vsUrl.substring(vsUrl.lastIndexOf('/') + 1);
             Path vsDownloadFilePath = hiddenVsFolder.resolve(vsDownloadFileName);
@@ -327,6 +323,10 @@ public final class Bump extends CommonSubcommand {
                     .setBashCommand("sudo apt install g++ libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev")
                     .executeAndWait();
         }
+    }
+
+    private static Path getHiddenFolder(String name) {
+        return Path.of(System.getProperty("user.home"), ".webfx-cli", name);
     }
 
     private static String downloadPage(String fileUrl) {

@@ -23,6 +23,3 @@ hs_err_pid*
 *.ipr
 *.iws
 *.iml
-
-# WebFX CLI
-.webfx-cli
