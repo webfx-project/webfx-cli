@@ -94,7 +94,10 @@ final class BuildRunCommon {
         else if (fileName.endsWith(".jar"))
             ProcessCall.executeCommandTokens("java", "-jar", executableFilePath.toString());
         else if (fileName.endsWith(".html"))
-            ProcessCall.executeCommandTokens((OperatingSystem.isWindows() ? "start" : "open"), executableFilePath.toString());
+            if (OperatingSystem.isWindows())
+                ProcessCall.executePowershellCommand(". " + executableFilePath);
+            else
+                ProcessCall.executeCommandTokens("open", executableFilePath.toString());
         else
             throw new CliException("Unsupported execution file " + executableFilePath);
     }

@@ -200,14 +200,14 @@ public class ProcessCall {
         if (logsCalling)
             logCallCommand();
         // We also try here to solve 2 problems that can happen on Windows:
-        // 1) The program is found and executed but the parameters containing spaces are not correctly passed (ex: explorer and start)
+        // 1) The program is found and executed but the parameters containing spaces are not correctly passed (ex: explorer)
         // 2) The program is not found because it is not defined globally, but only in the context of a shell (ex: mvn)
         // In both cases, the solution is to execute the command via cmd instead of invoking the program directly
         String program = commandTokens[0];
         String windowsProgramNotFoundErrorToken = "CreateProcess error=2";
         try {
             // Early detection of case 1). We don't call the program in that case because it would not behave as expected and no exception would be raised
-            if (OperatingSystem.isWindows() && ("explorer").equals(program) || "start".equals(program))
+            if (OperatingSystem.isWindows() && ("explorer").equals(program))
                 throw new RuntimeException(windowsProgramNotFoundErrorToken); //  Instead we raise an exception similar to case 2) because the solution is the same
             // Otherwise, we try calling the program. If it's not found, an exception will be raised
             tryExecuteAndConsume(outputLineConsumer, getCommandTokens());
@@ -267,6 +267,10 @@ public class ProcessCall {
 
     public static int executeCmdCommand(String cmdCommand) {
         return new ProcessCall().setCmdCommand(cmdCommand).executeAndWait().getExitCode();
+    }
+
+    public static int executePowershellCommand(String psCommand) {
+        return new ProcessCall().setPowershellCommand(psCommand).executeAndWait().getExitCode();
     }
 
 }
