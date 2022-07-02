@@ -199,15 +199,31 @@ public class ProcessCall {
     private void executeAndConsume(Consumer<String> outputLineConsumer) {
         if (logsCalling)
             logCallCommand();
+        // We also try here to solve 2 problems that can happen on Windows:
+        // 1) The program is found and executed but the parameters containing spaces are not correctly passed (ex: explorer and start)
+        // 2) The program is not found because it is not defined globally, but only in the context of a shell (ex: mvn)
+        // In both cases, the solution is to execute the command via cmd instead of invoking the program directly
+        String program = commandTokens[0];
+        String windowsProgramNotFoundErrorToken = "CreateProcess error=2";
         try {
+            // Early detection of case 1). We don't call the program in that case because it would not behave as expected and no exception would be raised
+            if (OperatingSystem.isWindows() && ("explorer").equals(program) || "start".equals(program))
+                throw new RuntimeException(windowsProgramNotFoundErrorToken); //  Instead we raise an exception similar to case 2) because the solution is the same
+            // Otherwise, we try calling the program. If it's not found, an exception will be raised
             tryExecuteAndConsume(outputLineConsumer, getCommandTokens());
         } catch (Exception e) {
-            // Sometimes it's because Windows doesn't find the program (like mvn), if it's not started from cmd
-            if (OperatingSystem.isWindows() && !"cmd".equals(commandTokens[0]) && e.getMessage().contains("CreateProcess error=2"))
-                try { // In that case, we try again through cmd
+            // Trying the solution for cases 1) and 2)
+            if (OperatingSystem.isWindows() && !"cmd".equals(program) && e.getMessage().contains(windowsProgramNotFoundErrorToken))
+                try {
+                    // Trying again but via cmd
                     tryExecuteAndConsume(outputLineConsumer, "cmd", "/c", getShellLogCommand());
-                    return; // If it works, we recovered, so we return without raising an exception
-                } catch (Exception e2) { /* if it still doesn't work, we raise the original error */ }
+                    // If we reach this point, it means we recovered
+                    return; // So we can return without raising an exception
+                } catch (Exception e2) {
+                    // If we reach this point, it means the solution didn't work
+                    // We do nothing here, because we just want to raise the original error
+                }
+            // Raising the error for other cases, or if the solution for 1) or 2) didn't work
             throw new RuntimeException(e);
         }
     }

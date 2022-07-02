@@ -86,9 +86,9 @@ public final class Build extends CommonSubcommand implements Runnable {
                             Path graalVmHome = Bump.getGraalVmHome();
                             new ProcessCall()
                                     .setPowershellCommand(
-                                            (resultLine == null ? "" : resultLine.substring(resultLine.indexOf("&{Import-Module") + 2, resultLine.lastIndexOf('}')).replaceAll("\"\"\"", "'") + " -DevCmdArguments '-arch=x64';") +
-                                            (graalVmHome == null ? "" : "; $env:GRAALVM_HOME = '" + graalVmHome + "';") +
-                                            " mvn -P gluon-desktop gluonfx:build gluonfx:package")
+                                            (resultLine == null ? "" : resultLine.substring(resultLine.indexOf("&{Import-Module") + 2, resultLine.lastIndexOf('}')).replaceAll("\"\"\"", "'") + " -DevCmdArguments '-arch=x64'; ") +
+                                            (graalVmHome == null ? "" : "$env:GRAALVM_HOME = '" + graalVmHome + "'; ") +
+                                            "mvn -P gluon-desktop gluonfx:build gluonfx:package")
                                     .setWorkingDirectory(executableModule.getHomeDirectory())
                                     .executeAndWait();
                         });
