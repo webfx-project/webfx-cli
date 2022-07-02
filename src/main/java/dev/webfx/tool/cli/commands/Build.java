@@ -15,25 +15,25 @@ import java.nio.file.Path;
 @Command(name = "build", description = "Invoke Maven build.")
 public final class Build extends CommonSubcommand implements Runnable {
 
-    @CommandLine.Option(names = {"--gwt"}, description = "Includes the GWT compilation")
+    @CommandLine.Option(names = {"-g", "--gwt"}, description = "Includes the GWT compilation")
     private boolean gwt;
 
-    @CommandLine.Option(names = {"--openjfx-fatjar"}, description = "Creates a fat jar for the OpenJFX version")
+    @CommandLine.Option(names = {"-f", "--openjfx-fatjar"}, description = "Creates a fat jar for the OpenJFX version")
     private boolean fatjar;
 
-    @CommandLine.Option(names = {"--openjfx-desktop"}, description = "Includes the OpenJFX desktop build")
+    @CommandLine.Option(names = {"-k", "--openjfx-desktop"}, description = "Includes the OpenJFX desktop build")
     private boolean openJfxDesktop;
 
-    @CommandLine.Option(names = {"--gluon-desktop"}, description = "Includes the Gluon native desktop build")
+    @CommandLine.Option(names = {"-t", "--gluon-desktop"}, description = "Includes the Gluon native desktop build")
     private boolean gluonDesktop;
 
-    @CommandLine.Option(names = {"--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
+    @CommandLine.Option(names = {"-b", "--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
     private boolean mobile;
 
-    @CommandLine.Option(names = {"--gluon-android"}, description = "Includes the Gluon native Android build")
+    @CommandLine.Option(names = {"-a", "--gluon-android"}, description = "Includes the Gluon native Android build")
     private boolean android;
 
-    @CommandLine.Option(names = {"--gluon-ios"}, description = "Includes the Gluon native iOS build")
+    @CommandLine.Option(names = {"-i", "--gluon-ios"}, description = "Includes the Gluon native iOS build")
     private boolean ios;
 
     @CommandLine.Option(names= {"-l", "--locate"}, description = "Just prints the location of the expected executable file")

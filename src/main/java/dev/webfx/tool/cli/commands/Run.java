@@ -10,25 +10,25 @@ import picocli.CommandLine.Command;
 @Command(name = "run", description = "Run a WebFX application.")
 public final class Run extends CommonSubcommand implements Runnable {
 
-    @CommandLine.Option(names = {"--gwt"}, description = "Runs the GWT app")
+    @CommandLine.Option(names = {"-g", "--gwt"}, description = "Runs the GWT app")
     private boolean gwt;
 
-    @CommandLine.Option(names = {"--openjfx-fatjar"}, description = "Runs the OpenJFX fat jar")
+    @CommandLine.Option(names = {"-f", "--openjfx-fatjar"}, description = "Runs the OpenJFX fat jar")
     private boolean fatjar;
 
-    @CommandLine.Option(names = {"--openjfx-desktop"}, description = "Runs the OpenJFX desktop app")
+    @CommandLine.Option(names = {"-k", "--openjfx-desktop"}, description = "Runs the OpenJFX desktop app")
     private boolean openJfxDesktop;
 
-    @CommandLine.Option(names = {"--gluon-desktop"}, description = "Runs the Gluon native desktop app")
+    @CommandLine.Option(names = {"-t", "--gluon-desktop"}, description = "Runs the Gluon native desktop app")
     private boolean gluonDesktop;
 
-    @CommandLine.Option(names = {"--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
+    @CommandLine.Option(names = {"-b", "--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
     private boolean mobile;
 
-    @CommandLine.Option(names = {"--gluon-android"}, description = "Runs the Gluon native Android app")
+    @CommandLine.Option(names = {"-a", "--gluon-android"}, description = "Runs the Gluon native Android app")
     private boolean android;
 
-    @CommandLine.Option(names = {"--gluon-ios"}, description = "Runs the Gluon native iOS app")
+    @CommandLine.Option(names = {"-i", "--gluon-ios"}, description = "Runs the Gluon native iOS app")
     private boolean ios;
 
     @CommandLine.Option(names= {"-l", "--locate"}, description = "Just prints the location of the expected executable file")
