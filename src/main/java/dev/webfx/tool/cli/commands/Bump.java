@@ -391,8 +391,7 @@ public final class Bump extends CommonSubcommand {
     }
 
     public static Path getGraalVmHome() {
-        Path cliRepositoryPath = getCliRepositoryPath();
-        Path hiddenVmFolder = cliRepositoryPath.resolve(".webfx-cli/graalvm");
+        Path hiddenVmFolder = getHiddenFolder("graalvm");
         Path binPath = ReusableStream.create(() -> Files.exists(hiddenVmFolder) ? SplitFiles.uncheckedWalk(hiddenVmFolder) : Spliterators.emptySpliterator())
                 .filter(path -> path.toFile().isDirectory() && "bin".equals(path.getFileName().toString()))
                 .findFirst()
