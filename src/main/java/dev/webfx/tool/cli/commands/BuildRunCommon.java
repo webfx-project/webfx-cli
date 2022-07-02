@@ -2,6 +2,7 @@ package dev.webfx.tool.cli.commands;
 
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.tool.cli.core.*;
+import dev.webfx.tool.cli.modulefiles.DevMavenPomModuleFile;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 
@@ -79,10 +80,15 @@ final class BuildRunCommon {
 
     private static Path getExecutableFilePath(DevProjectModule module) {
         Path targetPath = module.getHomeDirectory().resolve("target");
-        if (module.isExecutable(Platform.JRE) && module.getTarget().hasTag(TargetTag.OPENJFX))
-            return targetPath.resolve( module.getName() + "-" + module.getVersion() + "-fat.jar");
         if (module.isExecutable(Platform.GWT))
             return targetPath.resolve(module.getName() + "-" + module.getVersion() + "/" + module.getName().replace('-', '_') + "/index.html");
+        if (module.isExecutable(Platform.JRE) && module.getTarget().hasTag(TargetTag.OPENJFX))
+            return targetPath.resolve( module.getName() + "-" + module.getVersion() + "-fat.jar");
+        if (module.isExecutable(Platform.JRE) && module.getTarget().hasTag(TargetTag.GLUON))
+            switch (OperatingSystem.getOsFamily()) {
+                case WINDOWS: return targetPath.resolve("gluonfx/x86_64-windows/" + DevMavenPomModuleFile.getApplicationName(module) + "-.exe");
+            }
+
         return null;
     }
 
