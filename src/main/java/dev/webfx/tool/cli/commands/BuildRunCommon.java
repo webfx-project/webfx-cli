@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
  * @author Bruno Salmon
  */
 final class BuildRunCommon {
-
     private final boolean gwt;
     private final boolean fatjar;
     private final boolean openJfxDesktop;
@@ -89,11 +88,13 @@ final class BuildRunCommon {
             if (gwt)
                 executablePaths.add(targetPath.resolve(module.getName() + "-" + module.getVersion() + "/" + module.getName().replace('-', '_') + "/index.html"));
         } else if (module.isExecutable(Platform.JRE)) {
+            String applicationName = DevMavenPomModuleFile.getApplicationName(module);
             if (module.getTarget().hasTag(TargetTag.OPENJFX)) {
                 if (fatjar)
                     executablePaths.add(targetPath.resolve(module.getName() + "-" + module.getVersion() + "-fat.jar"));
+                if (openJfxDesktop)
+                    executablePaths.add(targetPath.resolve("javapackager/" + applicationName + "/" + applicationName));
             } else if (module.getTarget().hasTag(TargetTag.GLUON)) {
-                String applicationName = DevMavenPomModuleFile.getApplicationName(module);
                 switch (OperatingSystem.getOsFamily()) {
                     case LINUX:
                         if (gluonDesktop)
