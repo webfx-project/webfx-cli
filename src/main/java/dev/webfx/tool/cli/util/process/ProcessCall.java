@@ -90,8 +90,8 @@ public class ProcessCall {
         return shellLogCommand;
     }
 
-    public static String toShellLogCommandToken(String commandToken) {
-        String shellLogCommandToken = commandToken;
+    public static String toShellLogCommandToken(Object commandToken) {
+        String shellLogCommandToken = commandToken.toString();
         if (shellLogCommandToken.contains(" ")
                 && !shellLogCommandToken.startsWith("\"")
                 && !shellLogCommandToken.endsWith("\"")

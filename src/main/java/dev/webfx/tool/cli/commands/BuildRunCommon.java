@@ -53,7 +53,7 @@ final class BuildRunCommon {
         }
         if (locate || reveal) {
             if (locate)
-                executableModules.flatMap(this::getExecutableFilePath).forEach(Logger::log);
+                executableModules.flatMap(this::getExecutableFilePath).map(ProcessCall::toShellLogCommandToken).forEach(Logger::log);
             if (reveal)
                 executableModules.flatMap(this::getExecutableFilePath).forEach(BuildRunCommon::revealFile);
             return;
@@ -70,11 +70,13 @@ final class BuildRunCommon {
     ReusableStream<DevProjectModule> findExecutableModules(DevProjectModule startingModule) {
         boolean openJfx = fatjar || openJfxDesktop;
         boolean gluon = gluonDesktop || android || ios;
-        ReusableStream<ProjectModule> executableModules = startingModule
+        return startingModule
                 .getThisAndChildrenModulesInDepth()
                 .filter(ProjectModule::isExecutable)
-                .filter(m -> m.isExecutable(Platform.GWT) ? gwt : m.getTarget().hasTag(TargetTag.OPENJFX) ? openJfx : !m.getTarget().hasTag(TargetTag.GLUON) || gluon);
-        return executableModules
+                .filter(m ->
+                        m.isExecutable(Platform.GWT) ? gwt :
+                        m.getTarget().hasTag(TargetTag.OPENJFX) ? openJfx :
+                        m.getTarget().hasTag(TargetTag.GLUON) && gluon)
                 .map(DevProjectModule.class::cast)
                 ;
     }
@@ -99,6 +101,12 @@ final class BuildRunCommon {
                         if (android)
                             executablePaths.add(targetPath.resolve("gluonfx/aarch64-android/gvm/" + applicationName + ".apk"));
                         break;
+                    case MAC_OS:
+                        if (gluonDesktop)
+                            executablePaths.add(targetPath.resolve("gluonfx/x86_64-darwin/" + applicationName));
+                        if (ios)
+                            executablePaths.add(targetPath.resolve("gluonfx/arm64-ios/" + applicationName + ".ipa"));
+                        break;
                     case WINDOWS:
                         if (gluonDesktop)
                             executablePaths.add(targetPath.resolve("gluonfx/x86_64-windows/" + applicationName + ".exe"));
@@ -115,38 +123,39 @@ final class BuildRunCommon {
     }
 
     private static void executeFile(Path executableFilePath) {
-        if (executableFilePath == null)
-            throw new CliException("Unknown executable file location");
         String fileName = executableFilePath.getFileName().toString();
+        String pathName = executableFilePath.toString();
         if (!Files.exists(executableFilePath))
-            throw new CliException("The file " + executableFilePath + " does not exist");
+            Logger.log("Can't execute nonexistent file " + ProcessCall.toShellLogCommandToken(executableFilePath));
         else if (fileName.endsWith(".jar"))
-            ProcessCall.executeCommandTokens("java", "-jar", executableFilePath.toString());
+            ProcessCall.executeCommandTokens("java", "-jar", pathName);
         else if (fileName.endsWith(".html"))
             if (OperatingSystem.isWindows())
-                ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath.toString()));
+                ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath));
             else
-                ProcessCall.executeCommandTokens("open", executableFilePath.toString());
-        else if (fileName.endsWith(".apk")) {
-            Path ancestor = executableFilePath.getParent();
-            while (ancestor != null && !Files.exists(ancestor.resolve("pom.xml")))
-                ancestor = ancestor.getParent();
-            if (ancestor != null)
-                MavenCaller.invokeMavenGoal("-P gluon-android gluonfx:install gluonfx:nativerun"
-                        , new ProcessCall().setWorkingDirectory(ancestor));
+                ProcessCall.executeCommandTokens("open", pathName);
+        else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
+            boolean android = fileName.endsWith(".apk");
+            Path gluonModulePath = executableFilePath.getParent();
+            while (gluonModulePath != null && !Files.exists(gluonModulePath.resolve("pom.xml")))
+                gluonModulePath = gluonModulePath.getParent();
+            if (gluonModulePath != null)
+                MavenCaller.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
+                        , new ProcessCall().setWorkingDirectory(gluonModulePath));
         } else // Everything else should be an executable file that we can call directly
-            ProcessCall.executeCommandTokens(executableFilePath.toString());
+            ProcessCall.executeCommandTokens(pathName);
     }
 
     private static void revealFile(Path filePath) {
+        String pathName = filePath.toString();
         if (!Files.exists(filePath))
-            Logger.log("Can't reveal file " + filePath + " as it does not exist");
+            Logger.log("Can't reveal nonexistent file " + ProcessCall.toShellLogCommandToken(pathName));
         else if (OperatingSystem.isMacOs())
-            ProcessCall.executeCommandTokens("open", "--reveal", filePath.toString());
+            ProcessCall.executeCommandTokens("open", "--reveal", pathName);
         else if (OperatingSystem.isLinux())
-            ProcessCall.executeCommandTokens("nautilus", filePath.toString());
+            ProcessCall.executeCommandTokens("nautilus", pathName);
         else if (OperatingSystem.isWindows())
-            ProcessCall.executeCommandTokens("explorer", "/select," + ProcessCall.toShellLogCommandToken(filePath.toString()));
+            ProcessCall.executeCommandTokens("explorer", "/select," + ProcessCall.toShellLogCommandToken(pathName));
     }
 
 }

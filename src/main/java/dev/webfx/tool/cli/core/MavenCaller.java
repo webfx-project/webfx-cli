@@ -35,9 +35,9 @@ public final class MavenCaller {
             // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
             if (graalVmHome != null)
                 if (OperatingSystem.isWindows())
-                    processCall.setPowershellCommand("$env:GRAALVM_HOME = " + ProcessCall.toShellLogCommandToken(graalVmHome.toString()) + "; mvn " + goal);
+                    processCall.setPowershellCommand("$env:GRAALVM_HOME = " + ProcessCall.toShellLogCommandToken(graalVmHome) + "; mvn " + goal);
                 else
-                    processCall.setBashCommand("export GRAALVM_HOME=" + ProcessCall.toShellLogCommandToken(graalVmHome.toString()) + "; mvn " + goal);
+                    processCall.setBashCommand("export GRAALVM_HOME=" + ProcessCall.toShellLogCommandToken(graalVmHome) + "; mvn " + goal);
             processCall
                     //.setErrorLineFilter(line -> line.contains("ERROR")) // Commented as it prevents colors
                     .executeAndWait();
