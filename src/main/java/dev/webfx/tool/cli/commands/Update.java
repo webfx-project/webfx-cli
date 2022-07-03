@@ -12,7 +12,7 @@ import picocli.CommandLine.Option;
 /**
  * @author Bruno Salmon
  */
-@Command(name = "update", description = "Update build files from webfx.xml files.")
+@Command(name = "update", description = "Update the build chain from webfx.xml files.")
 public final class Update extends CommonSubcommand implements Runnable {
 
     @Option(names={"-o", "--only",}, arity = "1..*", description = "Run only the specified update tasks *.")

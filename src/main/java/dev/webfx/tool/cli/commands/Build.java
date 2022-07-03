@@ -12,7 +12,7 @@ import java.nio.file.Path;
 /**
  * @author Bruno Salmon
  */
-@Command(name = "build", description = "Invoke Maven build.")
+@Command(name = "build", description = "Build a WebFX application.")
 public final class Build extends CommonSubcommand implements Runnable {
 
     @CommandLine.Option(names = {"-g", "--gwt"}, description = "Includes the GWT compilation")
