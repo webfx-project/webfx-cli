@@ -1,6 +1,6 @@
 package dev.webfx.tool.cli.core;
 
-import dev.webfx.tool.cli.commands.Bump;
+import dev.webfx.tool.cli.commands.Install;
 import dev.webfx.tool.cli.util.os.OperatingSystem;
 import dev.webfx.tool.cli.util.process.ProcessCall;
 
@@ -29,7 +29,7 @@ public final class MavenCaller {
 
     public static void invokeMavenGoal(String goal, ProcessCall processCall) {
         boolean gluonPluginCall = goal.contains("gluonfx:");
-        Path graalVmHome = gluonPluginCall ? Bump.getGraalVmHome() : null;
+        Path graalVmHome = gluonPluginCall ? Install.getGraalVmHome() : null;
         processCall.setCommand("mvn " + goal);
         //if (!USE_MAVEN_INVOKER) {
             // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker

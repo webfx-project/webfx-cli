@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
                 Build.class,
                 Run.class,
                 Update.class,
+                Install.class,
                 Bump.class,
                 //STream.class,
                 //Rename.class,

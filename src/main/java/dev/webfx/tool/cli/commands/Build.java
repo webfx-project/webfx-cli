@@ -91,7 +91,7 @@ public final class Build extends CommonSubcommand implements Runnable {
                             .setResultLineFilter(line -> line.contains("Microsoft.VisualStudio.DevShell.dll"))
                             .executeAndWait()
                             .onLastResultLine(resultLine -> {
-                                Path graalVmHome = Bump.getGraalVmHome();
+                                Path graalVmHome = Install.getGraalVmHome();
                                 new ProcessCall()
                                         .setPowershellCommand(
                                                 (resultLine == null ? "" : resultLine.substring(resultLine.indexOf("&{Import-Module") + 2, resultLine.lastIndexOf('}')).replaceAll("\"\"\"", "'") + " -DevCmdArguments '-arch=x64'; ") +
