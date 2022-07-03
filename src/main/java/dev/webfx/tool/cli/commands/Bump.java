@@ -326,7 +326,7 @@ public final class Bump extends CommonSubcommand {
     }
 
     private static Path getHiddenFolder(String name) {
-        return Path.of(System.getProperty("user.home"), ".webfx-cli", name);
+        return Path.of(System.getProperty("user.home"), ".webfx/cli", name);
     }
 
     private static String downloadPage(String fileUrl) {
@@ -411,10 +411,6 @@ public final class Bump extends CommonSubcommand {
     private static Path getCliJarPath() {
         Path cliCodePath = getCliCodePath();
         return cliCodePath.toString().endsWith(".jar") ? cliCodePath : null;
-    }
-
-    private static Path getCliRepositoryPath() {
-        return getCliRepositoryPath(getCliCodePath());
     }
 
     private static Path getCliRepositoryPath(Path insidePath) {
