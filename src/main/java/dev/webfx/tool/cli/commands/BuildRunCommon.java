@@ -124,39 +124,47 @@ final class BuildRunCommon {
     }
 
     private static void executeFile(Path executableFilePath) {
-        String fileName = executableFilePath.getFileName().toString();
-        String pathName = executableFilePath.toString();
-        if (!Files.exists(executableFilePath))
-            Logger.log("Can't execute nonexistent file " + ProcessCall.toShellLogCommandToken(executableFilePath));
-        else if (fileName.endsWith(".jar"))
-            ProcessCall.executeCommandTokens("java", "-jar", pathName);
-        else if (fileName.endsWith(".html"))
-            if (OperatingSystem.isWindows())
-                ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath));
-            else
-                ProcessCall.executeCommandTokens("open", pathName);
-        else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
-            boolean android = fileName.endsWith(".apk");
-            Path gluonModulePath = executableFilePath.getParent();
-            while (gluonModulePath != null && !Files.exists(gluonModulePath.resolve("pom.xml")))
-                gluonModulePath = gluonModulePath.getParent();
-            if (gluonModulePath != null)
-                MavenCaller.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
-                        , new ProcessCall().setWorkingDirectory(gluonModulePath));
-        } else // Everything else should be an executable file that we can call directly
-            ProcessCall.executeCommandTokens(pathName);
+        try {
+            String fileName = executableFilePath.getFileName().toString();
+            String pathName = executableFilePath.toString();
+            if (!Files.exists(executableFilePath))
+                Logger.log("Can't execute nonexistent file " + ProcessCall.toShellLogCommandToken(executableFilePath));
+            else if (fileName.endsWith(".jar"))
+                ProcessCall.executeCommandTokens("java", "-jar", pathName);
+            else if (fileName.endsWith(".html"))
+                if (OperatingSystem.isWindows())
+                    ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath));
+                else
+                    ProcessCall.executeCommandTokens("open", pathName);
+            else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
+                boolean android = fileName.endsWith(".apk");
+                Path gluonModulePath = executableFilePath.getParent();
+                while (gluonModulePath != null && !Files.exists(gluonModulePath.resolve("pom.xml")))
+                    gluonModulePath = gluonModulePath.getParent();
+                if (gluonModulePath != null)
+                    MavenCaller.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
+                            , new ProcessCall().setWorkingDirectory(gluonModulePath));
+            } else // Everything else should be an executable file that we can call directly
+                ProcessCall.executeCommandTokens(pathName);
+        } catch (Exception e) {
+            throw new CliException(e.getMessage());
+        }
     }
 
     private static void revealFile(Path filePath) {
-        String pathName = filePath.toString();
-        if (!Files.exists(filePath))
-            Logger.log("Can't reveal nonexistent file " + ProcessCall.toShellLogCommandToken(pathName));
-        else if (OperatingSystem.isMacOs())
-            ProcessCall.executeCommandTokens("open", "--reveal", pathName);
-        else if (OperatingSystem.isLinux())
-            ProcessCall.executeCommandTokens("nautilus", pathName);
-        else if (OperatingSystem.isWindows())
-            ProcessCall.executeCommandTokens("explorer", "/select," + ProcessCall.toShellLogCommandToken(pathName));
+        try {
+            String pathName = filePath.toString();
+            if (!Files.exists(filePath))
+                Logger.log("Can't reveal nonexistent file " + ProcessCall.toShellLogCommandToken(pathName));
+            else if (OperatingSystem.isMacOs())
+                ProcessCall.executeCommandTokens("open", "--reveal", pathName);
+            else if (OperatingSystem.isLinux())
+                ProcessCall.executeCommandTokens("nautilus", pathName);
+            else if (OperatingSystem.isWindows())
+                ProcessCall.executeCommandTokens("explorer", "/select," + ProcessCall.toShellLogCommandToken(pathName));
+        } catch (Exception e) {
+            throw new CliException(e.getMessage());
+        }
     }
 
 }
