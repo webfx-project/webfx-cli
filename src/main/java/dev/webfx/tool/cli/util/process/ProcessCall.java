@@ -163,7 +163,7 @@ public class ProcessCall {
     }
 
     public ProcessCall logCallCommand() {
-        Logger.log((powershellCommand ? "PS " : "") + (workingDirectory == null ? "" : workingDirectory) + (OperatingSystem.isLinux() ? "$ " : OperatingSystem.isMacOs() ? " % " : "> ") + getShellLogCommand());
+        Logger.log((powershellCommand ? "PS " : "") + (workingDirectory == null ? "" : OperatingSystem.isWindows() ? workingDirectory : workingDirectory.toString().replace(System.getProperty("user.home"), "~")) + (OperatingSystem.isLinux() ? "$ " : OperatingSystem.isMacOs() ? " % " : "> ") + getShellLogCommand());
         return this;
     }
 
