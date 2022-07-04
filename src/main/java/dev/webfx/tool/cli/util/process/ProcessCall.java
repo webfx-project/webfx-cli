@@ -269,6 +269,10 @@ public class ProcessCall {
         return new ProcessCall().setCmdCommand(cmdCommand).executeAndWait().getExitCode();
     }
 
+    public static int executeBashCommand(String bashCommand) {
+        return new ProcessCall().setBashCommand(bashCommand).executeAndWait().getExitCode();
+    }
+
     public static int executePowershellCommand(String psCommand) {
         return new ProcessCall().setPowershellCommand(psCommand).executeAndWait().getExitCode();
     }

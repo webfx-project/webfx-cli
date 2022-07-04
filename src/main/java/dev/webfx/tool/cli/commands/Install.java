@@ -32,7 +32,8 @@ import java.util.zip.GZIPInputStream;
                 Install.Wix.class,
                 Install.Inno.class,
                 Install.VsTools.class,
-                Install.UbuntuDevTools.class
+                Install.UbuntuTools.class,
+                Install.XcodeTools.class
         })
 public final class Install extends CommonSubcommand {
 
@@ -235,7 +236,7 @@ public final class Install extends CommonSubcommand {
         }
     }
 
-    @Command(name = "vstools", description = "Install or upgrade the Visual Studio Build Tools (Windows).")
+    @Command(name = "vs-tools", description = "Install or upgrade the Visual Studio Build Tools (Windows).")
     static class VsTools extends CommonSubcommand implements Runnable {
 
         private final static String VS_BUILD_TOOLS_URL = "https://aka.ms/vs/17/release/vs_buildtools.exe";
@@ -271,17 +272,27 @@ public final class Install extends CommonSubcommand {
         }
     }
 
-    @Command(name = "ubuntu-devtools", description = "Install or upgrade the dev tools required by Gluon (Ubuntu).")
-    static class UbuntuDevTools extends CommonSubcommand implements Runnable {
+    @Command(name = "ubuntu-tools", description = "Install or upgrade the dev tools required by Gluon (Ubuntu).")
+    static class UbuntuTools extends CommonSubcommand implements Runnable {
 
         @Override
         public void run() {
             if (OperatingSystem.getOsFamily() != OsFamily.LINUX)
                 throw new CliException("This command is to be executed on Ubuntu machines only.");
 
-            new ProcessCall()
-                    .setBashCommand("sudo apt install g++ libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev")
-                    .executeAndWait();
+            ProcessCall.executeBashCommand("sudo apt install g++ libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev");
+        }
+    }
+
+    @Command(name = "xcode-tools", description = "Install Xcode command line tools (macOS).")
+    static class XcodeTools extends CommonSubcommand implements Runnable {
+
+        @Override
+        public void run() {
+            if (OperatingSystem.getOsFamily() != OsFamily.MAC_OS)
+                throw new CliException("This command is to be executed on Macs only.");
+
+            ProcessCall.executeCommandTokens("xcode-select", "--install");
         }
     }
 
