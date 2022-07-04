@@ -93,7 +93,7 @@ final class BuildRunCommon {
                 if (fatjar)
                     executablePaths.add(targetPath.resolve(module.getName() + "-" + module.getVersion() + "-fat.jar"));
                 if (openJfxDesktop)
-                    executablePaths.add(targetPath.resolve("javapackager/" + applicationName + "/" + applicationName + (OperatingSystem.isWindows() ? ".exe" : "")));
+                    executablePaths.add(targetPath.resolve("javapackager/" + applicationName + "/" + applicationName + (OperatingSystem.isMacOs() ? ".app" : OperatingSystem.isWindows() ? ".exe" : "")));
             } else if (module.getTarget().hasTag(TargetTag.GLUON)) {
                 switch (OperatingSystem.getOsFamily()) {
                     case LINUX:
