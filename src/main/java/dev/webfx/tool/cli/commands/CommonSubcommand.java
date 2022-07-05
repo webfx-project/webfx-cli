@@ -7,7 +7,7 @@ import picocli.CommandLine.Option;
  */
 abstract class CommonSubcommand extends CommonCommand {
 
-    @Option(names={"-h", "--help"}, usageHelp = true, description="Show this help message and exit.")
+    @Option(names={"-H", "--help"}, usageHelp = true, description="Show this help message and exit.")
     private boolean help;
 
 }

@@ -52,14 +52,14 @@ public class CommonCommand {
         return logLevel != null ? logLevel : parentCommand != null ? parentCommand.getLogLevel() : null;
     }
 
-    @Option(names = {"-d", "--directory"}, description = "Directory of the webfx.xml project.")
+    @Option(names = {"-D", "--directory"}, description = "Directory of the webfx.xml project.")
     private String projectDirectory;
 
     public String getProjectDirectory() {
         return projectDirectory != null ? projectDirectory : parentCommand != null ? parentCommand.getProjectDirectory() : "";
     }
 
-    @Option(names = {"-m", "--module"}, description = "Name of the working module.")
+    @Option(names = {"-M", "--module"}, description = "Name of the working module.")
     private String moduleName;
 
     public String getModuleName() {

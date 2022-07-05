@@ -24,10 +24,10 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-k", "--openjfx-desktop"}, description = "Includes the OpenJFX desktop build")
     private boolean openJfxDesktop;
 
-    @CommandLine.Option(names = {"-t", "--gluon-desktop"}, description = "Includes the Gluon native desktop build")
+    @CommandLine.Option(names = {"-d", "--gluon-desktop"}, description = "Includes the Gluon native desktop build")
     private boolean gluonDesktop;
 
-    @CommandLine.Option(names = {"-b", "--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
+    @CommandLine.Option(names = {"-m", "--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
     private boolean mobile;
 
     @CommandLine.Option(names = {"-a", "--gluon-android"}, description = "Includes the Gluon native Android build")

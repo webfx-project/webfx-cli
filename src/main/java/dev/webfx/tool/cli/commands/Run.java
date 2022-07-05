@@ -19,10 +19,10 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-k", "--openjfx-desktop"}, description = "Runs the OpenJFX desktop app")
     private boolean openJfxDesktop;
 
-    @CommandLine.Option(names = {"-t", "--gluon-desktop"}, description = "Runs the Gluon native desktop app")
+    @CommandLine.Option(names = {"-d", "--gluon-desktop"}, description = "Runs the Gluon native desktop app")
     private boolean gluonDesktop;
 
-    @CommandLine.Option(names = {"-b", "--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
+    @CommandLine.Option(names = {"-m", "--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
     private boolean mobile;
 
     @CommandLine.Option(names = {"-a", "--gluon-android"}, description = "Runs the Gluon native Android app")
