@@ -130,13 +130,13 @@ class JavaCodePatternFinder implements Iterable<String> {
     String resolveFullClassName(String className) {
         if (className.contains("."))
             return className;
-        Iterator<String> classImportIterator = new JavaCodePatternFinder(new JavaCodePattern(Pattern.compile("^\\s*import\\s+([a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*\\." + className + "\\s*)\\s*;", Pattern.MULTILINE), 1), javaCode).iterator();
+        Iterator<String> classImportIterator = new JavaCodePatternFinder(new JavaCodePattern(Pattern.compile("^\\s*import\\s+([a-z][a-z_0-9]*(\\.[a-z][a-z_0-9]*)*\\." + className + "\\s*)\\s*;", Pattern.MULTILINE), 1), javaCode).iterator();
         return classImportIterator.hasNext() ? classImportIterator.next()
                 : javaCodePackageName() + "." + className;
     }
 
     String javaCodePackageName() {
-        Iterator<String> packageIterator = new JavaCodePatternFinder(new JavaCodePattern(Pattern.compile("^\\s*package\\s+([a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*)\\s*;", Pattern.MULTILINE), 1), javaCode).iterator();
+        Iterator<String> packageIterator = new JavaCodePatternFinder(new JavaCodePattern(Pattern.compile("^\\s*package\\s+([a-z][a-z_0-9]*(\\.[a-z][a-z_0-9]*)*)\\s*;", Pattern.MULTILINE), 1), javaCode).iterator();
         return packageIterator.hasNext() ?
                 packageIterator.next()
                 : null;

@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
  */
 public final class RequiredJavaServicesFinder extends JavaCodePatternFinder {
 
-    private static JavaCodePattern SERVICE_PATTERN =
-            new JavaCodePattern(Pattern.compile("SingleServiceProvider\\s*\\.\\s*getProvider\\s*\\(\\s*([a-z0-9A-Z.]+)\\.class"), 1);
+    private static final JavaCodePattern SERVICE_PATTERN =
+            new JavaCodePattern(Pattern.compile("SingleServiceProvider\\s*\\.\\s*getProvider\\s*\\(\\s*([a-z_0-9A-Z.]+)\\.class"), 1);
 
     public RequiredJavaServicesFinder(JavaCode javaCode) {
         super(SERVICE_PATTERN, javaCode);

@@ -12,9 +12,9 @@ public final class JavaCodePackagesFinder extends JavaCodePatternFinder {
      * imports section (ex: import a.b.c.MyClass => package = a.b.c) or those explicitly used in the java code (ex:
      * new java.util.ArrayList<>(); => package = java.util).
      *
-     * It works for most of cases but it's not 100% accurate as it doesn't know about the java syntax (an improvement
+     * It works for most of the cases, but it's not 100% accurate as it doesn't know about the java syntax (an improvement
      * would be to replace this by a java syntax analyzer) but just relies on conventional java naming which is that
-     * only lowercase characters are used in a package as opposed to classes that start with a uppercase letter (an
+     * only lowercase characters are used in a package as opposed to classes that start with an uppercase letter (an
      * exception is made for the lr_parser class coming from the javacup library).
      */
 
