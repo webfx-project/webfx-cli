@@ -10,23 +10,23 @@ module webfx.cli {
     requires webfx.lib.reusablestream;
 
     // Exported packages
-    exports dev.webfx.tool.cli;
-    exports dev.webfx.tool.cli.commands;
-    exports dev.webfx.tool.cli.core;
-    exports dev.webfx.tool.cli.modulefiles;
-    exports dev.webfx.tool.cli.modulefiles.abstr;
-    exports dev.webfx.tool.cli.sourcegenerators;
-    exports dev.webfx.tool.cli.util.javacode;
-    exports dev.webfx.tool.cli.util.os;
-    exports dev.webfx.tool.cli.util.process;
-    exports dev.webfx.tool.cli.util.splitfiles;
-    exports dev.webfx.tool.cli.util.textfile;
-    exports dev.webfx.tool.cli.util.xml;
+    exports dev.webfx.cli;
+    exports dev.webfx.cli.commands;
+    exports dev.webfx.cli.core;
+    exports dev.webfx.cli.modulefiles;
+    exports dev.webfx.cli.modulefiles.abstr;
+    exports dev.webfx.cli.sourcegenerators;
+    exports dev.webfx.cli.util.javacode;
+    exports dev.webfx.cli.util.os;
+    exports dev.webfx.cli.util.process;
+    exports dev.webfx.cli.util.splitfiles;
+    exports dev.webfx.cli.util.textfile;
+    exports dev.webfx.cli.util.xml;
 
     // Resources packages
-    opens dev.webfx.tool.cli.commands;
-    opens dev.webfx.tool.cli.jdk;
-    opens dev.webfx.tool.cli.templates;
-    opens dev.webfx.tool.cli.version.dev;
+    opens dev.webfx.cli.commands;
+    opens dev.webfx.cli.jdk;
+    opens dev.webfx.cli.templates;
+    opens dev.webfx.cli.version.dev;
 
 }

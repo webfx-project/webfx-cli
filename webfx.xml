@@ -3,10 +3,10 @@
 
     <exported-packages>
         <source-packages/>
-        <resource-package>dev.webfx.tool.cli.commands</resource-package>
-        <resource-package>dev.webfx.tool.cli.jdk</resource-package>
-        <resource-package>dev.webfx.tool.cli.templates</resource-package>
-        <resource-package>dev.webfx.tool.cli.version.dev</resource-package>
+        <resource-package>dev.webfx.cli.commands</resource-package>
+        <resource-package>dev.webfx.cli.jdk</resource-package>
+        <resource-package>dev.webfx.cli.templates</resource-package>
+        <resource-package>dev.webfx.cli.version.dev</resource-package>
     </exported-packages>
 
     <dependencies>
@@ -26,7 +26,7 @@
         <properties>
             <!-- Java 13 is required because of the use of FileSystems.newFileSystem() in the code -->
             <java.version>13</java.version>
-            <webfx.mainClass>dev.webfx.tool.cli.WebFx</webfx.mainClass>
+            <webfx.mainClass>dev.webfx.cli.WebFx</webfx.mainClass>
             <!-- disabling classes and sources dependencies unpack to avoid including them again in the jar -->
             <plugin.dependency.param.unpack-classes.phase>none</plugin.dependency.param.unpack-classes.phase>
             <plugin.dependency.param.unpack-sources.phase>none</plugin.dependency.param.unpack-sources.phase>
@@ -54,10 +54,10 @@
                 <build>
                     <resources>
                         <resource>
-                            <directory>src/main/resources/dev/webfx/tool/cli/version/template</directory>
+                            <directory>src/main/resources/dev/webfx/cli/version/template</directory>
                             <filtering>true</filtering>
                             <!-- A bit hacky but for now the development version is stored in a resource file under git source control -->
-                            <targetPath>../../src/main/resources/dev/webfx/tool/cli/version/dev</targetPath>
+                            <targetPath>../../src/main/resources/dev/webfx/cli/version/dev</targetPath>
                         </resource>
                     </resources>
                 </build>
