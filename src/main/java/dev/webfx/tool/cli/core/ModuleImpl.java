@@ -5,7 +5,7 @@ package dev.webfx.tool.cli.core;
  */
 class ModuleImpl implements Module {
 
-    private final String name;
+    protected String name;
     protected String groupId;
     protected String artifactId;
     protected String version;

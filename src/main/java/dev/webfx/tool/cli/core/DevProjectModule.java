@@ -133,4 +133,9 @@ public class DevProjectModule extends ProjectModuleImpl {
         return homeDirectory != null && homeDirectory.startsWith(getRootModule().getHomeDirectory());
     }
 
+    public void rename(String newName) {
+        name = newName;
+        artifactId = null;
+    }
+
 }

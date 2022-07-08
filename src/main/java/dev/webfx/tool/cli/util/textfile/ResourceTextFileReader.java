@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 /**
  * @author Bruno Salmon
  */
-public class ResourceTextFileReader {
+public final class ResourceTextFileReader {
 
     public static String readTemplate(String templateName) {
         return uncheckedReadResourceTextFile("dev/webfx/tool/cli/templates/" + templateName);
