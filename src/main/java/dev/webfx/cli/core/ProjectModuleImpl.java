@@ -399,17 +399,21 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * a final web application). For making this replacement work with the java module system, the concrete modules will
      * be declared using the same name as the interface module in their module-info.java (See {@link DevJavaModuleInfoFile} ).
      */
-    private final ReusableStream<ModuleDependency> directDependenciesCache =
+    private final ReusableStream<ModuleDependency> unfilteredDirectDependenciesCache =
             ReusableStream.concat(
                             directDependenciesWithoutFinalExecutableResolutionsCache,
                             // Moving transitive dependencies declared with an executable target to here (ie direct dependencies)
                             transitiveDependenciesWithoutFinalExecutableResolutionsCache
                                     .filter(dep -> dep.getExecutableTarget() != null)
                     )
-                    // Removing dependencies declared with an executable target if this module is not executable or with incompatible target
-                    .filter(dep -> dep.getExecutableTarget() == null || isExecutable() && dep.getExecutableTarget().gradeTargetMatch(getTarget()) >= 0)
                     .flatMap(this::resolveInterfaceDependencyIfExecutable) // Resolving interface modules
                     .distinct()
+                    .cache();
+
+    private final ReusableStream<ModuleDependency> directDependenciesCache =
+            unfilteredDirectDependenciesCache
+                    // Removing dependencies declared with an executable target if this module is not executable or with incompatible target
+                    .filter(dep -> dep.getExecutableTarget() == null || isExecutable() && dep.getExecutableTarget().gradeTargetMatch(getTarget()) >= 0)
                     .cache();
 
     /**
@@ -607,6 +611,11 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     @Override
     public ReusableStream<ModuleDependency> getDirectDependencies() {
         return directDependenciesCache;
+    }
+
+    @Override
+    public ReusableStream<ModuleDependency> getUnfilteredDirectDependencies() {
+        return unfilteredDirectDependenciesCache;
     }
 
     @Override

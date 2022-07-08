@@ -33,9 +33,9 @@ public final class Create extends CommonSubcommand {
         String project;
 
         private DevProjectModule createModule(String name, boolean aggregate) {
-            Path projectDirectoryPath = project != null ? getWorkspaceDirectoryPath().resolve(project) : getProjectDirectoryPath();
+            Path projectDirectoryPath = project != null ? workspace.getWorkspaceDirectoryPath().resolve(project) : workspace.getProjectDirectoryPath();
             Path modulePath = projectDirectoryPath.resolve(name);
-            DevProjectModule module = getModuleRegistry().getOrCreateDevProjectModule(modulePath);
+            DevProjectModule module = workspace.getModuleRegistry().getOrCreateDevProjectModule(modulePath);
             module.getMavenModuleFile().setAggregate(aggregate);
             DevMavenPomModuleFile parentDevMavenModuleFile = getParentDevMavenModuleFile(module);
             if (parentDevMavenModuleFile != null)
@@ -160,7 +160,7 @@ public final class Create extends CommonSubcommand {
                 if (project != null)
                     prefix = project;
                 else
-                    prefix = getModuleRegistry().getOrCreateDevProjectModule(getProjectDirectoryPath()).getName();
+                    prefix = workspace.getModuleRegistry().getOrCreateDevProjectModule(workspace.getProjectDirectoryPath()).getName();
             }
             DevProjectModule applicationModule = createTagApplicationModule(null);
             createTagApplicationModule(TargetTag.OPENJFX);

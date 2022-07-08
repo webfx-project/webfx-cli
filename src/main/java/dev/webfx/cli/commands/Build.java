@@ -51,7 +51,7 @@ public final class Build extends CommonSubcommand implements Runnable {
                 android = true;
         }
         new BuildRunCommon(gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, reveal, false, true)
-                .findAndConsumeExecutableModule(getWorkingDevProjectModule(), getTopRootModule(),
+                .findAndConsumeExecutableModule(workspace.getWorkingDevProjectModule(), workspace.getTopRootModule(),
                         this::build);
     }
 
@@ -81,7 +81,7 @@ public final class Build extends CommonSubcommand implements Runnable {
         } else
             processCall.setCommand(command);
         processCall
-                .setWorkingDirectory(getTopRootModule().getHomeDirectory())
+                .setWorkingDirectory(workspace.getTopRootModule().getHomeDirectory())
                 .executeAndWait();
         if (gluonModule != null) {
             if (gluonDesktop) {

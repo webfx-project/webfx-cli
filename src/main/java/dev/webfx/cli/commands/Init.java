@@ -21,8 +21,13 @@ public final class Init extends CommonSubcommand implements Callable<Void> {
 
     @Override
     public Void call() {
-        Path projectDirectoryPath = getProjectDirectoryPath();
-        setWorkspaceDirectoryPath(projectDirectoryPath.getParent());
+        execute(artifact, workspace);
+        return null;
+    }
+
+    static void execute(String artifact, CommandWorkspace workspace) {
+        Path projectDirectoryPath = workspace.getProjectDirectoryPath();
+        workspace.setWorkspaceDirectoryPath(projectDirectoryPath.getParent());
         String[] split = artifact.split(":");
         int i = 0, n = split.length;
         String groupId = split[i++];
@@ -30,7 +35,7 @@ public final class Init extends CommonSubcommand implements Callable<Void> {
         String version = split[i];
         if (artifactId == null)
             artifactId = projectDirectoryPath.getFileName().toString();
-        DevRootModule module = (DevRootModule) getModuleRegistry().getOrCreateDevProjectModule(projectDirectoryPath);
+        DevRootModule module = (DevRootModule) workspace.getModuleRegistry().getOrCreateDevProjectModule(projectDirectoryPath);
         module.setGroupId(groupId);
         module.setArtifactId(artifactId);
         module.setVersion(version);
@@ -38,7 +43,6 @@ public final class Init extends CommonSubcommand implements Callable<Void> {
         module.getWebFxModuleFile().writeFile();
         module.getMavenModuleFile().writeFile();
         module.getMavenModuleFile().updateAndWrite();
-        return null;
     }
 
 }

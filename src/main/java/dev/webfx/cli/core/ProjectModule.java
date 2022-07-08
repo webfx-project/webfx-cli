@@ -193,6 +193,8 @@ public interface ProjectModule extends Module {
     ///// Dependencies
     ReusableStream<ModuleDependency> getDirectDependencies();
 
+    ReusableStream<ModuleDependency> getUnfilteredDirectDependencies();
+
     ReusableStream<ModuleDependency> getTransitiveDependencies();
 
     ReusableStream<ModuleDependency> getTransitiveDependenciesWithoutImplicitProviders();
@@ -203,6 +205,10 @@ public interface ProjectModule extends Module {
 
     default ReusableStream<Module> getDirectModules() {
         return mapDestinationModules(getDirectDependencies());
+    }
+
+    default ReusableStream<Module> getUnfilteredDirectModules() {
+        return mapDestinationModules(getUnfilteredDirectDependencies());
     }
 
     default ReusableStream<Module> getThisAndDirectModules() {

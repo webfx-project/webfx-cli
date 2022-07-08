@@ -11,6 +11,8 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Bruno Salmon
@@ -32,43 +34,70 @@ public final class Rename extends CommonSubcommand {
 
         @Override
         public void run() {
-            DevRootModule rootModule = getWorkingDevProjectModule().getRootModule();
+            setUpLogger();
+            execute(moduleName, moduleNewName, workspace);
+        }
+
+        static void execute(String moduleName, String moduleNewName, CommandWorkspace workspace) {
+            boolean wildcard = moduleName.contains("*");
+            if (!wildcard)
+                executeNoWildcard(moduleName, moduleNewName, workspace);
+            else {
+                Pattern pattern = Pattern.compile(moduleName.replace("*", "(.*)"));
+                DevProjectModule workingModule = workspace.getWorkingDevProjectModule();
+                ReusableStream<DevProjectModule> matchingModules =
+                        workingModule.getThisAndChildrenModulesInDepth()
+                                .map(DevProjectModule.class::cast)
+                                .filter(m -> m.getRootModule() != m && pattern.matcher(m.getName()).matches())
+                                .cache();
+                if (matchingModules.count() == 0) // count() forces to load everything in the cache, so we capture all original names before renaming them
+                    throw new CliException("Can't find any module matching " + moduleName + " under " + workingModule);
+                matchingModules.forEach(m -> {
+                    String name = m.getName();
+                    Matcher matcher = pattern.matcher(name);
+                    String newName = !matcher.matches() ? moduleNewName : moduleNewName.replace("*", matcher.group(1));
+                    log("Renaming " + name + " to " + newName);
+                    executeNoWildcard(name, newName, new CommandWorkspace(workspace));
+                });
+            }
+        }
+
+        static void executeNoWildcard(String moduleName, String moduleNewName, CommandWorkspace workspace) {
+            DevProjectModule module = (DevProjectModule) workspace.getWorkingDevProjectModule().searchRegisteredModule(moduleName, false);
+            DevRootModule rootModule = module.getRootModule();
             ReusableStream<DevProjectModule> childrenModulesInDepth =
                     rootModule.getThisAndChildrenModulesInDepth()
-                    .map(DevProjectModule.class::cast);
-            DevProjectModule originalModule = childrenModulesInDepth
-                    .filter(m -> moduleName.equals(m.getName()))
-                    .findFirst().orElse(null);
-            if (originalModule == null)
-                throw new CliException("Can't find module " + moduleName + " in your project");
-            setUpLogger();
-
+                            .map(DevProjectModule.class::cast);
             try (TextFileThreadTransaction transaction = TextFileThreadTransaction.open()) {
                 childrenModulesInDepth
                         .filter(m ->
                                 // Dependent modules
-                                !m.getDirectModules().filter(dm -> dm == originalModule).isEmpty()
-                                // Implementing modules
-                                || m.implementsModule(originalModule)
+                                !m.getUnfilteredDirectModules().filter(dm -> dm == module).isEmpty()
+                                        // Implementing modules
+                                        || m.implementsModule(module)
                         )
-                        .forEach(m -> replaceModuleNameInWebfxModule(m.getWebFxModuleFile().getModuleFilePath()));
-                ProjectModule parentModule = originalModule.getParentModule();
+                        .forEach(m -> replaceModuleNameInWebFxAndPom(m, moduleName, moduleNewName));
+                ProjectModule parentModule = module.getParentModule();
                 if (parentModule instanceof DevProjectModule)
-                    replaceModuleNameInWebfxModule(((DevProjectModule)parentModule).getWebFxModuleFile().getModuleFilePath());
+                    replaceModuleNameInWebFxAndPom(((DevProjectModule) parentModule), moduleName, moduleNewName);
                 transaction.commit();
-                originalModule.rename(moduleNewName);
-                Update.executeUpdateTasks(rootModule, new Update.UpdateTasks(true));
-                transaction.commit();
-                Path homeDirectory = originalModule.getHomeDirectory();
-                if (homeDirectory.endsWith(moduleName))
+                Path homeDirectory = module.getHomeDirectory();
+                if (homeDirectory.endsWith(module.getName()))
                     homeDirectory.toFile().renameTo(homeDirectory.getParent().resolve(moduleNewName).toFile());
+                Update.executeUpdateTasks(new CommandWorkspace(workspace).getWorkingDevProjectModule().getRootModule(), new Update.UpdateTasks(true));
+                transaction.commit();
             }
         }
 
-        private void replaceModuleNameInWebfxModule(Path webfxModulePath) {
-            String xmlContent = TextFileReaderWriter.readTextFile(webfxModulePath)
-                    .replace(">" + moduleName + "</", ">" + moduleNewName + "</");
-            TextFileReaderWriter.writeTextFile(xmlContent, webfxModulePath);
+        private static void replaceModuleNameInWebFxAndPom(DevProjectModule module, String moduleName, String moduleNewName) {
+            replaceModuleNameInXmlFile(module.getWebFxModuleFile().getModuleFilePath(), moduleName, moduleNewName);
+            replaceModuleNameInXmlFile(module.getMavenModuleFile().getModuleFilePath(), moduleName, moduleNewName);
+        }
+
+        private static void replaceModuleNameInXmlFile(Path xmlPath, String moduleName, String moduleNewName) {
+            String xmlContent = TextFileReaderWriter.readTextFile(xmlPath);
+            if (xmlContent != null)
+                TextFileReaderWriter.writeTextFile(xmlContent.replace(">" + moduleName + "</", ">" + moduleNewName + "</"), xmlPath);
         }
     }
 }

@@ -54,7 +54,7 @@ public final class STream extends CommonSubcommand {
             if (count)
                 log(stream.count());
             else if (forEach == null)
-                stream.forEach(this::log);
+                stream.forEach(CommonCommand::log);
             else
                 stream.forEach(o -> {
                     String s = forEach.replace("{o}", o.toString());
@@ -204,7 +204,7 @@ public final class STream extends CommonSubcommand {
         ReusableStream<ProjectModule> computeProjectModuleBaseStream() {
             if (getClass() != Modules.class || flatMap != null)
                 includeParent = recursive = true;
-            ProjectModule projectModule = getWorkingProjectModule();
+            ProjectModule projectModule = workspace.getWorkingProjectModule();
             if (!recursive)
                 return includeParent ? projectModule.getThisAndChildrenModules() : projectModule.getChildrenModules();
             return includeParent ? projectModule.getThisAndChildrenModulesInDepth() : projectModule.getChildrenModulesInDepth();
