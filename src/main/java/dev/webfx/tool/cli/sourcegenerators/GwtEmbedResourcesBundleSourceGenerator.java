@@ -31,7 +31,7 @@ final class GwtEmbedResourcesBundleSourceGenerator {
                 });
         String packageName = getPackageName(module);
         String source = resourceNumber.get() == 0 ? null // if no resource, setting the source to null so writeTextFile() will actually delete the file if exists
-                : ResourceTextFileReader.readTemplate("EmbedResourcesBundle.java")
+                : ResourceTextFileReader.readTemplate("EmbedResourcesBundle.javat")
                         .replace("${package}", packageName)
                         .replace("${resourceDeclaration}", resourceDeclaration)
                         .replace("${resourceRegistration}", resourceRegistration);

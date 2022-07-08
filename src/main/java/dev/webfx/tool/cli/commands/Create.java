@@ -121,7 +121,7 @@ public final class Create extends CommonSubcommand {
 
         @Override
         public Void call() throws Exception {
-            DevProjectModule module = aggregate ? createAggregateModule(name, true) : createSourceModule(name, ResourceTextFileReader.readTemplate("Class.java"), moduleClassName, false);
+            DevProjectModule module = aggregate ? createAggregateModule(name, true) : createSourceModule(name, ResourceTextFileReader.readTemplate("Class.javat"), moduleClassName, false);
             writeParentMavenModuleFile(module);
             return null;
         }
@@ -173,7 +173,7 @@ public final class Create extends CommonSubcommand {
 
         private DevProjectModule createTagApplicationModule(TargetTag targetTag) throws IOException {
             if (targetTag == null)
-                return createSourceModule(prefix + "-application", helloWorld ? "JavaFxHelloWorldApplication.java" : "JavaFxApplication.java", javaFxApplication, false);
+                return createSourceModule(prefix + "-application", helloWorld ? "JavaFxHelloWorldApplication.javat" : "JavaFxApplication.java", javaFxApplication, false);
             return createSourceModule(prefix + "-application-" + targetTag.name().toLowerCase(), null, null, true);
         }
     }
