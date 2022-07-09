@@ -37,7 +37,7 @@
         <webfx.mainClass>dev.webfx.platform.shared.services.boot.ApplicationBooter</webfx.mainClass>
         <webfx.mainModule>webfx.platform.shared.services.boot</webfx.mainModule>
 
-        <!-- java version -->
+        <!-- Java version -->
         <java.version>11</java.version>
         <java.level>${java.version}</java.level>
         <gwt.sourceLevel>1.${java.version}</gwt.sourceLevel>
@@ -48,28 +48,40 @@
         <maven.compiler.release>${java.level}</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- libraries versions -->
-        <lib.openjfx.version>15.0.1</lib.openjfx.version>
-        <lib.gwt.version>2.9.0</lib.gwt.version> <!-- can be switched to HEAD-SNAPSHOT on development machines to test the latest GWT version -->
-        <lib.elemental2.groupId>com.google.elemental2</lib.elemental2.groupId>
-        <lib.elemental2.version>1.1.0</lib.elemental2.version>
+        <!-- OpenJFX version -->
+        <openjfx.version>18.0.1</openjfx.version>
 
-        <lib.javafxsvg.version>1.3.0</lib.javafxsvg.version>
+        <!-- GWT version -->
+        <gwt.version>2.10.0</gwt.version>
 
-        <lib.junit.version>4.13.1</lib.junit.version>
+        <!-- Elemental2 version (GWT extension exposing browser APIs directly from Java) -->
+        <elemental2.version>1.1.0</elemental2.version>
+
+        <!-- GWT-time version (GWT library to emulate java.time - not supported by default by GWT) -->
+        <gwttime.version>2.0.8</gwttime.version>
+
+        <!-- Maven minimum required version -->
+        <maven.min.version>3.3.1</maven.min.version>
 
         <!-- Maven plugins versions -->
-        <plugin.compiler.version>3.8.1</plugin.compiler.version>
-        <plugin.jar.version>3.2.0</plugin.jar.version>
-        <plugin.source.version>3.2.0</plugin.source.version>
-        <plugin.dependency.version>3.1.2</plugin.dependency.version>
-        <plugin.shade.version>3.2.4</plugin.shade.version>
+        <plugin.compiler.version>3.10.1</plugin.compiler.version>
+        <plugin.jar.version>3.2.2</plugin.jar.version>
+        <plugin.source.version>3.2.1</plugin.source.version>
+        <plugin.clean.version>3.2.0</plugin.clean.version>
+        <plugin.deploy.version>3.0.0-M2</plugin.deploy.version>
+        <plugin.install.version>3.0.0-M1</plugin.install.version>
+        <plugin.site.version>4.0.0-M2</plugin.site.version>
+        <plugin.resources.version>3.2.0</plugin.resources.version>
+        <plugin.surefire.version>3.0.0-M7</plugin.surefire.version>
+        <plugin.shade.version>3.3.0</plugin.shade.version>
+        <plugin.enforcer.version>3.1.0</plugin.enforcer.version>
 
         <!-- Third-party plugins versions -->
-        <plugin.gwt.version>1.0.0</plugin.gwt.version>
-        <plugin.gluon.version>0.1.35</plugin.gluon.version>
-        <plugin.javapackager.version>1.4.2</plugin.javapackager.version>
-        <plugin.javafx.version>0.0.3</plugin.javafx.version>
+        <plugin.buildhelper.version>3.3.0</plugin.buildhelper.version>
+        <plugin.gwt.version>1.0.1</plugin.gwt.version>
+        <plugin.gluonfx.version>1.0.14</plugin.gluonfx.version>
+        <plugin.javapackager.version>1.6.6</plugin.javapackager.version>
+        <plugin.javafx.version>0.0.8</plugin.javafx.version>
 
         <!-- Plugin parameters with default values or set to TBD (To Be Defined) by any child module using the plugin -->
         <plugin.compiler.param.exclude></plugin.compiler.param.exclude>
@@ -80,17 +92,18 @@
         <plugin.dependency.param.unpack-classes.outputDirectory>${project.build.outputDirectory}</plugin.dependency.param.unpack-classes.outputDirectory>
         <plugin.dependency.param.copy-libs.phase>validate</plugin.dependency.param.copy-libs.phase>
         <plugin.shade.param.fat.phase>package</plugin.shade.param.fat.phase>
-        <plugin.antrun.param.j2objc.phase>compile</plugin.antrun.param.j2objc.phase>
         <plugin.gwt.param.skipCompilation>true</plugin.gwt.param.skipCompilation>
         <plugin.gwt.param.draftCompile>false</plugin.gwt.param.draftCompile>
         <plugin.gwt.param.optimize>9</plugin.gwt.param.optimize>
         <plugin.gwt.param.module>${project.artifactId}</plugin.gwt.param.module>
-        <plugin.gluon.param.target>TBD</plugin.gluon.param.target>
-        <plugin.gluon.param.mainClass>${webfx.mainClass}</plugin.gluon.param.mainClass>
+        <plugin.gluonfx.param.target>TBD</plugin.gluonfx.param.target>
+        <plugin.gluonfx.param.mainClass>${webfx.mainClass}</plugin.gluonfx.param.mainClass>
+        <plugin.javapackager.mainClass>${webfx.mainClass}</plugin.javapackager.mainClass>
+        <plugin.javapackager.runnableJar>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</plugin.javapackager.runnableJar>
         <plugin.javapackager.name>WebFxApp</plugin.javapackager.name>
-        <plugin.javapackager.displayName>WebFx Application</plugin.javapackager.displayName>
+        <plugin.javapackager.displayName>WebFX Application</plugin.javapackager.displayName>
         <plugin.javapackager.url>TBD</plugin.javapackager.url>
-        <plugin.javapackager.organizationName>WebFx</plugin.javapackager.organizationName>
+        <plugin.javapackager.organizationName>WebFX</plugin.javapackager.organizationName>
         <plugin.javapackager.organizationUrl>https://webfx.dev</plugin.javapackager.organizationUrl>
         <plugin.javapackager.organizationEmail>info@webfx.dev</plugin.javapackager.organizationEmail>
 
@@ -104,7 +117,83 @@
         <!-- Will be passed to GWT compiler so that the java code can get its value using System.getProperty("build.timestamp") -->
         <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'.000'X</maven.build.timestamp.format>
         <application.build.timestamp>${maven.build.timestamp}</application.build.timestamp>
+
     </properties>
+
+    <dependencyManagement>
+
+        <dependencies>
+
+            <!-- Setting version for OpenJFX modules -->
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-base</artifactId>
+                <version>${openjfx.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-graphics</artifactId>
+                <version>${openjfx.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-controls</artifactId>
+                <version>${openjfx.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-web</artifactId>
+                <version>${openjfx.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-media</artifactId>
+                <version>${openjfx.version}</version>
+            </dependency>
+
+            <!-- Setting version for GWT modules -->
+            <dependency>
+                <groupId>org.gwtproject</groupId>
+                <artifactId>gwt-user</artifactId>
+                <version>${gwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gwtproject</groupId>
+                <artifactId>gwt-dev</artifactId>
+                <version>${gwt.version}</version>
+            </dependency>
+
+            <!-- Setting version for Elemental2 modules -->
+            <dependency>
+                <groupId>com.google.elemental2</groupId>
+                <artifactId>elemental2-core</artifactId>
+                <version>${elemental2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.elemental2</groupId>
+                <artifactId>elemental2-dom</artifactId>
+                <version>${elemental2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.elemental2</groupId>
+                <artifactId>elemental2-svg</artifactId>
+                <version>${elemental2.version}</version>
+            </dependency>
+
+            <!-- Setting version for GWT-time modules -->
+            <dependency>
+                <groupId>org.jresearch.gwt.time</groupId>
+                <artifactId>org.jresearch.gwt.time</artifactId>
+                <version>${gwttime.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jresearch.gwt.time</groupId>
+                <artifactId>org.jresearch.gwt.time.tzdb</artifactId>
+                <version>${gwttime.version}</version>
+            </dependency>
+        </dependencies>
+
+    </dependencyManagement>
 
     <pluginRepositories>
         <!-- Adding Snapshots repository which is required to get the GWT 2.8.1-SNAPSHOT Maven plugin -->
@@ -116,6 +205,18 @@
         </pluginRepository>
     </pluginRepositories>
 
+    <repositories>
+
+        <!-- For Gluon -->
+        <repository>
+            <id>Gluon</id>
+            <url>https://nexus.gluonhq.com/nexus/content/repositories/releases</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+
+    </repositories>
+
     <distributionManagement>
 
         <!-- To tell mvn deploy to deploy snapshots to Sonatype repository  -->
@@ -126,108 +227,13 @@
 
     </distributionManagement>
 
-    <dependencyManagement>
-        <dependencies>
-
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${lib.junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <!--
-             ***************************************************************
-             * Libraries required for the GWT Platform (webfx-platform-gwt) *
-             ***************************************************************
-             -->
-
-            <dependency>
-                <groupId>com.google.gwt</groupId>
-                <artifactId>gwt</artifactId>
-                <version>${lib.gwt.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.validation</groupId>
-                        <artifactId>validation-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>${lib.elemental2.groupId}</groupId>
-                <artifactId>elemental2-core</artifactId>
-                <version>${lib.elemental2.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>${lib.elemental2.groupId}</groupId>
-                <artifactId>elemental2-dom</artifactId>
-                <version>${lib.elemental2.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>${lib.elemental2.groupId}</groupId>
-                <artifactId>elemental2-svg</artifactId>
-                <version>${lib.elemental2.version}</version>
-            </dependency>
-
-            <!--
-             ***************************************************
-             * Graphical libraries for toolkit implementations *
-             ***************************************************
-             -->
-
-            <!-- JavaFx maven modules provided by OpenJFX (since Java 11) -->
-
-            <!-- javafx.base module -->
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-base</artifactId>
-                <version>${lib.openjfx.version}</version>
-            </dependency>
-
-            <!-- javafx.graphics module -->
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-graphics</artifactId>
-                <version>${lib.openjfx.version}</version>
-            </dependency>
-
-            <!-- javafx.controls module -->
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-controls</artifactId>
-                <version>${lib.openjfx.version}</version>
-            </dependency>
-
-            <!-- javafx.web module -->
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-web</artifactId>
-                <version>${lib.openjfx.version}</version>
-            </dependency>
-
-            <!-- JavaFx third-party libraries -->
-
-            <!-- Javafxsvg is a library (based on Apache Batik) for adding SVG support to JavaFX -->
-            <dependency>
-                <groupId>de.codecentric.centerdevice</groupId>
-                <artifactId>javafxsvg</artifactId>
-                <version>${lib.javafxsvg.version}</version>
-            </dependency>
-
-        </dependencies>
-    </dependencyManagement>
-
     <build>
 
         <pluginManagement>
             <!-- plugins listed here are just pre-configured for a possible use in a module -->
             <plugins>
 
+                <!-- Setting explicit fixed version for the compiler plugin -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -237,6 +243,70 @@
                     </configuration>
                 </plugin>
 
+                <!-- Setting explicit fixed version for the clean plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${plugin.clean.version}</version>
+                </plugin>
+
+                <!-- Setting explicit fixed version for the deploy plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${plugin.deploy.version}</version>
+                </plugin>
+
+                <!-- Setting explicit fixed version for the install plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>${plugin.install.version}</version>
+                </plugin>
+
+                <!-- Setting explicit fixed version for the site plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>${plugin.site.version}</version>
+                </plugin>
+
+                <!-- Setting explicit fixed version for the resources plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${plugin.resources.version}</version>
+                </plugin>
+
+                <!-- Setting explicit fixed version for the surefire plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${plugin.surefire.version}</version>
+                </plugin>
+
+                <!-- Setting explicit fixed version for the enforcer plugin -->
+                <!-- And configure it to check the required Maven version -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${plugin.enforcer.version}</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-maven</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <requireMavenVersion>
+                                        <version>${maven.min.version}</version>
+                                    </requireMavenVersion>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
 
                 <!--
                  **********************************
@@ -248,7 +318,7 @@
                     <version>${plugin.jar.version}</version>
                     <configuration>
                         <archive>
-                            <!-- Whether or not including META-INF/maven/** coming from dependencies -->
+                            <!-- Whether including META-INF/maven/** coming from dependencies -->
                             <addMavenDescriptor>${plugin.jar.param.addMavenDescriptor}</addMavenDescriptor>
                         </archive>
                     </configuration>
@@ -275,62 +345,6 @@
                     </executions>
                 </plugin>
 
-
-                <!--
-                 *****************************************
-                 * Maven dependency plugin configuration *
-                 *****************************************
-                 Plugin to unpack dependencies with their source. This is required before calling j2objc
-                 -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>${plugin.dependency.version}</version>
-                    <executions>
-                        <execution>
-                            <id>unpack-sources</id>
-                            <phase>${plugin.dependency.param.unpack-sources.phase}</phase>
-                            <goals>
-                                <goal>unpack-dependencies</goal>
-                            </goals>
-                            <configuration>
-                                <classifier>sources</classifier>
-                                <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-                                <outputDirectory>${project.build.directory}/sources</outputDirectory>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>unpack-classes</id>
-                            <phase>${plugin.dependency.param.unpack-classes.phase}</phase>
-                            <goals>
-                                <goal>unpack-dependencies</goal>
-                            </goals>
-                            <configuration>
-                                <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-                                <outputDirectory>${plugin.dependency.param.unpack-classes.outputDirectory}</outputDirectory>
-                                <overWriteReleases>true</overWriteReleases>
-                                <overWriteSnapshots>true</overWriteSnapshots>
-                                <includes>${plugin.dependency.param.unpack-classes.includes}</includes>
-                                <!-- Excluding maven dependencies metadata (can be big and is useless here) -->
-                                <excludes>META-INF/maven/**</excludes>
-                            </configuration>
-                        </execution>
-                        <!-- Also copying these libraries in a lib folder for eventual reference in the classpath -->
-                        <execution>
-                            <id>copy-libs</id>
-                            <phase>${plugin.dependency.param.copy-libs.phase}</phase>
-                            <goals>
-                                <goal>copy-dependencies</goal>
-                            </goals>
-                            <configuration >
-                                <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-                                <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                                <overWriteReleases>true</overWriteReleases>
-                                <overWriteSnapshots>true</overWriteSnapshots>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
 
                 <!--
                  ******************************
@@ -402,6 +416,7 @@
                     </configuration>
                 </plugin>
 
+
                 <!--
                  ******************************
                  * Gluon plugin configuration *
@@ -409,11 +424,11 @@
                  -->
                 <plugin>
                     <groupId>com.gluonhq</groupId>
-                    <artifactId>client-maven-plugin</artifactId>
-                    <version>${plugin.gluon.version}</version>
+                    <artifactId>gluonfx-maven-plugin</artifactId>
+                    <version>${plugin.gluonfx.version}</version>
                     <configuration>
-                        <target>${plugin.gluon.param.target}</target>
-                        <mainClass>${plugin.gluon.param.mainClass}</mainClass>
+                        <target>${plugin.gluonfx.param.target}</target>
+                        <mainClass>${plugin.gluonfx.param.mainClass}</mainClass>
                         <nativeImageArgs>
                             <!-- SL4J -->
                             <arg>--allow-incomplete-classpath</arg>
@@ -425,7 +440,7 @@
 
                 <!--
                  ******************************************************************************************
-                 * Javapackager plugin configuration (MacOS/Linux package & windows installer generation) *
+                 * JavaPackager plugin configuration (macOS/Linux package & Windows installer generation) *
                  ******************************************************************************************
                  -->
                 <plugin>
@@ -440,7 +455,8 @@
                             </goals>
                             <configuration>
                                 <!-- mandatory -->
-                                <mainClass>${webfx.mainClass}</mainClass>
+                                <mainClass>${plugin.javapackager.mainClass}</mainClass>
+                                <runnableJar>${plugin.javapackager.runnableJar}</runnableJar>
                                 <!-- optional -->
                                 <bundleJre>true</bundleJre>
                                 <name>${plugin.javapackager.name}</name>
@@ -458,7 +474,7 @@
 
                 <!--
                  ********************************************************
-                 * JavaFx plugin configuration (jlink Image generation) *
+                 * JavaFX plugin configuration (jlink Image generation) *
                  ********************************************************
                  -->
                 <plugin>
@@ -466,7 +482,6 @@
                     <artifactId>javafx-maven-plugin</artifactId>
                     <version>${plugin.javafx.version}</version>
                     <configuration>
-                        <release>${maven.compiler.release}</release>
                         <jlinkImageName>jlinkImage</jlinkImageName>
                         <launcher>launcher</launcher>
                         <mainClass>${webfx.mainModule}/${webfx.mainClass}</mainClass>
@@ -475,6 +490,13 @@
 
             </plugins>
         </pluginManagement>
+
+        <!-- Checking the Maven version -->
+        <plugins>
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+        </plugins>
 
     </build>
 
@@ -486,7 +508,6 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-
             <properties>
                 <plugin.gwt.param.skipCompilation>false</plugin.gwt.param.skipCompilation>
             </properties>
@@ -494,28 +515,116 @@
 
         <profile>
             <id>gluon-desktop</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <properties>
-                <plugin.gluon.param.target>host</plugin.gluon.param.target>
+                <plugin.gluonfx.param.target>host</plugin.gluonfx.param.target>
             </properties>
         </profile>
-
         <profile>
             <id>gluon-ios</id>
             <properties>
-                <plugin.gluon.param.target>ios</plugin.gluon.param.target>
+                <plugin.gluonfx.param.target>ios</plugin.gluonfx.param.target>
             </properties>
         </profile>
 
         <profile>
             <id>gluon-android</id>
             <properties>
-                <plugin.gluon.param.target>android</plugin.gluon.param.target>
+                <plugin.gluonfx.param.target>android</plugin.gluonfx.param.target>
             </properties>
+        </profile>
+
+        <profile>
+            <id>auto-attach-sources</id>
+            <activation>
+                <file>
+                    <exists>src</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-source-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Automatically attach webfx.xml (if present) to the artifact in its Maven repository -->
+        <profile>
+            <id>auto-attach-webfx-xml</id>
+            <activation>
+                <file>
+                    <exists>webfx.xml</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- Using the build helper plugin to attach webfx.xml -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>${plugin.buildhelper.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-webfx-xml</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>attach-artifact</goal>
+                                </goals>
+                                <configuration>
+                                    <artifacts>
+                                        <artifact>
+                                            <file>webfx.xml</file>
+                                            <type>xml</type>
+                                            <classifier>webfx</classifier>
+                                        </artifact>
+                                    </artifacts>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>auto-plugin-gwt</id>
+            <!-- Recognizing an executable gwt module by the presence of a GWT module file -->
+            <activation>
+                <file>
+                    <exists>src/main/module.gwt.xml</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- Calling the GWT maven plugin to compile the gwt module into javascript -->
+                    <plugin>
+                        <groupId>net.ltgt.gwt.maven</groupId>
+                        <artifactId>gwt-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>auto-plugin-gluon</id>
+            <!-- Recognizing an executable gluon module by the presence of a GraalVM conf folder -->
+            <activation>
+                <file>
+                    <exists>src/main/graalvm_conf</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.gluonhq</groupId>
+                        <artifactId>gluonfx-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
     </profiles>
 
+</project>
 </project>
