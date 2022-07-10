@@ -9,18 +9,6 @@ import dev.webfx.cli.util.textfile.TextFileReaderWriter;
  */
 public final class GluonFilesGenerator {
 
-    static void generateServiceLoaderSuperSource(DevProjectModule module) {
-        module.getProvidedJavaServices()
-                .forEach(service -> {
-                    StringBuilder sb = new StringBuilder();
-                    module.getProvidedJavaServiceImplementations(service, false)
-                            .forEach(providerClassName ->
-                                    sb.append(providerClassName).append('\n')
-                            );
-                    TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), module.getResourcesDirectory().resolve("META-INF/services/" + service));
-                });
-    }
-
     public static void generateGraalVmReflectionJson(DevProjectModule gluonModule) {
         StringBuilder sb = new StringBuilder();
         ProjectModule.filterProjectModules(gluonModule.getTransitiveModules())

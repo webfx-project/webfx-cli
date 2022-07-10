@@ -1,10 +1,10 @@
 package dev.webfx.cli.modulefiles;
 
-import dev.webfx.cli.modulefiles.abstr.DevXmlModuleFileImpl;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.Module;
 import dev.webfx.cli.core.ModuleDependency;
 import dev.webfx.cli.core.ProjectModule;
+import dev.webfx.cli.modulefiles.abstr.DevXmlModuleFileImpl;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 import org.w3c.dom.Comment;
@@ -13,7 +13,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -57,6 +56,7 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                         parentNode.insertBefore(document.createTextNode(newIndentedLine), moduleSourceEndNode);
                         parentNode.insertBefore(node, moduleSourceEndNode);
                     };
+
                     // Creating a wrapper of the node appender that will drop all the unnecessary comments if there is
                     // finally no elements (such as source, resource or configuration property) for that module.
                     List<Comment> initialComments = new ArrayList<>();
@@ -76,9 +76,11 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                         nodeAppender.accept(node);
                     };
                     nodeAppenderIfNotOnlyComment.accept(document.createComment(createModuleSectionLine(module.getName())));
+                    /* Commented because this "Used by " section doesn't always generate the same content (ex: different result when executed on a single repository or on the contrib repository)
                     moduleGroup.getValue()
                             .stream().sorted(Comparator.comparing(ModuleDependency::getSourceModule)) // Sorting by source module name instead of default (destination module name)
                             .forEach(dep -> nodeAppenderIfNotOnlyComment.accept(document.createComment(" used by " + dep.getSourceModule() + " (" + dep.getType() + ") ")));
+                    */
                     String gwtModuleName = getGwtModuleName(module);
                     if (gwtModuleName != null) {
                         Element inherits = document.createElement("inherits");

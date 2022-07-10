@@ -61,8 +61,14 @@ public final class Update extends CommonSubcommand implements Runnable {
             getWorkingAndChildrenModulesInDepth(workingModule)
                     .filter(DevProjectModule::hasSourceDirectory)
                     .filter(DevProjectModule::hasJavaSourceDirectory)
-                    .filter(m -> m.getTarget().isPlatformSupported(Platform.JRE))
-                    .forEach(JavaFilesGenerator::generateJavaFiles);
+                    .forEach(m -> {
+                        boolean jre = m.getTarget().isPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
+                        boolean teavm = m.getTarget().isPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM
+                        if (jre) // Not for TeaVM because the TeaVM modules in module-info.java are not recognised by JPMS
+                            JavaFilesGenerator.generateModuleInfoJavaFile(m);
+                        if (jre /* for GraalVM */ || teavm)
+                            JavaFilesGenerator.generateMetaInfServicesFiles(m);
+                    });
 
         if (tasks.gwtXml || tasks.indexHtml || tasks.gwtSuperSources || tasks.gwtServiceLoader || tasks.gwtResourceBundles)
             // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
