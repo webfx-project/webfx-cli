@@ -115,7 +115,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default ReusableStream<ServiceProvider> providedServiceProviders() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("providers/*"), node -> new ServiceProvider(node.getNodeName(), node.getTextContent()));
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("providers/*"), node -> new ServiceProvider(XmlUtil.getAttributeValue(node, "interface"), node.getTextContent()));
     }
 
     default Node getHtmlNode() {
@@ -201,7 +201,8 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default void addProvider(String spiClassName, String providerClassName) {
-        appendElementWithTextContentIfNotAlreadyExists("providers/" + spiClassName, providerClassName, true);
+        if (lookupNode("providers/provider[@interface='" + spiClassName + "'][text() = '" + providerClassName + "']") == null)
+            appendElementWithTextContent("providers/provider", providerClassName, true).setAttribute("interface", spiClassName);
     }
 
     default boolean updateDocument(Document document) {
