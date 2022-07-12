@@ -47,7 +47,7 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                     // Ignoring emulated modules for 2 reasons:
                     // 1) they are destined to the super source, not the source (so they don't need to be listed here)
                     // 2) these modules have been shaded so the original source packages would start with emul (which would be incorrect) if they were listed here
-                    if (module.getName().startsWith("webfx-platform-gwt-emul-"))
+                    if (module.getName().startsWith("webfx-platform-emul-") && module.getName().endsWith("-gwt"))
                         return;
                     Node parentNode = moduleSourceEndNode.getParentNode();
                     // Creating a node appender that inserts a node with the after a new line and indentation

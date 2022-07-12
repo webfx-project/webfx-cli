@@ -165,7 +165,7 @@ public final class ArtifactResolver {
         if (isForGwt && isExecutable) {
             String moduleName = moduleGroup.getKey().getName();
             if (!moduleName.startsWith("gwt-") && !moduleName.startsWith("elemental2-") && !moduleName.equals("java-nio-emul") && !moduleName.equals("org.jresearch.gwt.time.tzdb"))
-                return moduleName.contains("-gwt-emul-") ? "shaded-sources" : "sources";
+                return moduleName.contains("-emul-") && moduleName.endsWith("-gwt") ? "shaded-sources" : "sources";
         }
         return null;
     }

@@ -763,7 +763,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         if (isExecutable(Platform.GWT))
             return ReusableStream.of(
                     getRootModule().searchRegisteredModule("webfx-kit-gwt"),
-                    getRootModule().searchRegisteredModule("webfx-platform-gwt-emul-javabase"),
+                    getRootModule().searchRegisteredModule("webfx-platform-emul-javabase-gwt"),
                     getRootModule().searchRegisteredModule("gwt-time")
             );
         if (isExecutable(Platform.JRE)) {
@@ -772,10 +772,10 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                 return usesMedia ? ReusableStream.of(
                         getRootModule().searchRegisteredModule("webfx-kit-openjfx"),
                         getRootModule().searchRegisteredModule("webfx-kit-javafxmedia-emul"),
-                        getRootModule().searchRegisteredModule("webfx-platform-java-boot-impl")
+                        getRootModule().searchRegisteredModule("webfx-platform-boot-java")
                 ) : ReusableStream.of(
                         getRootModule().searchRegisteredModule("webfx-kit-openjfx"),
-                        getRootModule().searchRegisteredModule("webfx-platform-java-boot-impl")
+                        getRootModule().searchRegisteredModule("webfx-platform-boot-java")
                 );
             }
             return ProjectModule.mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)

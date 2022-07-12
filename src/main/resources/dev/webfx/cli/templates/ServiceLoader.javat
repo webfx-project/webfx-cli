@@ -3,7 +3,7 @@ package java.util;
 
 import java.util.Iterator;
 import java.util.logging.Logger;
-import dev.webfx.platform.shared.util.function.Factory;
+import dev.webfx.platform.util.function.Factory;
 
 public class ServiceLoader<S> implements Iterable<S> {
 

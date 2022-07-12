@@ -34,7 +34,7 @@
     </modules>
 
     <properties>
-        <webfx.mainClass>dev.webfx.platform.shared.services.boot.ApplicationBooter</webfx.mainClass>
+        <webfx.mainClass>dev.webfx.platform.boot.ApplicationBooter</webfx.mainClass>
         <webfx.mainModule>webfx.platform.shared.services.boot</webfx.mainModule>
 
         <!-- Java version -->

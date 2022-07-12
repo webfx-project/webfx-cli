@@ -19,7 +19,7 @@ final class GwtServiceLoaderSuperSourceGenerator {
                 .forEach(providers -> {
                     String spiClassName = providers.getSpiClassName();
                     ReusableStream<String> providerClassNames = providers.getProviderClassNames();
-                    if (spiClassName.equals("dev.webfx.platform.gwt.services.resource.spi.impl.GwtResourceBundle")) {
+                    if (spiClassName.equals("dev.webfx.platform.resource.spi.impl.gwt.GwtResourceBundle")) {
                         if (Files.exists(GwtEmbedResourcesBundleSourceGenerator.getJavaFilePath(module)))
                             providerClassNames = ReusableStream.concat(
                                     providerClassNames,
