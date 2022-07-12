@@ -6,7 +6,7 @@ import dev.webfx.cli.core.Module;
 import org.w3c.dom.Element;
 
 /**
- * WebFx module file read from resources (only used for reading the JDK modules when initializing the ModuleRegistry)
+ * WebFX module file read from resources (only used for reading the JDK modules when initializing the ModuleRegistry)
  *
  * @author Bruno Salmon
  */

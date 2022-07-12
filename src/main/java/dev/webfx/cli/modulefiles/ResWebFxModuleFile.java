@@ -6,7 +6,7 @@ import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 
 /**
- * WebFx module file read from resources (only used for reading the JDK modules when initializing the ModuleRegistry)
+ * WebFX module file read from resources (only used for reading the JDK modules when initializing the ModuleRegistry)
  *
  * @author Bruno Salmon
  */
