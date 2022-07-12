@@ -763,7 +763,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         if (isExecutable(Platform.GWT))
             return ReusableStream.of(
                     getRootModule().searchRegisteredModule("webfx-kit-gwt"),
-                    getRootModule().searchRegisteredModule("webfx-platform-emul-javabase-gwt"),
+                    getRootModule().searchRegisteredModule("webfx-platform-javabase-emul-gwt"),
                     getRootModule().searchRegisteredModule("gwt-time")
             );
         if (isExecutable(Platform.JRE)) {
