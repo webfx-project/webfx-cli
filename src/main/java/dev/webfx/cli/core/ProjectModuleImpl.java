@@ -734,7 +734,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                     ReusableStream<ModuleDependency> concreteModuleDependencies = ModuleDependency.createImplicitProviderDependency(this, concreteModule)
                             .collectThisAndTransitiveDependencies();
                     // In case these dependencies have a SPI, collecting the providers and adding their associated implicit dependencies
-                    // Ex: interface = [webfx-extras-visual-controls-]grid-registry, concrete = [...]-grid-registry-spi, provider = [...]-grid-peers-javafx
+                    // Ex: interface = [webfx-extras-visual-]grid-registry, concrete = [...]-grid-registry-spi, provider = [...]-grid-peers-javafx
                     // TODO: See if we can move this up to the generic steps when building dependencies
                     if (concreteModule instanceof ProjectModuleImpl) // Added to solve cast problem, is it OK?
                         concreteModuleDependencies = ReusableStream.concat(

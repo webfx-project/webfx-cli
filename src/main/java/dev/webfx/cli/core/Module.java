@@ -20,7 +20,7 @@ public interface Module extends GavApi, Comparable<Module> {
         if (thisEmul != mEmul)
             return thisEmul ? -1 : 1;
         // This (temporary) rule is just for GridCollator (which has a different implementation in gwt so must be listed first)
-        String GridCollatorPeerPrefix = "webfx-extras-visual-controls-grid-peers";
+        String GridCollatorPeerPrefix = "webfx-extras-visual-grid-peers";
         if (getName().startsWith(GridCollatorPeerPrefix) && m.getName().startsWith(GridCollatorPeerPrefix)) {
             if (getName().endsWith("-gwt"))
                 return -1;
