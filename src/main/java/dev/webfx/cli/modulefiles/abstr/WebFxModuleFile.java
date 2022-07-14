@@ -115,7 +115,13 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
     }
 
     default ReusableStream<ServiceProvider> providedServiceProviders() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("providers/*"), node -> new ServiceProvider(XmlUtil.getAttributeValue(node, "interface"), node.getTextContent()));
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("providers/provider"), node -> {
+            String spi = XmlUtil.getAttributeValue(node, "interface");
+            String provider = node.getTextContent();
+            if (spi == null)
+                throw new CliException("Missing interface attribute in " + getModule().getName() + " provider declaration: " + XmlUtil.formatXmlText(node));
+            return new ServiceProvider(spi, provider);
+        });
     }
 
     default Node getHtmlNode() {
