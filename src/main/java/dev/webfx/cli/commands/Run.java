@@ -1,8 +1,16 @@
 package dev.webfx.cli.commands;
 
+import dev.webfx.cli.core.CliException;
+import dev.webfx.cli.core.DevProjectModule;
+import dev.webfx.cli.core.Logger;
+import dev.webfx.cli.core.MavenCaller;
 import dev.webfx.cli.util.os.OperatingSystem;
+import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * @author Bruno Salmon
@@ -31,16 +39,16 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-i", "--gluon-ios"}, description = "Runs the Gluon native iOS app")
     private boolean ios;
 
-    @CommandLine.Option(names= {"-l", "--locate"}, description = "Just prints the location of the expected executable file")
+    @CommandLine.Option(names= {"-l", "--locate"}, description = "Just prints the location of the expected executable file (no run)")
     boolean locate;
 
-    @CommandLine.Option(names= {"-r", "--reveal"}, description = "Just reveals the executable file in the file browser")
-    boolean reveal;
+    @CommandLine.Option(names= {"-s", "--show"}, description = "Just shows the executable file in the file browser (no run)")
+    boolean show;
 
-    /*@Option(names= {"-b", "--build"}, description = "Build before running")
+    @CommandLine.Option(names= {"-b", "--build"}, description = "(Re)build the application before running it")
     boolean build;
 
-    @Option(names= {"-p", "--port"}, description = "Port of the web server.")
+    /*@Option(names= {"-p", "--port"}, description = "Port of the web server.")
     int port;*/
 
     @Override
@@ -51,8 +59,42 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        BuildRunCommon buildRunCommon = new BuildRunCommon(gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, reveal, true, false);
-        buildRunCommon.findAndConsumeExecutableModule(workspace.getWorkingDevProjectModule(), workspace.getTopRootModule(), buildRunCommon::executeModule);
+        execute(new BuildRunCommon(build, true, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, true, false), workspace);
+    }
+
+    static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
+        DevProjectModule executableModule = brc.findExecutableModule(workspace.getWorkingDevProjectModule(), workspace.getTopRootModule());
+        if (brc.build)
+            Build.execute(brc, workspace);
+        brc.getExecutableFilePath(executableModule).forEach(Run::executeFile);
+    }
+
+    private static void executeFile(Path executableFilePath) {
+        try {
+            String fileName = executableFilePath.getFileName().toString();
+            String pathName = executableFilePath.toString();
+            if (!Files.exists(executableFilePath))
+                Logger.log("Can't execute nonexistent file " + ProcessCall.toShellLogCommandToken(executableFilePath));
+            else if (fileName.endsWith(".jar"))
+                ProcessCall.executeCommandTokens("java", "-jar", pathName);
+            else if (fileName.endsWith(".html"))
+                if (OperatingSystem.isWindows())
+                    ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath));
+                else
+                    ProcessCall.executeCommandTokens("open", pathName);
+            else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
+                boolean android = fileName.endsWith(".apk");
+                Path gluonModulePath = executableFilePath.getParent();
+                while (gluonModulePath != null && !Files.exists(gluonModulePath.resolve("pom.xml")))
+                    gluonModulePath = gluonModulePath.getParent();
+                if (gluonModulePath != null)
+                    MavenCaller.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
+                            , new ProcessCall().setWorkingDirectory(gluonModulePath));
+            } else // Everything else should be an executable file that we can call directly
+                ProcessCall.executeCommandTokens(pathName);
+        } catch (Exception e) {
+            throw new CliException(e.getMessage());
+        }
     }
 
 }

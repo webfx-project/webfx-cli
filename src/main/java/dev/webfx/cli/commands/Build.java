@@ -36,11 +36,14 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-i", "--gluon-ios"}, description = "Includes the Gluon native iOS build")
     private boolean ios;
 
-    @CommandLine.Option(names= {"-l", "--locate"}, description = "Just prints the location of the expected executable file")
+    @CommandLine.Option(names= {"-l", "--locate"}, description = "Just prints the location of the expected executable file (no build)")
     boolean locate;
 
-    @CommandLine.Option(names= {"-r", "--reveal"}, description = "Just reveals the executable file in the file browser")
-    boolean reveal;
+    @CommandLine.Option(names= {"-s", "--show"}, description = "Just shows the executable file in the file browser (no build)")
+    boolean show;
+
+    @CommandLine.Option(names= {"-r", "--run"}, description = "Runs the application after the build")
+    boolean run;
 
     @Override
     public void run() {
@@ -50,23 +53,22 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        new BuildRunCommon(gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, reveal, false, true)
-                .findAndConsumeExecutableModule(workspace.getWorkingDevProjectModule(), workspace.getTopRootModule(),
-                        this::build);
+        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, false, true), workspace);
     }
 
-    private void build(DevProjectModule gluonModule) {
+    static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
+        DevProjectModule gluonModule = brc.findExecutableModule(workspace.getWorkingDevProjectModule(), workspace.getTopRootModule());
 /*
         if (!fatjar && !gwt && !openJfxDesktop && !gluon)
             throw new CommandLine.ParameterException(new CommandLine(this), "Missing required build option");
 */
         String command = "mvn " +
                 (gluonModule != null ? "install " : "package ") +
-                (fatjar ? "-P openjfx-fatjar " : "") +
-                (openJfxDesktop ? "-P openjfx-desktop " : "") +
-                (gwt ? "-P gwt-compile " : "");
+                (brc.fatjar ? "-P openjfx-fatjar " : "") +
+                (brc.openJfxDesktop ? "-P openjfx-desktop " : "") +
+                (brc.gwt ? "-P gwt-compile " : "");
         ProcessCall processCall = new ProcessCall();
-        if (openJfxDesktop && OperatingSystem.isWindows()) { // Ensuring WiX and Inno is in the environment path (usually not done by the installer)
+        if (brc.openJfxDesktop && OperatingSystem.isWindows()) { // Ensuring WiX and Inno is in the environment path (usually not done by the installer)
             String innoResultLine = new ProcessCall()
                     .setCommandTokens("reg", "query", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\InnoSetupScriptFile", "/f", "\"Inno Setup*.exe\"", "/s")
                     .setResultLineFilter(line -> line.contains("Inno Setup"))
@@ -84,7 +86,7 @@ public final class Build extends CommonSubcommand implements Runnable {
                 .setWorkingDirectory(workspace.getTopRootModule().getHomeDirectory())
                 .executeAndWait();
         if (gluonModule != null) {
-            if (gluonDesktop) {
+            if (brc.gluonDesktop) {
                 if (OperatingSystem.isWindows()) {
                     new ProcessCall()
                             .setCommand("reg query HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\UFH\\SHC /f Microsoft.VisualStudio.DevShell.dll")
@@ -103,14 +105,14 @@ public final class Build extends CommonSubcommand implements Runnable {
                 } else
                     invokeGluonGoal("gluon-desktop", gluonModule);
             }
-            if (android)
+            if (brc.android)
                 invokeGluonGoal("gluon-android", gluonModule);
-            if (ios)
+            if (brc.ios)
                 invokeGluonGoal("gluon-ios", gluonModule);
         }
     }
 
-    private void invokeGluonGoal(String gluonProfile, DevProjectModule gluonModule) {
+    private static void invokeGluonGoal(String gluonProfile, DevProjectModule gluonModule) {
         MavenCaller.invokeMavenGoal("-P " + gluonProfile + " gluonfx:build gluonfx:package"
                 , new ProcessCall()
                         .setWorkingDirectory(gluonModule.getHomeDirectory())
