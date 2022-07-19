@@ -204,7 +204,7 @@ public final class STream extends CommonSubcommand {
         ReusableStream<ProjectModule> computeProjectModuleBaseStream() {
             if (getClass() != Modules.class || flatMap != null)
                 includeParent = recursive = true;
-            ProjectModule projectModule = workspace.getWorkingProjectModule();
+            ProjectModule projectModule = getWorkspace().getWorkingProjectModule();
             if (!recursive)
                 return includeParent ? projectModule.getThisAndChildrenModules() : projectModule.getChildrenModules();
             return includeParent ? projectModule.getThisAndChildrenModulesInDepth() : projectModule.getChildrenModulesInDepth();

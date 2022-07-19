@@ -21,7 +21,7 @@ public final class Init extends CommonSubcommand implements Callable<Void> {
 
     @Override
     public Void call() {
-        execute(artifact, workspace);
+        execute(artifact, getWorkspace());
         return null;
     }
 

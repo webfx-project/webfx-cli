@@ -33,6 +33,7 @@ public final class Create extends CommonSubcommand {
         String project;
 
         private DevProjectModule createModule(String name, boolean aggregate) {
+            CommandWorkspace workspace = getWorkspace();
             Path projectDirectoryPath = project != null ? workspace.getWorkspaceDirectoryPath().resolve(project) : workspace.getProjectDirectoryPath();
             Path modulePath = projectDirectoryPath.resolve(name);
             DevProjectModule module = workspace.getModuleRegistry().getOrCreateDevProjectModule(modulePath);
@@ -160,7 +161,7 @@ public final class Create extends CommonSubcommand {
                 if (project != null)
                     prefix = project;
                 else
-                    prefix = workspace.getModuleRegistry().getOrCreateDevProjectModule(workspace.getProjectDirectoryPath()).getName();
+                    prefix = getWorkspace().getModuleRegistry().getOrCreateDevProjectModule(getWorkspace().getProjectDirectoryPath()).getName();
             }
             DevProjectModule applicationModule = createTagApplicationModule(null);
             createTagApplicationModule(TargetTag.OPENJFX);

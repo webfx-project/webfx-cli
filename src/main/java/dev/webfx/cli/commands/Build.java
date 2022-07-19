@@ -53,7 +53,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, false, true), workspace);
+        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, false, true), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {

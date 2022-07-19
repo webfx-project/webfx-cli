@@ -24,7 +24,7 @@ public final class Update extends CommonSubcommand implements Runnable {
     @Override
     public void run() {
         setUpLogger();
-        execute(only, skip, workspace);
+        execute(only, skip, getWorkspace());
     }
 
     static void execute(String[] only, String[] skip, CommandWorkspace workspace) {

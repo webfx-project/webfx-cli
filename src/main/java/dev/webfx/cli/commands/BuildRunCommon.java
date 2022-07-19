@@ -63,7 +63,7 @@ final class BuildRunCommon {
         if (returnGluonModuleOnly)
             executableModules = executableModules.filter(m -> m.getTarget().hasTag(TargetTag.GLUON));
         if (executableModules.count() > 1)
-            throw new CliException("Ambiguous executable modules. Please add one of the following options:\n" + executableModules.map(m -> "-m " + m.getName()).collect(Collectors.joining("\n")));
+            throw new CliException("Ambiguous executable modules. Please add one of the following options:\n" + executableModules.map(m -> "-M " + m.getName()).collect(Collectors.joining("\n")));
         return executableModules.findFirst().orElse(null);
     }
 

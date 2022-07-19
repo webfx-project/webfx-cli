@@ -66,6 +66,14 @@ public class CommonCommand {
         return moduleName != null || parentCommand == null ? moduleName : parentCommand.getModuleName();
     }
 
+    private CommandWorkspace workspace;
+
+    public CommandWorkspace getWorkspace() {
+        if (workspace == null)
+            workspace = new CommandWorkspace(getProjectDirectory(), getModuleName());
+        return workspace;
+    }
+
     protected void setUpLogger() {
         Logger.setLogConsumer(object -> {
             String message = null;
@@ -110,7 +118,5 @@ public class CommonCommand {
     protected static void log(Object o) {
         Logger.log(o);
     }
-
-    protected final CommandWorkspace workspace = new CommandWorkspace(getProjectDirectory(), moduleName);
 
 }

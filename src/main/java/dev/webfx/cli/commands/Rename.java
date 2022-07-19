@@ -35,7 +35,7 @@ public final class Rename extends CommonSubcommand {
         @Override
         public void run() {
             setUpLogger();
-            execute(moduleName, moduleNewName, workspace);
+            execute(moduleName, moduleNewName, getWorkspace());
         }
 
         static void execute(String moduleName, String moduleNewName, CommandWorkspace workspace) {
