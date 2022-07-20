@@ -57,6 +57,9 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"--rpm"}, description = "Takes the rpm package as executable (Linux)")
     boolean rpm;
 
+    @CommandLine.Option(names= {"--open"}, description = "Runs the executable via 'open' command (Linux/macOS)")
+    boolean open;
+
     /*@Option(names= {"-p", "--port"}, description = "Port of the web server.")
     int port;*/
 
@@ -68,7 +71,7 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(build, true, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm), getWorkspace());
+        execute(new BuildRunCommon(build, true, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
@@ -81,10 +84,10 @@ public final class Run extends CommonSubcommand implements Runnable {
     static void executeNoBuild(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule executableModule = brc.findExecutableModule(workspace);
         if (executableModule != null) // null with --locate or --show
-            brc.getExecutableFilePath(executableModule).forEach(Run::executeFile);
+            brc.getExecutableFilePath(executableModule).forEach(path -> executeFile(path, brc.open));
     }
 
-    private static void executeFile(Path executableFilePath) {
+    private static void executeFile(Path executableFilePath, boolean usesOpen) {
         try {
             String fileName = executableFilePath.getFileName().toString();
             String pathName = executableFilePath.toString();
@@ -112,7 +115,11 @@ public final class Run extends CommonSubcommand implements Runnable {
                     Logger.log("\nIn addition to the desktop icon, you can now type '" + commandName + "' in the terminal to launch the application.\nUse 'sudo apt remove " + commandName.toLowerCase() + "' to uninstall the application.");
                 }
             } else { // Everything else should be an executable file that we can call directly
-                int exitCode = ProcessCall.executeCommandTokens(pathName);
+                int exitCode;
+                if (usesOpen && !OperatingSystem.isWindows())
+                    exitCode = ProcessCall.executeCommandTokens("open", pathName);
+                else
+                    exitCode = ProcessCall.executeCommandTokens(pathName);
                 if (exitCode != 0 && fileName.endsWith(".AppImage"))
                     Logger.log("\nYou can install FUSE with 'sudo apt install fuse'");
             }

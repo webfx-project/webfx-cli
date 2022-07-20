@@ -29,8 +29,9 @@ final class BuildRunCommon {
     final boolean appImage;
     final boolean deb;
     final boolean rpm;
+    final boolean open;
 
-    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm) {
+    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open) {
         this.build = build;
         this.run = run;
         this.gwt = gwt;
@@ -44,6 +45,7 @@ final class BuildRunCommon {
         this.appImage = appImage;
         this.deb = deb;
         this.rpm = rpm;
+        this.open = open;
         // Checking this is a compatible machine for the target
         if (android && !OperatingSystem.isLinux())
             throw new CliException("Please use a Linux machine to build the Android app");

@@ -54,6 +54,9 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"--rpm"}, description = "Takes the rpm package as executable (Linux)")
     boolean rpm;
 
+    @CommandLine.Option(names= {"--open"}, description = "Runs the executable via 'open' command (Linux/macOS)")
+    boolean open;
+
     @Override
     public void run() {
         if (mobile) {
@@ -62,7 +65,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm), getWorkspace());
+        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
