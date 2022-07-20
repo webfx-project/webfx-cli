@@ -106,7 +106,11 @@ public final class Run extends CommonSubcommand implements Runnable {
                     MavenCaller.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
                             , new ProcessCall().setWorkingDirectory(gluonModulePath));
             } else if (fileName.endsWith(".deb")) {
-                ProcessCall.executeCommandTokens("sudo", "apt", "install", pathName);
+                int exitCode = ProcessCall.executeCommandTokens("sudo", "apt", "install", pathName);
+                if (exitCode == 0 && fileName.contains("_")) {
+                    String commandName = fileName.substring(0, fileName.lastIndexOf('_'));
+                    Logger.log("In addition to the desktop icon, you can now type '" + commandName + "' in the terminal to launch the application. Use 'sudo apt remove " + commandName.toLowerCase() + "' to uninstall the application.");
+                }
             } else // Everything else should be an executable file that we can call directly
                 ProcessCall.executeCommandTokens(pathName);
         } catch (Exception e) {
