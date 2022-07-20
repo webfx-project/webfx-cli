@@ -59,13 +59,18 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(build, true, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, true, false), getWorkspace());
+        execute(new BuildRunCommon(build, true, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
-        DevProjectModule executableModule = brc.findExecutableModule(workspace.getWorkingDevProjectModule(), workspace.getTopRootModule());
         if (brc.build)
-            Build.execute(brc, workspace);
+            Build.execute(brc, workspace); // Build will call executeNoBuild() at the end of the build
+        else
+            executeNoBuild(brc, workspace);
+    }
+
+    static void executeNoBuild(BuildRunCommon brc, CommandWorkspace workspace) {
+        DevProjectModule executableModule = brc.findExecutableModule(workspace);
         brc.getExecutableFilePath(executableModule).forEach(Run::executeFile);
     }
 

@@ -53,11 +53,11 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, false, true), getWorkspace());
+        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
-        DevProjectModule gluonModule = brc.findExecutableModule(workspace.getWorkingDevProjectModule(), workspace.getTopRootModule());
+        DevProjectModule gluonModule = brc.findGluonModule(workspace);
 /*
         if (!fatjar && !gwt && !openJfxDesktop && !gluon)
             throw new CommandLine.ParameterException(new CommandLine(this), "Missing required build option");
@@ -110,6 +110,8 @@ public final class Build extends CommonSubcommand implements Runnable {
             if (brc.ios)
                 invokeGluonGoal("gluon-ios", gluonModule);
         }
+        if (brc.run)
+            Run.executeNoBuild(brc, workspace);
     }
 
     private static void invokeGluonGoal(String gluonProfile, DevProjectModule gluonModule) {

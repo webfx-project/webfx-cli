@@ -26,10 +26,8 @@ final class BuildRunCommon {
     final boolean ios;
     final boolean locate;
     final boolean show;
-    final boolean raiseExceptionIfEmpty;
-    final boolean returnGluonModuleOnly;
 
-    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean raiseExceptionIfEmpty, boolean returnGluonModuleOnly) {
+    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show) {
         this.build = build;
         this.run = run;
         this.gwt = gwt;
@@ -40,17 +38,25 @@ final class BuildRunCommon {
         this.ios = ios;
         this.locate = locate;
         this.show = show;
-        this.raiseExceptionIfEmpty = raiseExceptionIfEmpty;
-        this.returnGluonModuleOnly = returnGluonModuleOnly;
     }
 
-    public DevProjectModule findExecutableModule(DevProjectModule workingModule, DevProjectModule topRootModule) {
+    DevProjectModule findExecutableModule(CommandWorkspace workspace) {
+        return findExecutableModule(workspace, false);
+    }
+
+    DevProjectModule findGluonModule(CommandWorkspace workspace) {
+        return findExecutableModule(workspace, true);
+    }
+
+    private DevProjectModule findExecutableModule(CommandWorkspace workspace, boolean returnGluonModuleOnly) {
+        DevProjectModule workingModule = workspace.getWorkingDevProjectModule();
+        DevProjectModule topRootModule = workspace.getTopRootModule();
         ReusableStream<DevProjectModule> executableModules = findExecutableModules(workingModule);
         if (executableModules.isEmpty()) {
             executableModules = findExecutableModules(topRootModule);
             if (!executableModules.isEmpty())
                 Logger.log("NOTE: No executable module under " + workingModule + " so searching over the whole repository");
-            else if (raiseExceptionIfEmpty)
+            else if (run)
                 throw new CliException("No executable module found");
         }
         if (locate || show) {
