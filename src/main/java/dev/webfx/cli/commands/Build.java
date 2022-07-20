@@ -67,8 +67,6 @@ public final class Build extends CommonSubcommand implements Runnable {
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule gluonModule = brc.findGluonModule(workspace);
-        if (gluonModule == null) // happens with --locate or --show
-            return;
 /*
         if (!fatjar && !gwt && !openJfxDesktop && !gluon)
             throw new CommandLine.ParameterException(new CommandLine(this), "Missing required build option");
@@ -93,40 +91,45 @@ public final class Build extends CommonSubcommand implements Runnable {
             processCall.setPowershellCommand("$env:PATH += \";$env:WIX\\bin" + (innoResultLine != null ? ";" + innoResultLine : "") + "\"; " + command);
         } else
             processCall.setCommand(command);
-        processCall
+        int exitCode = processCall
                 .setWorkingDirectory(workspace.getTopRootModule().getHomeDirectory())
-                .executeAndWait();
-        if (gluonModule != null) {
+                .executeAndWait()
+                .getExitCode();
+        if (gluonModule != null && exitCode == 0) {
             if (brc.gluonDesktop) {
                 if (OperatingSystem.isWindows()) {
-                    new ProcessCall()
+                    int[] gluonWindowsExitCode = {0};
+                    exitCode = new ProcessCall()
                             .setCommand("reg query HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\UFH\\SHC /f Microsoft.VisualStudio.DevShell.dll")
                             .setResultLineFilter(line -> line.contains("Microsoft.VisualStudio.DevShell.dll"))
                             .executeAndWait()
                             .onLastResultLine(resultLine -> {
                                 Path graalVmHome = Install.getGraalVmHome();
-                                new ProcessCall()
+                                gluonWindowsExitCode[0] = new ProcessCall()
                                         .setPowershellCommand(
                                                 (resultLine == null ? "" : resultLine.substring(resultLine.indexOf("&{Import-Module") + 2, resultLine.lastIndexOf('}')).replaceAll("\"\"\"", "'") + " -DevCmdArguments '-arch=x64'; ") +
                                                         (graalVmHome == null ? "" : "$env:GRAALVM_HOME = '" + graalVmHome + "'; ") +
                                                         "mvn -P gluon-desktop gluonfx:build gluonfx:package")
                                         .setWorkingDirectory(gluonModule.getHomeDirectory())
-                                        .executeAndWait();
-                            });
+                                        .executeAndWait()
+                                        .getExitCode();
+                            }).getExitCode();
+                    if (exitCode == 0)
+                        exitCode = gluonWindowsExitCode[0];
                 } else
-                    invokeGluonGoal("gluon-desktop", gluonModule);
+                    exitCode = invokeGluonGoal("gluon-desktop", gluonModule);
             }
             if (brc.android)
-                invokeGluonGoal("gluon-android", gluonModule);
+                exitCode = invokeGluonGoal("gluon-android", gluonModule);
             if (brc.ios)
-                invokeGluonGoal("gluon-ios", gluonModule);
+                exitCode = invokeGluonGoal("gluon-ios", gluonModule);
         }
-        if (brc.run)
+        if (brc.run && exitCode == 0)
             Run.executeNoBuild(brc, workspace);
     }
 
-    private static void invokeGluonGoal(String gluonProfile, DevProjectModule gluonModule) {
-        MavenCaller.invokeMavenGoal("-P " + gluonProfile + " gluonfx:build gluonfx:package"
+    private static int invokeGluonGoal(String gluonProfile, DevProjectModule gluonModule) {
+        return MavenCaller.invokeMavenGoal("-P " + gluonProfile + " gluonfx:build gluonfx:package"
                 , new ProcessCall()
                         .setWorkingDirectory(gluonModule.getHomeDirectory())
         );

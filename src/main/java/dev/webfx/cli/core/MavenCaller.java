@@ -19,15 +19,15 @@ public final class MavenCaller {
             : Path.of(System.getProperty("user.home"), ".m2", "repository");
     //private static Invoker MAVEN_INVOKER; // Will be initialised later if needed
 
-    public static void invokeMavenGoal(String goal) {
-        invokeMavenGoal(goal, new ProcessCall());
+    public static int invokeMavenGoal(String goal) {
+        return invokeMavenGoal(goal, new ProcessCall());
     }
 
-    public static void invokeDownloadMavenGoal(String goal) {
-        invokeMavenGoal(goal, new ProcessCall().setLogLineFilter(line -> line.startsWith("Downloading")));
+    public static int invokeDownloadMavenGoal(String goal) {
+        return invokeMavenGoal(goal, new ProcessCall().setLogLineFilter(line -> line.startsWith("Downloading")));
     }
 
-    public static void invokeMavenGoal(String goal, ProcessCall processCall) {
+    public static int invokeMavenGoal(String goal, ProcessCall processCall) {
         boolean gluonPluginCall = goal.contains("gluonfx:");
         Path graalVmHome = gluonPluginCall ? Install.getGraalVmHome() : null;
         processCall.setCommand("mvn " + goal);
@@ -43,6 +43,7 @@ public final class MavenCaller {
                     .executeAndWait();
             if (processCall.getLastErrorLine() != null)
                 throw new CliException("Error(s) detected during Maven invocation:\n" + String.join("\n", processCall.getErrorLines()));
+            return processCall.getExitCode();
         }/* else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();
