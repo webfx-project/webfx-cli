@@ -26,8 +26,11 @@ final class BuildRunCommon {
     final boolean ios;
     final boolean locate;
     final boolean show;
+    final boolean appImage;
+    final boolean deb;
+    final boolean rpm;
 
-    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show) {
+    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm) {
         this.build = build;
         this.run = run;
         this.gwt = gwt;
@@ -38,6 +41,18 @@ final class BuildRunCommon {
         this.ios = ios;
         this.locate = locate;
         this.show = show;
+        this.appImage = appImage;
+        this.deb = deb;
+        this.rpm = rpm;
+        // Checking this is a compatible machine for the target
+        if (android && !OperatingSystem.isLinux())
+            throw new CliException("Please use a Linux machine to build the Android app");
+        if (ios && !OperatingSystem.isMacOs())
+            throw new CliException("Please use a Mac to build the iOS app");
+        if ((appImage || deb || rpm) && !OperatingSystem.isLinux())
+            throw new CliException("--AppImage, --deb and --rpm options are to be used on Linux machines only");
+        if ((appImage || deb || rpm) && !openJfxDesktop)
+            throw new CliException("--AppImage, --deb and --rpm options are to be used with the --openjfx-desktop option");
     }
 
     DevProjectModule findExecutableModule(CommandWorkspace workspace) {
@@ -100,8 +115,18 @@ final class BuildRunCommon {
             if (module.getTarget().hasTag(TargetTag.OPENJFX)) {
                 if (fatjar)
                     executablePaths.add(targetPath.resolve(module.getName() + "-" + module.getVersion() + "-fat.jar"));
-                if (openJfxDesktop)
-                    executablePaths.add(targetPath.resolve("javapackager/" + applicationName + "/" + applicationName + (OperatingSystem.isMacOs() ? ".app" : OperatingSystem.isWindows() ? ".exe" : "")));
+                if (openJfxDesktop) {
+                    if (!appImage && !deb && !rpm)
+                        executablePaths.add(targetPath.resolve("javapackager/" + applicationName + "/" + applicationName + (OperatingSystem.isMacOs() ? ".app" : OperatingSystem.isWindows() ? ".exe" : "")));
+                    else {
+                        if (appImage)
+                            executablePaths.add(targetPath.resolve("javapackager/" + applicationName + ".AppImage"));
+                        if (deb)
+                            executablePaths.add(targetPath.resolve("javapackager/" + applicationName + "_" + module.getVersion() + ".deb"));
+                        if (rpm)
+                            executablePaths.add(targetPath.resolve("javapackager/" + applicationName + "_" + module.getVersion() + ".rpm"));
+                    }
+                }
             } else if (module.getTarget().hasTag(TargetTag.GLUON)) {
                 switch (OperatingSystem.getOsFamily()) {
                     case LINUX:

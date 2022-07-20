@@ -45,6 +45,15 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"-r", "--run"}, description = "Runs the application after the build")
     boolean run;
 
+    @CommandLine.Option(names= {"--AppImage"}, description = "Takes the AppImage as executable (Linux)")
+    boolean appImage;
+
+    @CommandLine.Option(names= {"--deb"}, description = "Takes the deb package as executable (Linux)")
+    boolean deb;
+
+    @CommandLine.Option(names= {"--rpm"}, description = "Takes the rpm package as executable (Linux)")
+    boolean rpm;
+
     @Override
     public void run() {
         if (mobile) {
@@ -53,7 +62,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show), getWorkspace());
+        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {

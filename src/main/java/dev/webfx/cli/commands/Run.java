@@ -48,6 +48,15 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"-b", "--build"}, description = "(Re)build the application before running it")
     boolean build;
 
+    @CommandLine.Option(names= {"--AppImage"}, description = "Takes the AppImage as executable (Linux)")
+    boolean appImage;
+
+    @CommandLine.Option(names= {"--deb"}, description = "Takes the deb package as executable (Linux)")
+    boolean deb;
+
+    @CommandLine.Option(names= {"--rpm"}, description = "Takes the rpm package as executable (Linux)")
+    boolean rpm;
+
     /*@Option(names= {"-p", "--port"}, description = "Port of the web server.")
     int port;*/
 
@@ -59,7 +68,7 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(build, true, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show), getWorkspace());
+        execute(new BuildRunCommon(build, true, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
@@ -96,6 +105,8 @@ public final class Run extends CommonSubcommand implements Runnable {
                 if (gluonModulePath != null)
                     MavenCaller.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
                             , new ProcessCall().setWorkingDirectory(gluonModulePath));
+            } else if (fileName.endsWith(".deb")) {
+
             } else // Everything else should be an executable file that we can call directly
                 ProcessCall.executeCommandTokens(pathName);
         } catch (Exception e) {
