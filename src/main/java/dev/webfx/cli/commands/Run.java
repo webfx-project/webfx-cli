@@ -57,7 +57,7 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"--rpm"}, description = "Takes the rpm package as executable (Linux)")
     boolean rpm;
 
-    @CommandLine.Option(names= {"--open"}, description = "Runs the executable via 'open' command (Linux/macOS)")
+    @CommandLine.Option(names= {"--open"}, description = "Runs the executable via 'open' (macOS)")
     boolean open;
 
     /*@Option(names= {"-p", "--port"}, description = "Port of the web server.")
