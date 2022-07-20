@@ -300,19 +300,14 @@ public final class Install extends CommonSubcommand {
 
     static boolean checkOrFixXcodePathForGluon(boolean install) {
         // Fixing wrong Xcode path on macOS causing build failure (see issue https://github.com/gluonhq/substrate/issues/978)
-        String xcodePath = new ProcessCall("xcode-select", "-p").setLogsCall(install, false).setLogLineFilter(install ? line -> true : null).executeAndWait().getLastResultLine();
+        String xcodePath = new ProcessCall("xcode-select", "-p").setLogsCall(install, false).setLogLineFilter(line -> install).executeAndWait().getLastResultLine();
         String expectedXcodePath = "/Applications/Xcode.app/Contents/Developer";
         if (expectedXcodePath.equals(xcodePath)) {
             if (install)
                 Logger.log("Well done, your Xcode path is correctly set.");
         } else {
-            Logger.log("Your Xcode path is incorrectly set, the following command should fix it:");
-            int errorCode = ProcessCall.executeCommandTokens("xcode-select", "-s", expectedXcodePath);
-            if (errorCode != 0) {
-                Logger.log("\nXcode doesn't seem to be installed on your machine. Please install it from the Apple website.");
-                ProcessCall.executeCommandTokens("open", "https://apps.apple.com/us/app/xcode/id497799835");
-                return false;
-            }
+            Logger.log("Your Xcode path is incorrectly set. Get Xcode from https://apps.apple.com/us/app/xcode/id497799835 if not already installed, otherwise try the following command to fix the path:\n% sudo xcode-select -s " + expectedXcodePath);
+            return false;
         }
         return true;
     }
