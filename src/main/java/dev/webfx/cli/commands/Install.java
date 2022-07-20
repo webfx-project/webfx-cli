@@ -284,7 +284,7 @@ public final class Install extends CommonSubcommand {
         }
     }
 
-    @Command(name = "xcode-tools", description = "Install Xcode command line tools (macOS).")
+    @Command(name = "xcode", description = "Check your Xcode installation is correct, otherwise redirect to the Apple website (macOS).")
     static class XcodeTools extends CommonSubcommand implements Runnable {
 
         @Override
@@ -292,8 +292,29 @@ public final class Install extends CommonSubcommand {
             if (OperatingSystem.getOsFamily() != OsFamily.MAC_OS)
                 throw new CliException("This command is to be executed on Macs only.");
 
-            ProcessCall.executeCommandTokens("xcode-select", "--install");
+            //ProcessCall.executeCommandTokens("xcode-select", "--install"); // Installs the command line tools (not enough for Gluon)
+
+            checkOrFixXcodePathForGluon(true);
         }
+    }
+
+    static boolean checkOrFixXcodePathForGluon(boolean install) {
+        // Fixing wrong Xcode path on macOS causing build failure (see issue https://github.com/gluonhq/substrate/issues/978)
+        String xcodePath = new ProcessCall("xcode-select", "-p").setLogsCall(install, false).setLogLineFilter(install ? line -> true : null).executeAndWait().getLastResultLine();
+        String expectedXcodePath = "/Applications/Xcode.app/Contents/Developer";
+        if (expectedXcodePath.equals(xcodePath)) {
+            if (install)
+                Logger.log("Well done, your Xcode path is correctly set.");
+        } else {
+            Logger.log("Your Xcode path is incorrectly set, the following command should fix it:");
+            int errorCode = ProcessCall.executeCommandTokens("xcode-select", "-s", expectedXcodePath);
+            if (errorCode != 0) {
+                Logger.log("\nXcode doesn't seem to be installed on your machine. Please install it from the Apple website.");
+                ProcessCall.executeCommandTokens("open", "https://apps.apple.com/us/app/xcode/id497799835");
+                return false;
+            }
+        }
+        return true;
     }
 
     private static Path getHiddenFolder(String name) {
