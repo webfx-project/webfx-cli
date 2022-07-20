@@ -68,6 +68,10 @@ public final class Build extends CommonSubcommand implements Runnable {
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule gluonModule = brc.findGluonModule(workspace);
 
+        // Don't build if --locate or --show options are used
+        if (brc.locate || brc.show)
+            return;
+
         if (gluonModule != null && OperatingSystem.isMacOs()) {
             if (!Install.checkOrFixXcodePathForGluon(false))
                 return;
