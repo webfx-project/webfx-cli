@@ -106,7 +106,7 @@ public final class Run extends CommonSubcommand implements Runnable {
                     MavenCaller.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
                             , new ProcessCall().setWorkingDirectory(gluonModulePath));
             } else if (fileName.endsWith(".deb")) {
-
+                ProcessCall.executeCommandTokens("sudo", "apt", "install", pathName);
             } else // Everything else should be an executable file that we can call directly
                 ProcessCall.executeCommandTokens(pathName);
         } catch (Exception e) {
