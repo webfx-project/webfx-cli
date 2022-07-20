@@ -58,6 +58,8 @@ public final class Build extends CommonSubcommand implements Runnable {
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule gluonModule = brc.findGluonModule(workspace);
+        if (gluonModule == null) // happens with --locate or --show
+            return;
 /*
         if (!fatjar && !gwt && !openJfxDesktop && !gluon)
             throw new CommandLine.ParameterException(new CommandLine(this), "Missing required build option");

@@ -71,7 +71,8 @@ public final class Run extends CommonSubcommand implements Runnable {
 
     static void executeNoBuild(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule executableModule = brc.findExecutableModule(workspace);
-        brc.getExecutableFilePath(executableModule).forEach(Run::executeFile);
+        if (executableModule != null) // null with --locate or --show
+            brc.getExecutableFilePath(executableModule).forEach(Run::executeFile);
     }
 
     private static void executeFile(Path executableFilePath) {
