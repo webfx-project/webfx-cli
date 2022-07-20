@@ -1,6 +1,7 @@
 package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.DevProjectModule;
+import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.core.MavenCaller;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
@@ -67,6 +68,18 @@ public final class Build extends CommonSubcommand implements Runnable {
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule gluonModule = brc.findGluonModule(workspace);
+
+        // Fixing wrong Xcode path on macOS causing build failure (see issue https://github.com/gluonhq/substrate/issues/978)
+        if (gluonModule != null && OperatingSystem.isMacOs()) {
+            String xcodePath = new ProcessCall("xcode-select", "-p").setLogsCall(false, false).setLogLineFilter(line -> false).executeAndWait().getLastResultLine();
+            String expectedXcodePath = "/Applications/Xcode.app/Contents/Developer";
+            if (!expectedXcodePath.equals(xcodePath)) {
+                Logger.log("Your Xcode path is incorrect for Gluon, the following command will fix it:");
+                int exitCode = ProcessCall.executeCommandTokens("xcode-select", "-s", expectedXcodePath);
+                if (exitCode != 0)
+                    return;
+            }
+        }
 /*
         if (!fatjar && !gwt && !openJfxDesktop && !gluon)
             throw new CommandLine.ParameterException(new CommandLine(this), "Missing required build option");
