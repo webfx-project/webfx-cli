@@ -1,6 +1,6 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.WebFx;
+import dev.webfx.cli.WebFX;
 import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine.Command;
@@ -34,7 +34,7 @@ public final class Bump extends CommonSubcommand {
                             //Logger.log("Git result line: " + gitResultLine);
                             if (gitResultLine == null) {
                                 Logger.log("A new version is available!");
-                                Logger.log("Old version: " + WebFx.getVersion());
+                                Logger.log("Old version: " + WebFX.getVersion());
                                 new ProcessCall("mvn", "package")
                                         .setWorkingDirectory(cliRepositoryPath)
                                         .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))

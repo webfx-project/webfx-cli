@@ -1,6 +1,6 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.WebFx;
+import dev.webfx.cli.WebFX;
 import dev.webfx.cli.core.Module;
 import dev.webfx.cli.core.*;
 import dev.webfx.cli.modulefiles.ArtifactResolver;
@@ -58,7 +58,7 @@ public final class STream extends CommonSubcommand {
             else
                 stream.forEach(o -> {
                     String s = forEach.replace("{o}", o.toString());
-                    WebFx.executeCommand(s.split(" "));
+                    WebFX.executeCommand(s.split(" "));
                 });
         }
 
