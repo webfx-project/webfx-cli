@@ -8,7 +8,7 @@ The WebFX CLI is the Command Line Interface for WebFX. It's an essential tool fo
 
 It creates and maintains all the application modules, with all the necessary module files for the build chain, from the information declared in webfx.xml files and the module source code. For example, it automatically computes all the dependencies of a module (in pom.xml) from an analysis of its Java source code.
 
-More information is given in the WebFX [documentation][webfx-cli-docs], including the command line usage.
+More information is given in the WebFX [documentation][webfx-cli-docs], including the installation and the command line usage.
 
 ## How it works
 
