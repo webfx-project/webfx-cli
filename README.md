@@ -6,17 +6,17 @@ The WebFX CLI is the Command Line Interface for WebFX. It's an essential tool fo
   <img src="https://docs.webfx.dev/webfx-cli.svg" />
 </p>
 
-It creates and maintains all the application modules, with all the necessary module files for the build chain, from the information declared in webfx.xml files and the module source code. For example, it automatically computes all the dependencies of a module (in pom.xml) from an analysis of its Java source code.
+The WebFX CLI creates and maintains all the application modules, including all the necessary build chain module files, from the information declared in the webfx.xml files and the module source code. For example, it will automatically compute all the dependencies of a module (in pom.xml) from an analysis of the module's Java source code.
 
 More information is given in the WebFX [documentation][webfx-cli-docs], including the installation and the command line usage.
 
 ## How it works
 
-The WebFX CLI scans all the application repository and possible libraries sources to build the knowledge of what packages belong to what modules. Knowing this, it can then tell what modules a Java source file is using, just by detecting what packages it is using. Each time a Java file references a package that is not declared in its own module, this introduces a dependency to the external module that package belongs to (it can be another module of the application or of a library).   
+The WebFX CLI scans the entire application repository, together with possible library sources, to understand which packages belong to which modules. Use this information, it can then determine which modules a Java source file is using, just by detecting which packages it is using. Each time a Java file references a package that is not declared in its own module, the CLI will introduce a dependency to the external module that the package belongs to (it can be module within the application or within a library source).  
 
 ## Known limitation
 
-The current Java source file analyser is a simple implementation based on regular expressions. It can detect only packages that are explicitly written in the Java source file (such as the ones listed in the imports, or in the code when using a fully qualified class name). However, it's possible to have implicit usages of packages, and the CLI currently doesn't detect them, like for example in the following code:
+The current Java source file analyser is a simple implementation based on regular expressions. It can only detect packages that are explicitly written in the Java source file (such as the ones listed in the imports, or in the code when using a fully qualified class name). However, where developers have used packages implicitly, the CLI currently cannot detect them. For example:
 
 ```java
 package mypackage;
@@ -36,7 +36,7 @@ public class MyClass {
 
 ## Workaround
 
-There are 2 possible workarounds. The first is to rewrite the code in an explicit way, like for example: 
+There are 2 possible workarounds. The first is to rewrite the code in an explicit way, for example: 
 
 ```java
 package mypackage;
@@ -56,7 +56,7 @@ public class MyClass {
 }
 ```
 
-The second way is to tell the CLI what module it missed in webfx.xml:
+The second way is to list the modules missed by the CLI in the webfx.xml:
 
 ```xml
 
@@ -68,9 +68,9 @@ The second way is to tell the CLI what module it missed in webfx.xml:
 
 ```
 
-## How to help
+## Get involved!
 
-We are looking for a contributor with expertise in Java language parsing to replace the current implementation with a proper Java parser in order to fix the current limitation. If you are happy to work on this topic, please apply in the related [issue][webfx-cli-issue]. Thank you! 
+We are looking for a contributor with expertise in Java language parsing. The task will be to replace the current implementation with a proper Java parser, in order to fix the implict package limitation. If you would like to work on this topic, please apply in the related [issue][webfx-cli-issue]. Thank you! 
 
 [webfx-cli-docs]: https://docs.webfx.dev/#_introducing_the_webfx_cli
 [webfx-cli-issue]: https://github.com/webfx-project/webfx-cli/issues/1
