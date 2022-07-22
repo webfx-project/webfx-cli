@@ -32,13 +32,7 @@ import java.util.stream.Collectors;
                 Run.class,
                 Update.class,
                 Bump.class,
-                Install.class,
-                STream.class,
-                Rename.class,
-                //Move.class,
-                //Conf.class,
-                //Shell.class,
-                //Watch.class,
+                Install.class
         },
         mixinStandardHelpOptions = true,
         versionProvider = WebFX.DevVersionProvider.class)
