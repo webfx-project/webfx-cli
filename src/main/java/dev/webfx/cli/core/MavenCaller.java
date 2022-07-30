@@ -1,10 +1,12 @@
 package dev.webfx.cli.core;
 
-import dev.webfx.cli.commands.Install;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 /**
  * @author Bruno Salmon
@@ -29,7 +31,7 @@ public final class MavenCaller {
 
     public static int invokeMavenGoal(String goal, ProcessCall processCall) {
         boolean gluonPluginCall = goal.contains("gluonfx:");
-        Path graalVmHome = gluonPluginCall ? Install.getGraalVmHome() : null;
+        Path graalVmHome = gluonPluginCall ? WebFXHiddenFolder.getGraalVmHome() : null;
         processCall.setCommand("mvn " + goal);
         //if (!USE_MAVEN_INVOKER) {
             // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
@@ -72,4 +74,16 @@ public final class MavenCaller {
             }
         }
     }*/
+
+    public static int invokeMavenGoalOnPomModule(ProjectModule module, String goal, ProcessCall processCall) {
+        Path mavenWorkspace = WebFXHiddenFolder.getMavenWorkspace();
+        mavenWorkspace.toFile().mkdirs();
+        try {
+            Files.copy(module.getMavenModuleFile().getModuleFilePath(), mavenWorkspace.resolve("pom.xml"), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new CliException(e.getMessage());
+        }
+        processCall.setWorkingDirectory(mavenWorkspace);
+        return invokeMavenGoal(goal, processCall);
+    }
 }
