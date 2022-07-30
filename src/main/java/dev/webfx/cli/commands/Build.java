@@ -2,6 +2,7 @@ package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.MavenCaller;
+import dev.webfx.cli.core.WebFXHiddenFolder;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine;
@@ -117,7 +118,7 @@ public final class Build extends CommonSubcommand implements Runnable {
                             .setResultLineFilter(line -> line.contains("Microsoft.VisualStudio.DevShell.dll"))
                             .executeAndWait()
                             .onLastResultLine(resultLine -> {
-                                Path graalVmHome = Install.getGraalVmHome();
+                                Path graalVmHome = WebFXHiddenFolder.getGraalVmHome();
                                 gluonWindowsExitCode[0] = new ProcessCall()
                                         .setPowershellCommand(
                                                 (resultLine == null ? "" : resultLine.substring(resultLine.indexOf("&{Import-Module") + 2, resultLine.lastIndexOf('}')).replaceAll("\"\"\"", "'") + " -DevCmdArguments '-arch=x64'; ") +

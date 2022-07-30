@@ -2,6 +2,7 @@ package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.CliException;
 import dev.webfx.cli.core.Logger;
+import dev.webfx.cli.core.WebFXHiddenFolder;
 import dev.webfx.cli.util.os.OsFamily;
 import dev.webfx.cli.util.process.ProcessCall;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
@@ -17,7 +18,6 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.*;
 import java.util.Comparator;
-import java.util.Spliterators;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -36,15 +36,6 @@ import java.util.zip.GZIPInputStream;
                 Install.XcodeTools.class
         })
 public final class Install extends CommonSubcommand {
-
-    public static Path getGraalVmHome() {
-        Path hiddenVmFolder = getHiddenFolder("graalvm");
-        Path binPath = ReusableStream.create(() -> Files.exists(hiddenVmFolder) ? SplitFiles.uncheckedWalk(hiddenVmFolder) : Spliterators.emptySpliterator())
-                .filter(path -> path.toFile().isDirectory() && "bin".equals(path.getFileName().toString()))
-                .findFirst()
-                .orElse(null);
-        return binPath == null ? null : binPath.getParent();
-    }
 
     @Command(name = "graalvm", description = "Install or upgrade GraalVM.")
     static class GraalVm extends CommonSubcommand implements Runnable {
@@ -72,7 +63,7 @@ public final class Install extends CommonSubcommand {
             if (vmUrl.startsWith("/"))
                 vmUrl = "https://github.com" + vmUrl;
 
-            Path hiddenVmFolder = getHiddenFolder("graalvm");
+            Path hiddenVmFolder = WebFXHiddenFolder.getCliSubFolder("graalvm");
             String vmDownloadFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
             Path vmDownloadFilePath = hiddenVmFolder.resolve(vmDownloadFileName);
             boolean isZip = vmDownloadFileName.endsWith(".zip");
@@ -149,7 +140,7 @@ public final class Install extends CommonSubcommand {
             if (wixUrl.startsWith("/"))
                 wixUrl = "https://github.com" + wixUrl;
 
-            Path hiddenWixFolder = getHiddenFolder("wix");
+            Path hiddenWixFolder = WebFXHiddenFolder.getCliSubFolder("wix");
             String wixDownloadFileName = wixUrl.substring(wixUrl.lastIndexOf('/') + 1);
             Path wixDownloadFilePath = hiddenWixFolder.resolve(wixDownloadFileName);
             String wixName = wixDownloadFileName.substring(0, wixDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
@@ -204,7 +195,7 @@ public final class Install extends CommonSubcommand {
             if (innoUrl.startsWith("/"))
                 innoUrl = "https://jrsoftware.org" + innoUrl;
 
-            Path hiddenInnoFolder = getHiddenFolder("inno");
+            Path hiddenInnoFolder = WebFXHiddenFolder.getCliSubFolder("inno");
             String innoDownloadFileName = innoUrl.substring(innoUrl.lastIndexOf('/') + 1);
             Path innoDownloadFilePath = hiddenInnoFolder.resolve(innoDownloadFileName);
             String innoName = innoDownloadFileName.substring(0, innoDownloadFileName.lastIndexOf('.')); // removing .zip or .gz extension
@@ -246,7 +237,7 @@ public final class Install extends CommonSubcommand {
             if (OperatingSystem.getOsFamily() != OsFamily.WINDOWS)
                 throw new CliException("This command is to be executed on Windows machines only.");
 
-            Path hiddenVsFolder = getHiddenFolder("vstools");
+            Path hiddenVsFolder = WebFXHiddenFolder.getCliSubFolder("vstools");
             String vsUrl = VS_BUILD_TOOLS_URL;
             String vsDownloadFileName = vsUrl.substring(vsUrl.lastIndexOf('/') + 1);
             Path vsDownloadFilePath = hiddenVsFolder.resolve(vsDownloadFileName);
@@ -310,10 +301,6 @@ public final class Install extends CommonSubcommand {
             return false;
         }
         return true;
-    }
-
-    private static Path getHiddenFolder(String name) {
-        return Path.of(System.getProperty("user.home"), ".webfx/cli", name);
     }
 
     private static String downloadPage(String fileUrl) {
