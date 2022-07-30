@@ -41,7 +41,7 @@ public class ProcessCall {
 
     private boolean logsCallDuration = true;
 
-    private StreamGobbler streamGobbler;
+    private StreamGobbler inputStreamGobbler, errorStreamGobbler;
 
     private int exitCode;
 
@@ -242,8 +242,10 @@ public class ProcessCall {
                     .redirectOutput(ProcessBuilder.Redirect.INHERIT)
                     .redirectError(ProcessBuilder.Redirect.INHERIT);
         Process process = processBuilder.start();
-        streamGobbler = new StreamGobbler(process.getInputStream(), outputLineConsumer);
-        Executors.newSingleThreadExecutor().submit(streamGobbler);
+        inputStreamGobbler = new StreamGobbler(process.getInputStream(), outputLineConsumer);
+        errorStreamGobbler = new StreamGobbler(process.getErrorStream(), outputLineConsumer);
+        Executors.newSingleThreadExecutor().submit(inputStreamGobbler);
+        Executors.newSingleThreadExecutor().submit(errorStreamGobbler);
         exitCode = process.waitFor();
         callDurationMillis = System.currentTimeMillis() - t0;
         if (logsCallDuration)
@@ -251,10 +253,18 @@ public class ProcessCall {
     }
 
     private void waitForStreamGobblerCompleted() {
-        while (streamGobbler != null && !streamGobbler.isCompleted())
+        while (inputStreamGobbler != null && !inputStreamGobbler.isCompleted())
             try {
-                synchronized (streamGobbler) {
-                    streamGobbler.wait(1);
+                synchronized (inputStreamGobbler) {
+                    inputStreamGobbler.wait(1);
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        while (errorStreamGobbler != null && !errorStreamGobbler.isCompleted())
+            try {
+                synchronized (errorStreamGobbler) {
+                    errorStreamGobbler.wait(1);
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
