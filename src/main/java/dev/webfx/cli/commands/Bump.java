@@ -53,14 +53,14 @@ public final class Bump extends CommonSubcommand {
                         if (!skipBuildIfUpToDate || gitUpToDateLine == null)
                             buildAndExit();
                         else
-                            Logger.log("You already have the latest version");
+                            Logger.log("You have the latest version of the CLI");
                     });
         }
 
         private void buildAndExit() {
-            if (switchedBranch) {
+            if (switchedBranch)
                 Logger.log("Building " + branch + " branch");
-            } else {
+            else {
                 Logger.log("A new version is available!");
                 Logger.log("Old version: " + WebFX.getVersion());
             }

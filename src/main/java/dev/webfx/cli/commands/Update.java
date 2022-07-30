@@ -60,7 +60,7 @@ public final class Update extends CommonSubcommand implements Runnable {
         if (tasks.moduleInfoJava || tasks.metaInfServices)
             getWorkingAndChildrenModulesInDepth(workingModule)
                     .filter(DevProjectModule::hasSourceDirectory)
-                    .filter(DevProjectModule::hasJavaSourceDirectory)
+                    .filter(DevProjectModule::hasMainJavaSourceDirectory)
                     .forEach(m -> {
                         boolean jre = m.getTarget().isPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
                         boolean teavm = m.getTarget().isPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM

@@ -25,13 +25,13 @@ final class ModuleReporter {
 
     void listJavaClasses() {
         listIterableElements("Listing " + projectModule + " module java classes",
-                projectModule.getJavaSourceFiles()
+                projectModule.getMainJavaSourceRootAnalyzer().getSourceFiles()
         );
     }
 
     void listDirectDependencies() {
         listIterableElements("Listing " + projectModule + " module direct dependencies",
-                projectModule.getDirectDependencies().map(ModuleDependency::getDestinationModule)
+                projectModule.getMainJavaSourceRootAnalyzer().getDirectDependencies().map(ModuleDependency::getDestinationModule)
         );
     }
 
@@ -50,13 +50,13 @@ final class ModuleReporter {
 
     void listThisAndChildrenModulesInDepthTransitiveDependencies() {
         listIterableElements("Listing " + projectModule + " and children modules (in depth) transitive dependencies",
-                projectModule.getTransitiveModules()
+                projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
         );
     }
 
     void listOrAndChildrenModulesInDepthDirectlyDependingOn(String moduleArtifactId) {
         listIterableElements("Listing " + projectModule + " or children modules (in depth) directly depending on " + moduleArtifactId,
-                projectModule.getThisOrChildrenModulesInDepthDirectlyDependingOn(moduleArtifactId)
+                projectModule.getMainJavaSourceRootAnalyzer().getThisOrChildrenModulesInDepthDirectlyDependingOn(moduleArtifactId)
         );
     }
 
@@ -115,7 +115,7 @@ final class ModuleReporter {
      ***************************/
 
     private static void logModuleWithDirectDependencies(ProjectModule module) {
-        log(module + " direct dependencies: " + module.getDirectModules()
+        log(module + " direct dependencies: " + module.getMainJavaSourceRootAnalyzer().getDirectModules()
                 .collect(Collectors.toList()));
     }
 

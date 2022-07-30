@@ -10,7 +10,7 @@ public class JavaFilesGenerator {
 
     public static void generateModuleInfoJavaFile(DevProjectModule module) {
         // Generating module-info.java for this module
-        module.getJavaModuleFile().writeFile();
+        module.getMainJavaModuleFile().writeFile();
     }
 
     public static void generateMetaInfServicesFiles(DevProjectModule module) {
@@ -24,7 +24,7 @@ public class JavaFilesGenerator {
                             .forEach(providerClassName ->
                                     sb.append(providerClassName).append('\n')
                             );
-                    TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), module.getResourcesDirectory().resolve("META-INF/services/" + service));
+                    TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), module.getMainResourcesDirectory().resolve("META-INF/services/" + service));
                 });
     }
 }

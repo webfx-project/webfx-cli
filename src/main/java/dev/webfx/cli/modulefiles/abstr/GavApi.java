@@ -8,4 +8,9 @@ public interface GavApi {
 
     String getVersion();
 
+    default boolean isSnapshotVersion() {
+        String version = getVersion();
+        return version != null && version.endsWith("-SNAPSHOT");
+    }
+
 }

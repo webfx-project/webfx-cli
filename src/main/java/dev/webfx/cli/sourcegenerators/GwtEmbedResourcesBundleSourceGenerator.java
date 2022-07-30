@@ -18,7 +18,7 @@ final class GwtEmbedResourcesBundleSourceGenerator {
         StringBuilder resourceDeclaration = new StringBuilder();
         StringBuilder resourceRegistration = new StringBuilder();
         AtomicInteger resourceNumber = new AtomicInteger();
-        ProjectModule.filterProjectModules(module.getThisAndTransitiveModules())
+        ProjectModule.filterProjectModules(module.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
                 .flatMap(ProjectModule::getEmbedResources)
                 .sorted()
                 .forEach(r -> {
@@ -39,11 +39,11 @@ final class GwtEmbedResourcesBundleSourceGenerator {
     }
 
     static String getPackageName(DevProjectModule module) {
-        return module.getJavaModuleFile().getJavaModuleName() + ".embed";
+        return module.getMainJavaModuleFile().getJavaModuleName() + ".embed";
     }
 
     static Path getJavaFilePath(DevProjectModule module) {
-        return module.getResourcesDirectory().resolve("super").resolve(getPackageName(module).replaceAll("\\.", "/")).resolve("EmbedResourcesBundle.java");
+        return module.getMainResourcesDirectory().resolve("super").resolve(getPackageName(module).replaceAll("\\.", "/")).resolve("EmbedResourcesBundle.java");
     }
 
     static String getProviderClassName(DevProjectModule module) {

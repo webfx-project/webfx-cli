@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
 
     public DevJavaModuleInfoFile(DevProjectModule module) {
-        super(module, module.getJavaSourceDirectory().resolve("module-info.java"));
+        super(module, module.getMainJavaSourceDirectory().resolve("module-info.java"));
     }
 
     public String getJavaModuleName() {
@@ -30,7 +30,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
         StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n\nmodule ").append(getJavaModuleName()).append(" {\n");
         processSection(sb, "Direct dependencies modules", "requires",
                 ReusableStream.fromIterable(
-                        module.getDirectDependencies()
+                        module.getMainJavaSourceRootAnalyzer().getDirectDependencies()
                         // Modules with "runtime", "test" or "verify" scope must not have a "requires" clause (since they are invisible for the source module).
                         // Exception is made however for JDK modules (since they are always visible) and may be needed (ex: java.sql for Vert.x)
                         .filter(d -> (!"runtime".equals(d.getScope()) && !"test".equals(d.getScope()) && !"verify".equals(d.getScope())) || ModuleRegistry.isJdkModule(d.getDestinationModule()))
@@ -49,7 +49,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
                 module.getResourcePackages()
         );
         processSection(sb, "Used services", "uses",
-                module.getUsedJavaServices()
+                module.getMainJavaSourceRootAnalyzer().getUsedJavaServices()
         );
         ReusableStream<String> providedJavaServices = module.getProvidedJavaServices();
         if (module.getTarget().isPlatformSupported(Platform.JRE) && providedJavaServices.count() > 0) {

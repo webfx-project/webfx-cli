@@ -13,7 +13,7 @@ final class GwtArraySuperSourceGenerator {
     static void generateArraySuperSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module java.lang.reflect.Array.java super source for GWT");
         StringBuilder sb = new StringBuilder();
-        ProjectModule.filterProjectModules(module.getTransitiveModules())
+        ProjectModule.filterProjectModules(module.getMainJavaSourceRootAnalyzer().getTransitiveModules())
                 .flatMap(m -> m.getWebFxModuleFile().getArrayNewInstanceClasses())
                 .distinct()
                 .sorted()
@@ -21,6 +21,6 @@ final class GwtArraySuperSourceGenerator {
         TextFileReaderWriter.writeTextFileIfNewOrModified(
                 ResourceTextFileReader.readTemplate("Array.javat")
                         .replace("${generatedCasesCode}", sb),
-                module.getResourcesDirectory().resolve("super/java/lang/reflect/Array.java"));
+                module.getMainResourcesDirectory().resolve("super/java/lang/reflect/Array.java"));
     }
 }

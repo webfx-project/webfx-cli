@@ -13,9 +13,8 @@ import java.nio.file.Path;
 public class DevProjectModule extends ProjectModuleImpl {
 
     private final Path homeDirectory;
-    private Boolean hasSourceDirectory;
-    private Boolean hasJavaSourceDirectory;
-    private DevJavaModuleInfoFile javaModuleInfoFile;
+    private Boolean hasSourceDirectory, hasMainJavaSourceDirectory, hasTestJavaSourceDirectory;
+    private DevJavaModuleInfoFile mainJavaModuleInfoFile;
     private DevWebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
 
@@ -57,16 +56,21 @@ public class DevProjectModule extends ProjectModuleImpl {
     }
 
     @Override
-    public Path getJavaSourceDirectory() {
+    public Path getMainJavaSourceDirectory() {
         return homeDirectory != null ? homeDirectory.resolve("src/main/java/") : null;
     }
 
-    public Path getResourcesDirectory() {
+    @Override
+    public Path getTestJavaSourceDirectory() {
+        return homeDirectory != null ? homeDirectory.resolve("src/test/java/") : null;
+    }
+
+    public Path getMainResourcesDirectory() {
         return homeDirectory != null ? homeDirectory.resolve("src/main/resources/") : null;
     }
 
     private Path getMetaInfJavaServicesDirectory() {
-        return getResourcesDirectory().resolve("META-INF/services/");
+        return getMainResourcesDirectory().resolve("META-INF/services/");
     }
 
     public DevGwtModuleFile getGwtModuleFile() {
@@ -100,16 +104,22 @@ public class DevProjectModule extends ProjectModuleImpl {
     }
 
     @Override
-    public boolean hasJavaSourceDirectory() {
-        if (hasJavaSourceDirectory == null)
-            hasJavaSourceDirectory = hasSourceDirectory() && pathExists(getJavaSourceDirectory());
-        return hasJavaSourceDirectory;
+    public boolean hasMainJavaSourceDirectory() {
+        if (hasMainJavaSourceDirectory == null)
+            hasMainJavaSourceDirectory = hasSourceDirectory() && pathExists(getMainJavaSourceDirectory());
+        return hasMainJavaSourceDirectory;
     }
 
-    public DevJavaModuleInfoFile getJavaModuleFile() {
-        if (javaModuleInfoFile == null)
-            javaModuleInfoFile = new DevJavaModuleInfoFile(this);
-        return javaModuleInfoFile;
+    public boolean hasTestJavaSourceDirectory() {
+        if (hasTestJavaSourceDirectory == null)
+            hasTestJavaSourceDirectory = hasSourceDirectory() && pathExists(getTestJavaSourceDirectory());
+        return hasTestJavaSourceDirectory;
+    }
+
+    public DevJavaModuleInfoFile getMainJavaModuleFile() {
+        if (mainJavaModuleInfoFile == null)
+            mainJavaModuleInfoFile = new DevJavaModuleInfoFile(this);
+        return mainJavaModuleInfoFile;
     }
 
     @Override

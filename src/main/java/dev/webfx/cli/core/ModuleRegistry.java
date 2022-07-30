@@ -37,6 +37,7 @@ final public class ModuleRegistry {
     private final Map<Path, DevProjectModule> devProjectModulesPathMap = new HashMap<>();
 
     private final ArrayDeque<ReusableStream<ProjectModule>> listOfRootModuleAndChildrenToRegister = new ArrayDeque<>();
+    private final ArrayDeque<M2RootModule> rootThirdPartyLibrariesWithPossibleTransitiveLibrariesToRegister = new ArrayDeque<>();
     private final ReusableStream<ProjectModule> projectModuleRegistrationResumableStream = ReusableStream.resumeFromIterator(new Iterator<>() {
         ReusableStream<ProjectModule> rootModuleAndChildrenToRegisterResumableStream;
         ProjectModule nextProjectModuleToRegister;
@@ -66,8 +67,19 @@ final public class ModuleRegistry {
                     // Now let's try to pool the next module and children stream
                     rootModuleAndChildrenToRegisterResumableStream = listOfRootModuleAndChildrenToRegister.poll();
                     // If we reached the end,
-                    if (rootModuleAndChildrenToRegisterResumableStream == null)
-                        break; // we exit with next = null
+                    if (rootModuleAndChildrenToRegisterResumableStream == null) {
+                        // Now that all webfx modules and third-party libraries (declared in webfx.xml) have been
+                        // registered, if we still haven't found what we are looking for (ex: a package), the last
+                        // chance is to search in the third-party transitive libraries.
+                        if (rootThirdPartyLibrariesWithPossibleTransitiveLibrariesToRegister.isEmpty())
+                            break; // we exit with next = null if there are no more transitive libraries to register
+                        else {
+                            // Otherwise, we import the transitive libraries of the next root third-party library
+                            rootThirdPartyLibrariesWithPossibleTransitiveLibrariesToRegister.poll().getTransitiveLibraries().forEach(ModuleRegistry.this::importLibrary);
+                            // And continue the loop
+                            continue;
+                        }
+                    }
                     // We got the next stream :) We need to call the resumable operator, so we can take one element after the other
                     rootModuleAndChildrenToRegisterResumableStream = rootModuleAndChildrenToRegisterResumableStream.resumable();
                 }
@@ -253,9 +265,17 @@ final public class ModuleRegistry {
                 @Override
                 public Module next() {
                     Module next = getOrIncrementNextProjectModuleToDeclare();
-                    if (next instanceof ProjectModule)
-                        declareProjectModulePackages((ProjectModule) next); // This also add the module to declaredModules
-                    else if (next instanceof LibraryModule)
+                    if (next instanceof ProjectModule) {
+                        ProjectModule projectModule = (ProjectModule) next;
+                        declareProjectModulePackages(projectModule); // This also add the module to declaredModules
+                        if (next instanceof M2RootModule) { // Ex: M2Project for JUnit library declared as <library artifact="org.junit.jupiter:junit-jupiter:5.9.0"/>
+                            // => We must register the transitive dependencies as libraries as well
+                            M2RootModule m2RootModule = (M2RootModule) next;
+                            LibraryModule libraryModule = m2RootModule.getLibraryModule();
+                            if (libraryModule.isThirdParty() && libraryModule.getRootModule() == null)
+                                rootThirdPartyLibrariesWithPossibleTransitiveLibrariesToRegister.add(m2RootModule);
+                        }
+                    } else if (next instanceof LibraryModule)
                         declareLibraryModulePackages((LibraryModule) next);
                     nextModuleToDeclare = null; // To force incrementation on next getOrIncrementNextProjectModuleToDeclare() call
                     return next;
@@ -318,7 +338,7 @@ final public class ModuleRegistry {
 
     void declareProjectModulePackages(ProjectModule module) {
         //System.out.println("Declaring packages for project module " + module);
-        module.getJavaSourcePackages().forEach(p -> declarePackageBelongsToModule(p, module));
+        module.getMainJavaSourceRootAnalyzer().getSourcePackages().forEach(p -> declarePackageBelongsToModule(p, module));
         module.getWebFxModuleFile().getExplicitExportedPackages().forEach(p -> declarePackageBelongsToModule(p, module));
         declaredModules.add(module);
     }
@@ -337,7 +357,7 @@ final public class ModuleRegistry {
                 .orElse(null);
         if (module == null) { // Module not found :-(
             // Last chance: the package was actually in the source package! (ex: webfx-kit-extracontrols-registry-spi)
-            if (sourceModule.getJavaSourcePackages().anyMatch(p -> p.equals(packageName)))
+            if (sourceModule.getMainJavaSourceRootAnalyzer().getSourcePackages().anyMatch(p -> p.equals(packageName)))
                 module = sourceModule;
             else if (!canReturnNull) { // Otherwise, raising an exception (unless returning null is permitted)
                 if (lm == null || lm.isEmpty())

@@ -33,7 +33,7 @@ public interface RootModule extends ProjectModule {
 
     default ProjectModule findModuleDeclaringJavaService(String javaService) {
         return getThisAndChildrenModulesInDepth()
-                .filter(m -> m.declaresJavaService(javaService))
+                .filter(m -> m.getMainJavaSourceRootAnalyzer().getDeclaredJavaServices().anyMatch(javaService::equals))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unable to find " + javaService + " service declaration module"))
                 ;

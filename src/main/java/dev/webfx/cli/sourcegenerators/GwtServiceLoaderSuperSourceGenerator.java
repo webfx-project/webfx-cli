@@ -15,7 +15,7 @@ final class GwtServiceLoaderSuperSourceGenerator {
     static void generateServiceLoaderSuperSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module java.util.ServiceLoader.java super source for GWT");
         StringBuilder sb = new StringBuilder();
-        module.getExecutableProviders()
+        module.getMainJavaSourceRootAnalyzer().getExecutableProviders()
                 .forEach(providers -> {
                     String spiClassName = providers.getSpiClassName();
                     ReusableStream<String> providerClassNames = providers.getProviderClassNames();
@@ -38,7 +38,7 @@ final class GwtServiceLoaderSuperSourceGenerator {
         TextFileReaderWriter.writeTextFileIfNewOrModified(
                 ResourceTextFileReader.readTemplate("ServiceLoader.javat")
                         .replace("${generatedCasesCode}", sb),
-                module.getResourcesDirectory().resolve("super/java/util/ServiceLoader.java"));
+                module.getMainResourcesDirectory().resolve("super/java/util/ServiceLoader.java"));
     }
 
     private static String getProviderConstructorReference(String providerClassName) {

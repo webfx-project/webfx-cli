@@ -11,7 +11,7 @@ public final class GluonFilesGenerator {
 
     public static void generateGraalVmReflectionJson(DevProjectModule gluonModule) {
         StringBuilder sb = new StringBuilder();
-        ProjectModule.filterProjectModules(gluonModule.getTransitiveModules())
+        ProjectModule.filterProjectModules(gluonModule.getMainJavaSourceRootAnalyzer().getTransitiveModules())
                 .forEach(module -> {
                     String json = module.getWebFxModuleFile().getGraalVmReflectionJson();
                     if (json != null) {

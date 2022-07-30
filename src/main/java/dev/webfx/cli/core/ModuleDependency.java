@@ -91,7 +91,7 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
                 return;
             ProjectModule pm = destinationModule instanceof ProjectModule ? (ProjectModule) destinationModule : null;
             if (pm != null)
-                pm.getDirectDependenciesWithoutFinalExecutableResolutions().forEach(dep ->
+                pm.getMainJavaSourceRootAnalyzer().getDirectDependenciesWithoutFinalExecutableResolutions().forEach(dep ->
                         dep.collectThisAndTransitiveDependencies(dependencies, targetModule)
                 );
         }

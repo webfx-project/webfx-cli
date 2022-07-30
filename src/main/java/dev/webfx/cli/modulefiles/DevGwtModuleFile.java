@@ -38,7 +38,7 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
         Node moduleSourceCommentNode = lookupNode("/module//comment()[2]");
         Node moduleSourceEndNode = moduleSourceCommentNode.getNextSibling();
         // In the GWT module file, we need to list all transitive dependencies (not only direct dependencies) so that GWT can find all the sources required by the application
-        getProjectModule().getTransitiveDependencies()
+        getProjectModule().getMainJavaSourceRootAnalyzer().getTransitiveDependencies()
                 .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                 .stream().sorted(Map.Entry.comparingByKey())
                 .forEach(moduleGroup -> {
@@ -91,7 +91,7 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                     if (module instanceof ProjectModule) {
                         ProjectModule projectModule = (ProjectModule) module;
                         resourcePackages = projectModule.getResourcePackages();
-                        sourcePackages = projectModule.getJavaSourcePackages();
+                        sourcePackages = projectModule.getMainJavaSourceRootAnalyzer().getSourcePackages();
                         systemProperties = projectModule.getSystemProperties();
                     } else if (module instanceof LibraryModule && !ModuleRegistry.isJdkModule(module)) {
                         boolean isGwtLibrary = gwtModuleName != null && (

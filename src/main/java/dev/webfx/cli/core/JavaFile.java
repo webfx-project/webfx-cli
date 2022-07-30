@@ -68,7 +68,7 @@ public final class JavaFile implements Comparable<JavaFile> {
 
     public String getClassName() {
         if (className == null)
-            className = projectModule.getJavaSourceDirectory().relativize(path).toString().replace(".java", "").replaceAll("[/\\\\]", ".");
+            className = projectModule.getMainJavaSourceDirectory().relativize(path).toString().replace(".java", "").replaceAll("[/\\\\]", ".");
         return className;
     }
 

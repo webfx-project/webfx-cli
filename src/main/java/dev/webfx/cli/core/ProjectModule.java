@@ -119,12 +119,12 @@ public interface ProjectModule extends Module {
     default ReusableStream<String> getExportedJavaPackages() {
         ReusableStream<String> exportedPackages = getWebFxModuleFile().getExplicitExportedPackages();
         if (getWebFxModuleFile().areSourcePackagesAutomaticallyExported())
-            exportedPackages = ReusableStream.concat(getJavaSourcePackages(), getJavaSourcePackagesMinusExcludedPackages()).distinct();
+            exportedPackages = ReusableStream.concat(getMainJavaSourceRootAnalyzer().getSourcePackages(), getJavaSourcePackagesMinusExcludedPackages()).distinct();
         return exportedPackages;
     }
 
     private ReusableStream<String> getJavaSourcePackagesMinusExcludedPackages() {
-        ReusableStream<String> sourcePackages = getJavaSourcePackages();
+        ReusableStream<String> sourcePackages = getMainJavaSourceRootAnalyzer().getSourcePackages();
         ReusableStream<String> excludedPackages = getWebFxModuleFile().getExcludedPackagesFromSourcePackages().cache();
         if (!excludedPackages.isEmpty())
             sourcePackages = sourcePackages.filter(p -> excludedPackages.noneMatch(p::equals));
@@ -138,13 +138,13 @@ public interface ProjectModule extends Module {
 
     Path getSourceDirectory();
 
-    boolean hasJavaSourceDirectory();
+    boolean hasMainJavaSourceDirectory();
 
-    Path getJavaSourceDirectory();
+    Path getMainJavaSourceDirectory();
 
-    ReusableStream<String> getJavaSourcePackages();
+    boolean hasTestJavaSourceDirectory();
 
-    ReusableStream<JavaFile> getJavaSourceFiles();
+    Path getTestJavaSourceDirectory();
 
     default ModuleRegistry getModuleRegistry() {
         return getRootModule().getModuleRegistry();
@@ -154,33 +154,12 @@ public interface ProjectModule extends Module {
      ***** Analyzing streams  *****
      ******************************/
 
-    ReusableStream<String> getUsedJavaPackages();
+    JavaSourceRootAnalyzer getMainJavaSourceRootAnalyzer();
 
-    default boolean usesJavaPackage(String javaPackage) {
-        return getUsedJavaPackages().anyMatch(javaPackage::equals);
-    }
+    JavaSourceRootAnalyzer getTestJavaSourceRootAnalyzer();
 
-    default boolean usesJavaClass(String javaClass) {
-        String packageName = JavaFile.getPackageNameFromJavaClass(javaClass);
-        boolean excludeWebFxKit = packageName.startsWith("javafx.");
-        if (excludeWebFxKit && getName().startsWith("webfx-kit-"))
-            return false;
-        return usesJavaPackage(packageName) && getJavaSourceFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
-    }
-
-    ReusableStream<String> getUsedRequiredJavaServices();
-
-    ReusableStream<String> getUsedOptionalJavaServices();
-
-    ReusableStream<String> getUsedJavaServices();
-
-    ReusableStream<String> getDeclaredJavaServices();
 
     ReusableStream<String> getProvidedJavaServices();
-
-    default boolean declaresJavaService(String javaService) {
-        return getDeclaredJavaServices().anyMatch(javaService::equals);
-    }
 
     default boolean providesJavaService(String javaService) {
         return getProvidedJavaServices()
@@ -188,56 +167,7 @@ public interface ProjectModule extends Module {
                 ;
     }
 
-    ReusableStream<Providers> getExecutableProviders();
-
     ///// Dependencies
-    ReusableStream<ModuleDependency> getDirectDependencies();
-
-    ReusableStream<ModuleDependency> getUnfilteredDirectDependencies();
-
-    ReusableStream<ModuleDependency> getTransitiveDependencies();
-
-    ReusableStream<ModuleDependency> getTransitiveDependenciesWithoutImplicitProviders();
-
-    ReusableStream<ModuleDependency> getDetectedByCodeAnalyzerSourceDependencies();
-
-    ReusableStream<ModuleDependency> getDirectDependenciesWithoutFinalExecutableResolutions();
-
-    default ReusableStream<Module> getDirectModules() {
-        return mapDestinationModules(getDirectDependencies());
-    }
-
-    default ReusableStream<Module> getUnfilteredDirectModules() {
-        return mapDestinationModules(getUnfilteredDirectDependencies());
-    }
-
-    default ReusableStream<Module> getThisAndDirectModules() {
-        return ReusableStream.concat(
-                ReusableStream.of(this),
-                getDirectModules()
-        );
-    }
-
-    default ReusableStream<ProjectModule> getThisOrChildrenModulesInDepthDirectlyDependingOn(String moduleArtifactId) {
-        return getThisAndChildrenModulesInDepth()
-                .filter(module -> module.isDirectlyDependingOn(moduleArtifactId))
-                ;
-    }
-
-    default boolean isDirectlyDependingOn(String moduleName) {
-        return getDirectModules().anyMatch(m -> moduleName.equals(m.getName()));
-    }
-
-    default ReusableStream<Module> getTransitiveModules() {
-        return mapDestinationModules(getTransitiveDependencies());
-    }
-
-    default ReusableStream<Module> getThisAndTransitiveModules() {
-        return ReusableStream.concat(
-                ReusableStream.of(this),
-                getTransitiveDependencies().map(ModuleDependency::getDestinationModule)
-        );
-    }
 
     default boolean implementsModule(Module module) {
         return this != module && (getName().startsWith(module.getName()) || getWebFxModuleFile().implementedInterfaces().anyMatch(m -> module.getName().equals(m)));
@@ -364,11 +294,11 @@ public interface ProjectModule extends Module {
     }
 
     static boolean modulesUsesJavaPackage(ReusableStream<ProjectModule> modules, String javaPackage) {
-        return modules.anyMatch(m -> m.usesJavaPackage(javaPackage));
+        return modules.anyMatch(m -> m.getMainJavaSourceRootAnalyzer().usesJavaPackage(javaPackage));
     }
 
     static boolean modulesUsesJavaClass(ReusableStream<ProjectModule> modules, String javaClass) {
-        return modules.anyMatch(m -> m.usesJavaClass(javaClass));
+        return modules.anyMatch(m -> m.getMainJavaSourceRootAnalyzer().usesJavaClass(javaClass));
     }
 
     static ReusableStream<ProjectModule> filterDestinationProjectModules(ReusableStream<ModuleDependency> dependencies) {

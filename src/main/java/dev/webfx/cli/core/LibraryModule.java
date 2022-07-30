@@ -13,6 +13,8 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
 
     private final Node moduleNode;
     private final boolean webFx;
+    private Module rootModule; // Non-null for libraries that are actually transitive libraries from a root one (ex: junit-jupiter for junit-jupiter-api, junit-jupiter-params, etc...)
+    // This is this rootModule that will be listed in pom.xml and not the transitive libraries
 
     public LibraryModule(Node moduleNode, boolean webFx) {
         super(XmlGavUtil.lookupName(moduleNode));
@@ -22,6 +24,17 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
         version = lookupVersion();
         type = lookupType();
         this.webFx = webFx;
+    }
+
+    public LibraryModule(Module descriptor, Module rootModule) {
+        super(descriptor.getName());
+        moduleNode = null;
+        groupId = descriptor.getGroupId();
+        artifactId = descriptor.getArtifactId();
+        version = descriptor.getVersion();
+        type = descriptor.getType();
+        this.rootModule = rootModule;
+        webFx = false;
     }
 
     public boolean isWebFx() {
@@ -35,6 +48,10 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
     @Override
     public Node getXmlNode() {
         return moduleNode;
+    }
+
+    public Module getRootModule() {
+        return rootModule;
     }
 
     public ReusableStream<String> getExportedPackages() {

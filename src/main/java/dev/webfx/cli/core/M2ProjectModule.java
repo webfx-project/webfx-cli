@@ -22,20 +22,21 @@ public class M2ProjectModule extends ProjectModuleImpl {
     private Path sourceDirectory;
 
     public M2ProjectModule(String name, M2ProjectModule parentModule) {
-        this(name, parentModule.getGroupId(), name, parentModule.getVersion(), parentModule);
+        this(name, parentModule.getGroupId(), name, parentModule.getVersion(), null, parentModule);
     }
 
     public M2ProjectModule(Module descriptor, M2ProjectModule parentModule) {
-        this(descriptor.getName(), descriptor.getGroupId(), descriptor.getArtifactId(), descriptor.getVersion(), parentModule);
+        this(descriptor.getName(), descriptor.getGroupId(), descriptor.getArtifactId(), descriptor.getVersion(), descriptor.getType(), parentModule);
     }
 
-    public M2ProjectModule(String name, String groupId, String artifactId, String version, M2ProjectModule parentModule) {
+    public M2ProjectModule(String name, String groupId, String artifactId, String version, String type, M2ProjectModule parentModule) {
         super(name, parentModule);
         if (artifactId == null)
             artifactId = name;
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
+        this.type = type;
         m2ProjectHomeDirectory = MavenCaller.M2_LOCAL_REPOSITORY.resolve(groupId.replace('.', '/')).resolve(artifactId).resolve(version);
     }
 
@@ -75,35 +76,35 @@ public class M2ProjectModule extends ProjectModuleImpl {
         return null;
     }
 
-    @Override
-    public boolean usesJavaPackage(String javaPackage) {
+    Boolean tryEvaluateUsesJavaPackageWithoutDownloadingSources(String javaPackage) {
         // If the sources are already present, we can skip this section and just do a sources analyse to compute the requested usage.
-        if (sourceDirectory == null) { // But if they are absent, we try to compute the usage without downloading the sources (if possible with the export snapshot).
-            // If this module is an aggregate module, we don't expect any sources, so we return false
-            if (isAggregate())
-                return false;
-            Module moduleDeclaringThisPackage = getRootModule().searchJavaPackageModule(javaPackage, this);
-            if (moduleDeclaringThisPackage == this)
-                return true;
-            if (moduleDeclaringThisPackage != null && getDirectModules().filter(m -> m == moduleDeclaringThisPackage).isEmpty())
-                return false;
-            Boolean computedUsage = getModuleRegistry().doExportSnapshotsTellIfModuleIsUsingPackageOrClass(this, javaPackage);
-            if (computedUsage != null)
-                return computedUsage;
-        }
-        return super.usesJavaPackage(javaPackage);
+        if (sourceDirectory != null)
+            return null;
+        // But if they are absent, we try to compute the usage without downloading the sources (if possible with the export snapshot).
+        // If this module is an aggregate module, we don't expect any sources, so we return false
+        if (isAggregate())
+            return false;
+        // If the package is declared in this module, then yes, it uses it
+        Module moduleDeclaringThisPackage = getRootModule().searchJavaPackageModule(javaPackage, this);
+        if (moduleDeclaringThisPackage == this)
+            return true;
+        // If the package is declared in another module that is not listed in the direct dependencies (according to export snapshot), then it means this module doesn't use it
+        if (moduleDeclaringThisPackage != null && getMainJavaSourceRootAnalyzer().getDirectModules().filter(m -> m == moduleDeclaringThisPackage).isEmpty())
+            return false;
+        // For all other cases, we check if the info resides in the export snapshot
+        return getModuleRegistry().doExportSnapshotsTellIfModuleIsUsingPackageOrClass(this, javaPackage);
     }
 
-    @Override
-    public boolean usesJavaClass(String javaClass) {
-        if (sourceDirectory == null) {
-            if (isAggregate())
-                return false;
-            Boolean computedUsage = getModuleRegistry().doExportSnapshotsTellIfModuleIsUsingPackageOrClass(this, javaClass);
-            if (computedUsage != null)
-                return computedUsage;
-        }
-        return super.usesJavaClass(javaClass);
+    Boolean tryEvaluateUsesJavaClassWithoutDownloadingSources(String javaClass) {
+        // If the sources are already present, we can skip this section and just do a sources analyse to compute the requested usage.
+        if (sourceDirectory != null)
+            return null;
+        // But if they are absent, we try to compute the usage without downloading the sources (if possible with the export snapshot).
+        // If this module is an aggregate module, we don't expect any sources, so we return false
+        if (isAggregate())
+            return false;
+        // For all other cases, we check if the info resides in the export snapshot
+        return getModuleRegistry().doExportSnapshotsTellIfModuleIsUsingPackageOrClass(this, javaClass);
     }
 
     @Override
@@ -141,14 +142,24 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     @Override
-    public boolean hasJavaSourceDirectory() {
+    public boolean hasMainJavaSourceDirectory() {
         return hasSourceDirectory();
     }
 
     @Override
-    public Path getJavaSourceDirectory() {
+    public Path getMainJavaSourceDirectory() {
         // Same as source directory (there is no main/java subdirectory in the -sources.jar artifact)
         return getSourceDirectory();
+    }
+
+    @Override
+    public boolean hasTestJavaSourceDirectory() {
+        return false;
+    }
+
+    @Override
+    public Path getTestJavaSourceDirectory() {
+        return null;
     }
 
     public M2ProjectModule getOrCreateChildProjectModule(String name) {

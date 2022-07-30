@@ -57,7 +57,7 @@ public final class DevRootModule extends DevProjectModule implements RootModule 
             if (destinationModule == sourceModule)
                 paths.add(extendedPath);
             else if (sourceModule instanceof ProjectModule)
-                ((ProjectModule) sourceModule).getDirectModules()
+                ((ProjectModule) sourceModule).getMainJavaSourceRootAnalyzer().getDirectModules()
                         .map(depModule -> analyzeDependenciesPathsBetween(extendedPath, depModule, destinationModule))
                         .forEach(paths::addAll);
         }
@@ -83,7 +83,7 @@ public final class DevRootModule extends DevProjectModule implements RootModule 
             paths.add(cyclicPath);
         } else if (module instanceof ProjectModule) {
             List<Module> extendedPath = extendModuleCollection(parentPath, module);
-            ((ProjectModule) module).getDirectModules()
+            ((ProjectModule) module).getMainJavaSourceRootAnalyzer().getDirectModules()
                     .map(depModule -> analyzeCyclicDependenciesLoops(extendedPath, depModule))
                     .forEach(paths::addAll);
         }

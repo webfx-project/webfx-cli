@@ -18,14 +18,14 @@ import java.util.Scanner;
 public class DevGwtHtmlFile extends DevModuleFileImpl {
 
     public DevGwtHtmlFile(DevProjectModule module) {
-        super(module, module.getResourcesDirectory().resolve("public/index.html"));
+        super(module, module.getMainResourcesDirectory().resolve("public/index.html"));
     }
 
     @Override
     public void writeFile() {
         StringBuilder headSb = new StringBuilder(), bodySb = new StringBuilder();
         ReusableStream<ProjectModule> transitiveProjectModules =
-                ProjectModule.filterProjectModules(getProjectModule().getThisAndTransitiveModules()).distinct();
+                ProjectModule.filterProjectModules(getProjectModule().getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()).distinct();
         ReusableStream.concat(
                 transitiveProjectModules.map(m -> m.getWebFxModuleFile().getHtmlNode()),
                 ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order=\"0\"><script type=\"text/javascript\" src=\"" + getModule().getName().replaceAll("-", "_") + ".nocache.js\" charset=\"utf-8\"/></body></html>"), "/html"))

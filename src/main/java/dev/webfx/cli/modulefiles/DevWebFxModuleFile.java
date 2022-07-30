@@ -109,27 +109,28 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
                     .forEach(libraryModule -> {
                         ProjectModule libraryProjectModule = projectModule.searchRegisteredProjectModule(libraryModule.getName(), true);
                         if (libraryProjectModule != null)
-                            libraryProjectModule.getJavaSourcePackages()
+                            libraryProjectModule.getMainJavaSourceRootAnalyzer().getSourcePackages()
                                     .forEach(p -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(libraryModule.getXmlNode(), "exported-packages/package", p, true));
                     });
             // Adding a snapshot of the source packages, because they must be listed in executable GWT modules, and also
             // because we want to be able to evaluate the <source-packages/> directive without having to download the sources
-            childModule.getJavaSourcePackages()
+            JavaSourceRootAnalyzer childMainJavaSourceRootAnalyzer = childModule.getMainJavaSourceRootAnalyzer();
+            childMainJavaSourceRootAnalyzer.getSourcePackages()
                     .sorted()
                     .forEach(p -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(childProjectElement, "source-packages/package", p, true));
             // Adding a snapshot of the detected used by sources modules (so the import doesn't need to download the sources).
             if (childModule.hasSourceDirectory()) {
                 Node detectedUsedBySourceModulesNode = XmlUtil.appendIndentNode(document.createElement("used-by-source-modules"), childProjectElement, true);
-                childModule.getDetectedByCodeAnalyzerSourceDependencies()
+                childMainJavaSourceRootAnalyzer.getDetectedByCodeAnalyzerSourceDependencies()
                         .map(ModuleDependency::getDestinationModule)
                         .map(Module::getName)
                         .sorted()
                         .forEach(m -> XmlUtil.appendElementWithTextContent(detectedUsedBySourceModulesNode, "module", m));
             }
             // Adding a snapshot of the used required java services
-            childModule.getUsedRequiredJavaServices().forEach(js -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(childProjectElement, "used-services/required-service", js, true));
+            childMainJavaSourceRootAnalyzer.getUsedRequiredJavaServices().forEach(js -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(childProjectElement, "used-services/required-service", js, true));
             // Adding a snapshot of the used optional java services
-            childModule.getUsedOptionalJavaServices().forEach(js -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(childProjectElement, "used-services/optional-service", js, true));
+            childMainJavaSourceRootAnalyzer.getUsedOptionalJavaServices().forEach(js -> XmlUtil.appendElementWithTextContentIfNotAlreadyExists(childProjectElement, "used-services/optional-service", js, true));
             XmlUtil.appendIndentNode(childProjectElement, exportNode, true);
         }
     }
@@ -180,7 +181,7 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
     }
 
     private static boolean usesJavaPackageOrClass(ProjectModule pm, String packageOrClassToFindUsage, boolean isPackage) {
-        return isPackage ? pm.usesJavaPackage(packageOrClassToFindUsage) : pm.usesJavaClass(packageOrClassToFindUsage);
+        return isPackage ? pm.getMainJavaSourceRootAnalyzer().usesJavaPackage(packageOrClassToFindUsage) : pm.getMainJavaSourceRootAnalyzer().usesJavaClass(packageOrClassToFindUsage);
     }
 
     private static void removeNodeAndPreviousCommentsOrBlankTexts(Node node) {
