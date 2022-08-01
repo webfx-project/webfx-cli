@@ -1,5 +1,6 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.modulefiles.abstr.GavApi;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 
@@ -76,7 +77,7 @@ public final class MavenCaller {
     }*/
 
     public static int invokeMavenGoalOnPomModule(ProjectModule module, String goal, ProcessCall processCall) {
-        Path mavenWorkspace = WebFXHiddenFolder.getMavenWorkspace();
+        Path mavenWorkspace = getMavenModuleWorkspace(module);
         mavenWorkspace.toFile().mkdirs();
         try {
             Files.copy(module.getMavenModuleFile().getModuleFilePath(), mavenWorkspace.resolve("pom.xml"), StandardCopyOption.REPLACE_EXISTING);
@@ -85,5 +86,10 @@ public final class MavenCaller {
         }
         processCall.setWorkingDirectory(mavenWorkspace);
         return invokeMavenGoal(goal, processCall);
+    }
+
+    public static Path getMavenModuleWorkspace(GavApi module) {
+        return WebFXHiddenFolder.getMavenWorkspace()
+                .resolve(module.getGroupId()).resolve(module.getArtifactId()).resolve(module.getVersion());
     }
 }

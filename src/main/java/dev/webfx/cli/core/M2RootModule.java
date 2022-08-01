@@ -56,8 +56,7 @@ public final class M2RootModule extends M2ProjectModule implements RootModule {
         return ReusableStream.create(() -> {
             // We invoke the Maven dependency tree, and analyse it, to get the transitive libraries
             List<LibraryModule> tree = new ArrayList<>();
-            Path cachePath = WebFXHiddenFolder.getMavenWorkspace()
-                    .resolve(getGroupId()).resolve(getArtifactId()).resolve(getVersion()).resolve("dependency-tree.txt");
+            Path cachePath = MavenCaller.getMavenModuleWorkspace(this).resolve("dependency-tree.txt");
 
             Consumer<String> mavenDependencyTreeAnalyzer = new Consumer<>() {
                 boolean treelogstart, treelogend;
