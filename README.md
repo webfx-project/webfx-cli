@@ -70,7 +70,11 @@ The second way is to list the modules missed by the CLI in the webfx.xml:
 
 ## Get involved!
 
-We are looking for a contributor with expertise in Java language parsing. The task will be to replace the current implementation with a proper Java parser, in order to fix the implict package limitation. If you would like to work on this topic, please apply in the related [issue][webfx-cli-issue]. Thank you! 
+We are looking for a contributor with expertise in Java language parsing. The task will be to replace the current implementation with a proper Java parser, in order to fix the implicit package limitation. If you would like to work on this topic, please apply in the related [issue][webfx-cli-issue]. Thank you! 
+
+## License
+
+The WebFX CLI is a free, open-source software licensed under the [Apache License 2.0](LICENSE)
 
 [webfx-cli-docs]: https://docs.webfx.dev/#_introducing_the_webfx_cli
 [webfx-cli-issue]: https://github.com/webfx-project/webfx-cli/issues/1
