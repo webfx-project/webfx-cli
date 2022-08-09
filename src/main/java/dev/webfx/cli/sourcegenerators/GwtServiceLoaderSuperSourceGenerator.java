@@ -43,7 +43,7 @@ final class GwtServiceLoaderSuperSourceGenerator {
 
     private static String getProviderConstructorReference(String providerClassName) {
         return providerClassName.replace('$', '.')
-                + (providerClassName.equals("dev.webfx.stack.platform.json.spi.impl.gwt.GwtJsonObject") ? "::create" : "::new");
+                + (providerClassName.equals("dev.webfx.platform.json.spi.impl.gwt.GwtJsonObject") ? "::create" : "::new");
     }
 
 }
