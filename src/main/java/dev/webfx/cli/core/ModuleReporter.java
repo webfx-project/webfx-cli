@@ -7,13 +7,13 @@ import java.util.stream.Stream;
 /**
  * @author Bruno Salmon
  */
-final class ModuleReporter {
+public final class ModuleReporter {
 
     private final Module module;
     private final DevProjectModule projectModule;
     private final DevRootModule rootModule;
 
-    ModuleReporter(Module module) {
+    public ModuleReporter(Module module) {
         this.module = module;
         projectModule = module instanceof DevProjectModule ? (DevProjectModule) module : null;
         rootModule = projectModule != null ? projectModule.getRootModule() : null;
@@ -23,44 +23,44 @@ final class ModuleReporter {
      ***** Listing methods *****
      ***************************/
 
-    void listJavaClasses() {
+    public void listJavaClasses() {
         listIterableElements("Listing " + projectModule + " module java classes",
                 projectModule.getMainJavaSourceRootAnalyzer().getSourceFiles()
         );
     }
 
-    void listDirectDependencies() {
+    public void listDirectDependencies() {
         listIterableElements("Listing " + projectModule + " module direct dependencies",
                 projectModule.getMainJavaSourceRootAnalyzer().getDirectDependencies().map(ModuleDependency::getDestinationModule)
         );
     }
 
-    void listChildrenModulesInDepth() {
+    public void listChildrenModulesInDepth() {
         listIterableElements("Listing " + projectModule + " children modules (in depth)",
                 projectModule.getChildrenModulesInDepth()
         );
     }
 
-    void listThisAndChildrenModulesInDepthWithTheirDirectDependencies() {
+    public void listThisAndChildrenModulesInDepthWithTheirDirectDependencies() {
         listIterableElements("Listing " + projectModule + " and children modules (in depth) with their direct dependencies",
                 projectModule.getThisAndChildrenModulesInDepth(),
                 ModuleReporter::logModuleWithDirectDependencies
         );
     }
 
-    void listThisAndChildrenModulesInDepthTransitiveDependencies() {
+    public void listThisAndChildrenModulesInDepthTransitiveDependencies() {
         listIterableElements("Listing " + projectModule + " and children modules (in depth) transitive dependencies",
                 projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
         );
     }
 
-    void listOrAndChildrenModulesInDepthDirectlyDependingOn(String moduleArtifactId) {
+    public void listOrAndChildrenModulesInDepthDirectlyDependingOn(String moduleArtifactId) {
         listIterableElements("Listing " + projectModule + " or children modules (in depth) directly depending on " + moduleArtifactId,
                 projectModule.getMainJavaSourceRootAnalyzer().getThisOrChildrenModulesInDepthDirectlyDependingOn(moduleArtifactId)
         );
     }
 
-    void listJavaClassesDependingOn(String destinationModule) {
+    public void listJavaClassesDependingOn(String destinationModule) {
         listIterableElements("Listing " + projectModule + " module java classes depending on " + destinationModule,
                 projectModule.getJavaFilesDependingOn(destinationModule)
                 , jc -> logJavaClassWithPackagesDependingOn(jc, destinationModule)
@@ -74,37 +74,37 @@ final class ModuleReporter {
 
     //// Listing methods that are just forwarders to the target project module
 
-    ModuleReporter newModuleAnalyzer(String moduleArtifactId) {
+    public ModuleReporter newModuleAnalyzer(String moduleArtifactId) {
         return new ModuleReporter(rootModule.searchRegisteredModule(moduleArtifactId));
     }
 
-    void listProjectModuleJavaClasses(String moduleArtifactId) {
+    public void listProjectModuleJavaClasses(String moduleArtifactId) {
         newModuleAnalyzer(moduleArtifactId).listJavaClasses();
     }
 
-    void listProjectModuleJavaClassesDependingOn(String moduleArtifactId, String destinationModule) {
+    public void listProjectModuleJavaClassesDependingOn(String moduleArtifactId, String destinationModule) {
         newModuleAnalyzer(moduleArtifactId).listJavaClassesDependingOn(destinationModule);
     }
 
-    void listProjectModuleDirectDependencies(String moduleArtifactId) {
+    public void listProjectModuleDirectDependencies(String moduleArtifactId) {
         newModuleAnalyzer(moduleArtifactId).listDirectDependencies();
     }
 
-    void listInDepthTransitiveDependencies(String moduleArtifactId) {
+    public void listInDepthTransitiveDependencies(String moduleArtifactId) {
         newModuleAnalyzer(moduleArtifactId).listThisAndChildrenModulesInDepthTransitiveDependencies();
     }
 
-    void listDependenciesPathsBetween(String sourceModule, String destinationModule) {
+    public void listDependenciesPathsBetween(String sourceModule, String destinationModule) {
         listDependenciesPathsBetween(rootModule.searchRegisteredModule(sourceModule), rootModule.searchRegisteredModule(destinationModule));
     }
 
-    void listDependenciesPathsBetween(Module sourceModule, Module destinationModule) {
+    public void listDependenciesPathsBetween(Module sourceModule, Module destinationModule) {
         listIterableElements("Listing dependency paths between " + sourceModule + " and " + destinationModule,
                 rootModule.analyzeDependenciesPathsBetween(sourceModule, destinationModule)
         );
     }
 
-    void listCyclicDependenciesPaths() {
+    public void listCyclicDependenciesPaths() {
         listIterableElements("Listing cyclic dependency paths",
                 rootModule.analyzeCyclicDependenciesLoops()
         );
