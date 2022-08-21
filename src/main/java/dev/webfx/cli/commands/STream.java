@@ -1,6 +1,6 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.WebFX;
+import dev.webfx.cli.WebFxCLI;
 import dev.webfx.cli.core.Module;
 import dev.webfx.cli.core.*;
 import dev.webfx.cli.modulefiles.ArtifactResolver;
@@ -58,7 +58,7 @@ public final class STream extends CommonSubcommand {
             else
                 stream.forEach(o -> {
                     String s = forEach.replace("{o}", o.toString());
-                    WebFX.executeCommand(s.split(" "));
+                    WebFxCLI.executeCommand(s.split(" "));
                 });
         }
 
@@ -108,34 +108,34 @@ public final class STream extends CommonSubcommand {
                 moduleStream = null;
                 switch (flatMap) {
                     case java_files:
-                        stream = projectModuleStream.flatMap(m -> m.getJavaSourceFiles().stream());
+                        stream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getSourceFiles().stream());
                         break;
                     case java_classes:
-                        stream = projectModuleStream.flatMap(m -> m.getJavaSourceFiles().stream()).map(JavaFile::getClassName);
+                        stream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getSourceFiles().stream()).map(JavaFile::getClassName);
                         break;
                     case code_lines:
-                        stream = projectModuleStream.flatMap(m -> m.getJavaSourceFiles().stream()).flatMap(f -> Arrays.stream(f.getJavaCode().getTextCode().split("\n")));
+                        stream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getSourceFiles().stream()).flatMap(f -> Arrays.stream(f.getJavaCode().getTextCode().split("\n")));
                         break;
                     case declared_packages:
-                        stream = projectModuleStream.flatMap(m -> m.getJavaSourcePackages().stream());
+                        stream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getSourcePackages().stream());
                         break;
                     case used_packages:
-                        stream = projectModuleStream.flatMap(m -> m.getUsedJavaPackages().stream());
+                        stream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getUsedJavaPackages().stream());
                         break;
                     case used_services:
-                        stream = projectModuleStream.flatMap(m -> m.getUsedJavaServices().stream());
+                        stream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getUsedJavaServices().stream());
                         break;
                     case implemented_services:
                         stream = projectModuleStream.flatMap(m -> m.getProvidedJavaServices().map(s -> new Providers(s, ReusableStream.of(m))) .stream());
                         break;
                     case service_providers:
-                        stream = projectModuleStream.flatMap(m -> m.getExecutableProviders().stream()).filter(p -> p.getProviderClassNames().stream().findFirst().isPresent());
+                        stream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getExecutableProviders().stream()).filter(p -> p.getProviderClassNames().stream().findFirst().isPresent());
                         break;
                     case direct_dependencies:
-                        stream = moduleDependencyStream = projectModuleStream.flatMap(m -> m.getDirectDependencies().stream());
+                        stream = moduleDependencyStream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getDirectDependencies().stream());
                         break;
                     case transitive_dependencies:
-                        stream = moduleDependencyStream = projectModuleStream.flatMap(m -> m.getTransitiveDependencies().stream());
+                        stream = moduleDependencyStream = projectModuleStream.flatMap(m -> m.getMainJavaSourceRootAnalyzer().getTransitiveDependencies().stream());
                         break;
                     case libraries:
                         stream = moduleStream = projectModuleStream.flatMap(m -> m.getRequiredLibraryModules().stream());
