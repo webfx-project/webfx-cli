@@ -33,7 +33,7 @@
     <properties>
         <!-- Java 13 is required because of the use of FileSystems.newFileSystem() in the code -->
         <java.version>13</java.version>
-        <webfx.mainClass>dev.webfx.cli.WebFX</webfx.mainClass>
+        <webfx.mainClass>dev.webfx.cli.WebFxCLI</webfx.mainClass>
         <!-- disabling classes and sources dependencies unpack to avoid including them again in the jar -->
         <plugin.dependency.param.unpack-classes.phase>none</plugin.dependency.param.unpack-classes.phase>
         <plugin.dependency.param.unpack-sources.phase>none</plugin.dependency.param.unpack-sources.phase>

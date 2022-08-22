@@ -35,15 +35,15 @@ import java.util.stream.Collectors;
                 Install.class
         },
         mixinStandardHelpOptions = true,
-        versionProvider = WebFX.DevVersionProvider.class)
-public final class WebFX extends CommonCommand {
+        versionProvider = WebFxCLI.DevVersionProvider.class)
+public final class WebFxCLI extends CommonCommand {
 
     public static void main(String... args) {
         System.exit(executeCommand(args));
     }
 
     public static int executeCommand(String... args) {
-        return new CommandLine(new WebFX())
+        return new CommandLine(new WebFxCLI())
                 .setHelpFactory(new HelpFactory())
                 .setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
                     // Removing the stack trace if this is raised by the cli tool (just showing the short message)
@@ -101,12 +101,12 @@ public final class WebFX extends CommonCommand {
     public static class DevVersionProvider implements CommandLine.IVersionProvider {
         @Override
         public String[] getVersion() throws Exception {
-            return new String[] { WebFX.getVersion() };
+            return new String[] { WebFxCLI.getVersion() };
         }
     }
 
     public static String getVersion() {
-        try (InputStream pis = WebFX.class.getClassLoader().getResourceAsStream("dev/webfx/cli/version/dev/version.ini")) {
+        try (InputStream pis = WebFxCLI.class.getClassLoader().getResourceAsStream("dev/webfx/cli/version/dev/version.ini")) {
             Properties devVersionProperties = new Properties();
             devVersionProperties.load(pis);
             return devVersionProperties.getProperty("version") + " ~ " + devVersionProperties.getProperty("build.timestamp") + " GMT";

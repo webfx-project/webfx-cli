@@ -1,6 +1,6 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.WebFX;
+import dev.webfx.cli.WebFxCLI;
 import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine;
@@ -62,7 +62,7 @@ public final class Bump extends CommonSubcommand {
                 Logger.log("Building " + branch + " branch");
             else {
                 Logger.log("A new version is available!");
-                Logger.log("Old version: " + WebFX.getVersion());
+                Logger.log("Old version: " + WebFxCLI.getVersion());
             }
             newCliProcessCall("mvn", "package")
                     .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))
