@@ -36,7 +36,7 @@ final class GwtServiceLoaderSuperSourceGenerator {
                     sb.append(");\n");
                 });
         TextFileReaderWriter.writeTextFileIfNewOrModified(
-                ResourceTextFileReader.readTemplate("ServiceLoader.javat")
+                ResourceTextFileReader.readTemplate("ServiceLoader.java")
                         .replace("${generatedCasesCode}", sb),
                 module.getMainResourcesDirectory().resolve("super/java/util/ServiceLoader.java"));
     }
