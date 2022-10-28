@@ -51,6 +51,8 @@ public final class ArtifactResolver {
                 return isForGwt || isRegistry ? moduleName : "javafx-controls";
             case "webfx-kit-javafxmedia-emul":
                 return isForGwt || isRegistry ? moduleName : "javafx-media";
+            case "webfx-kit-javafxweb-emul":
+                return isForGwt || isRegistry ? moduleName : "javafx-web";
         }
         if (isRegistry && "javafx-graphics".equals(moduleName))
             return "webfx-kit-javafxgraphics-emul";
@@ -62,6 +64,7 @@ public final class ArtifactResolver {
                 case "javafx-graphics":
                 case "javafx-controls":
                 case "javafx-media":
+                case "javafx-web":
                     return null;
                 case "gwt-user":
                     return "gwt-dev";
@@ -149,6 +152,8 @@ public final class ArtifactResolver {
                 case "webfx-kit-javafxcontrols-emul":
                 case "javafx-media":
                 case "webfx-kit-javafxmedia-emul":
+                case "javafx-web":
+                case "webfx-kit-javafxweb-emul":
                     return "provided";
             }
         return null;
