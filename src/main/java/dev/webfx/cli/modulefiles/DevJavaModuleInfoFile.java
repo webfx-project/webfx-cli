@@ -6,6 +6,7 @@ import dev.webfx.cli.modulefiles.abstr.DevModuleFileImpl;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,7 +38,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
                         // Grouping by destination module
                         .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                 )
-                .map(this::getJavaModuleNameWithStaticPrefixIfApplicable)
+                .map(this::getJavaModuleNameWithStaticOrTransitivePrefixIfApplicable)
                 .filter(Objects::nonNull)
                 .distinct()
         );
@@ -66,18 +67,26 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
     private static void processSection(StringBuilder sb, String sectionName, String keyword, ReusableStream<String> tokens) {
         if (tokens.count() > 0) {
             sb.append("\n    // ").append(sectionName).append('\n');
-            tokens.sorted()
+            tokens.sorted(Comparator.comparing(DevJavaModuleInfoFile::moduleNameOnly)) // ignoring prefixes such as static or transitive
                     .forEach(p -> sb.append("    ").append(keyword).append(' ').append(p).append(";\n"));
         }
     }
 
-    private String getJavaModuleNameWithStaticPrefixIfApplicable(Map.Entry<Module, List<ModuleDependency>> moduleGroup) {
+    private static String moduleNameOnly(String moduleNameWithPossiblePrefix) {
+        moduleNameWithPossiblePrefix = moduleNameWithPossiblePrefix.trim();
+        int lastSpaceIndex = moduleNameWithPossiblePrefix.lastIndexOf(' ');
+        return lastSpaceIndex < 0 ? moduleNameWithPossiblePrefix : moduleNameWithPossiblePrefix.substring(lastSpaceIndex + 1);
+    }
+
+    private String getJavaModuleNameWithStaticOrTransitivePrefixIfApplicable(Map.Entry<Module, List<ModuleDependency>> moduleGroup) {
         String javaModuleName = getJavaModuleName(moduleGroup.getKey());
-        if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
-            return "static " + javaModuleName;
         if (javaModuleName.equals("slf4j.api") ||
                 javaModuleName.equals(getJavaModuleName())) // May happen with modules implementing an interface module
             return null;
+        if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isTransitive))
+            javaModuleName = "transitive " + javaModuleName;
+        if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
+            javaModuleName = "static " + javaModuleName;
         return javaModuleName;
     }
 

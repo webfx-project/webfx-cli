@@ -25,19 +25,21 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
     private final Module destinationModule;
     private final Type type;
     private final boolean optional;
+    private final boolean transitive;
     private final String scope;
     private final String classifier;
     private final Target executableTarget;
 
     public ModuleDependency(Module sourceModule, Module destinationModule, Type type) {
-        this(sourceModule, destinationModule, type, false, null, null, null);
+        this(sourceModule, destinationModule, type, false, false, null, null, null);
     }
 
-    public ModuleDependency(Module sourceModule, Module destinationModule, Type type, boolean optional, String scope, String classifier, Target executableTarget) {
+    public ModuleDependency(Module sourceModule, Module destinationModule, Type type, boolean optional, boolean transitive, String scope, String classifier, Target executableTarget) {
         this.sourceModule = sourceModule;
         this.destinationModule = destinationModule;
         this.type = type;
         this.optional = optional;
+        this.transitive = transitive;
         this.scope = scope;
         this.classifier = classifier;
         this.executableTarget = executableTarget;
@@ -57,6 +59,10 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
 
     public boolean isOptional() {
         return optional;
+    }
+
+    public boolean isTransitive() {
+        return transitive;
     }
 
     public String getScope() {

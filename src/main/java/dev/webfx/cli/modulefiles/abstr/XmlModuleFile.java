@@ -37,6 +37,7 @@ public interface XmlModuleFile extends ModuleFile, XmlDocumentApi {
                         getProjectModule().getRootModule().searchRegisteredModule(node.getTextContent()),
                         type,
                         XmlUtil.getBooleanAttributeValue(node, "optional"),
+                        XmlUtil.getBooleanAttributeValue(node, "transitive"),
                         coalesce(XmlUtil.getAttributeValue(node, "scope"), defaultScope),
                         XmlUtil.getAttributeValue(node, "classifier"),
                         getTargetAttributeValue(node, "executable-target")
