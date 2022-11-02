@@ -56,7 +56,7 @@ public final class M2RootModule extends M2ProjectModule implements RootModule {
         return ReusableStream.create(() -> {
             // We invoke the Maven dependency tree, and analyse it, to get the transitive libraries
             List<LibraryModule> tree = new ArrayList<>();
-            Path cachePath = MavenCaller.getMavenModuleWorkspace(this).resolve("dependency-tree.txt");
+            Path cachePath = MavenUtil.getMavenModuleWorkspace(this).resolve("dependency-tree.txt");
 
             Consumer<String> mavenDependencyTreeAnalyzer = new Consumer<>() {
                 boolean treelogstart, treelogend;
@@ -93,7 +93,7 @@ public final class M2RootModule extends M2ProjectModule implements RootModule {
                         cacheFile.getParentFile().mkdirs();
                         writer = Files.newBufferedWriter(cachePath, StandardCharsets.UTF_8);
                     }
-                    MavenCaller.invokeMavenGoalOnPomModule(this, "dependency:tree", new ProcessCall().setLogLineFilter(line -> {
+                    MavenUtil.invokeMavenGoalOnPomModule(this, "dependency:tree", new ProcessCall().setLogLineFilter(line -> {
                         if (line.isBlank() || line.startsWith("Progress"))
                             return false;
                         mavenDependencyTreeAnalyzer.accept(line);

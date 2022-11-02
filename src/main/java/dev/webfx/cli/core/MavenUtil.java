@@ -4,15 +4,17 @@ import dev.webfx.cli.modulefiles.abstr.GavApi;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 
 /**
  * @author Bruno Salmon
  */
-public final class MavenCaller {
+public final class MavenUtil {
     //private final static boolean USE_MAVEN_INVOKER = false; // if false, just using shell invocation
     private final static boolean ASK_MAVEN_LOCAL_REPOSITORY = false; // if false, we will use the default path: ${user.home}/.m2/repository
     final static Path M2_LOCAL_REPOSITORY = ASK_MAVEN_LOCAL_REPOSITORY ?
@@ -21,6 +23,31 @@ public final class MavenCaller {
             // Otherwise, getting the standard path  (advantage: immediate / disadvantage: not 100% sure (the developer may have changed the default Maven settings)
             : Path.of(System.getProperty("user.home"), ".m2", "repository");
     //private static Invoker MAVEN_INVOKER; // Will be initialised later if needed
+
+    private static boolean CLEAN_M2_SNAPSHOTS;
+
+    public static void setCleanM2Snapshots(boolean cleanM2Snapshots) {
+        CLEAN_M2_SNAPSHOTS = cleanM2Snapshots;
+    }
+
+    public static boolean isCleanM2Snapshots() {
+        return CLEAN_M2_SNAPSHOTS;
+    }
+
+    public static void cleanM2ModuleSnapshotIfRequested(M2ProjectModule module) {
+        if (CLEAN_M2_SNAPSHOTS && module.isSnapshotVersion()) {
+            Path m2Path = module.getM2ProjectHomeDirectory();
+            if (Files.exists(m2Path))
+                try {
+                    Files.walk(m2Path)
+                            .sorted(Comparator.reverseOrder())
+                            .map(Path::toFile)
+                            .forEach(File::delete);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+        }
+    }
 
     public static int invokeMavenGoal(String goal) {
         return invokeMavenGoal(goal, new ProcessCall());

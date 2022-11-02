@@ -37,7 +37,11 @@ public class M2ProjectModule extends ProjectModuleImpl {
         this.artifactId = artifactId;
         this.version = version;
         this.type = type;
-        m2ProjectHomeDirectory = MavenCaller.M2_LOCAL_REPOSITORY.resolve(groupId.replace('.', '/')).resolve(artifactId).resolve(version);
+        m2ProjectHomeDirectory = MavenUtil.M2_LOCAL_REPOSITORY.resolve(groupId.replace('.', '/')).resolve(artifactId).resolve(version);
+    }
+
+    public Path getM2ProjectHomeDirectory() {
+        return m2ProjectHomeDirectory;
     }
 
     public Path getM2ArtifactSubPath(String suffix) {
@@ -174,7 +178,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     public void downloadArtifactClassifier(String classifier) {
-        MavenCaller.invokeDownloadMavenGoal("dependency:get -N -Dtransitive=false -Dartifact=" + getGroupId() + ":" + getArtifactId() + ":" + getVersion() + ":" + classifier);
+        MavenUtil.invokeDownloadMavenGoal("dependency:get -N -Dtransitive=false -Dartifact=" + getGroupId() + ":" + getArtifactId() + ":" + getVersion() + ":" + classifier);
     }
 
 }

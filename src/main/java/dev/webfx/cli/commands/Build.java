@@ -1,7 +1,7 @@
 package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.DevProjectModule;
-import dev.webfx.cli.core.MavenCaller;
+import dev.webfx.cli.core.MavenUtil;
 import dev.webfx.cli.core.WebFXHiddenFolder;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
@@ -143,7 +143,7 @@ public final class Build extends CommonSubcommand implements Runnable {
     }
 
     private static int invokeGluonGoal(String gluonProfile, DevProjectModule gluonModule) {
-        return MavenCaller.invokeMavenGoal("-P " + gluonProfile + " gluonfx:build gluonfx:package"
+        return MavenUtil.invokeMavenGoal("-P " + gluonProfile + " gluonfx:build gluonfx:package"
                 , new ProcessCall()
                         .setWorkingDirectory(gluonModule.getHomeDirectory())
         );

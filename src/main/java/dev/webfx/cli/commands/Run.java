@@ -3,7 +3,7 @@ package dev.webfx.cli.commands;
 import dev.webfx.cli.core.CliException;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.Logger;
-import dev.webfx.cli.core.MavenCaller;
+import dev.webfx.cli.core.MavenUtil;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine;
@@ -106,7 +106,7 @@ public final class Run extends CommonSubcommand implements Runnable {
                 while (gluonModulePath != null && !Files.exists(gluonModulePath.resolve("pom.xml")))
                     gluonModulePath = gluonModulePath.getParent();
                 if (gluonModulePath != null)
-                    MavenCaller.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
+                    MavenUtil.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
                             , new ProcessCall().setWorkingDirectory(gluonModulePath));
             } else if (fileName.endsWith(".deb")) {
                 int exitCode = ProcessCall.executeCommandTokens("sudo", "apt", "install", pathName);

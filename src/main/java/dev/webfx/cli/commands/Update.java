@@ -15,22 +15,28 @@ import picocli.CommandLine.Option;
 @Command(name = "update", description = "Update the build chain from webfx.xml files.")
 public final class Update extends CommonSubcommand implements Runnable {
 
-    @Option(names={"-o", "--only",}, arity = "1..*", description = "Run only the specified update tasks *.")
+    @Option(names={"-o", "--only"}, arity = "1..*", description = "Run only the specified update tasks *.")
     String[] only;
 
-    @Option(names={"-s", "--skip",}, arity = "1..*", description = "Skip the specified update tasks *.")
+    @Option(names={"-s", "--skip"}, arity = "1..*", description = "Skip the specified update tasks *.")
     String[] skip;
+
+    @Option(names={"-c", "--clean-snapshots"}, description = "Clean m2 snapshots related to this project first.")
+    boolean cleanSnapshots;
 
     @Override
     public void run() {
         setUpLogger();
-        execute(only, skip, getWorkspace());
+        execute(only, skip, cleanSnapshots, getWorkspace());
     }
 
-    static void execute(String[] only, String[] skip, CommandWorkspace workspace) {
+    static void execute(String[] only, String[] skip, boolean cleanSnapshots, CommandWorkspace workspace) {
         UpdateTasks tasks = new UpdateTasks(only == null);
         tasks.processTaskFlags(only, true);
         tasks.processTaskFlags(skip, false);
+
+        boolean previousCleanSnapshots = MavenUtil.isCleanM2Snapshots();
+        MavenUtil.setCleanM2Snapshots(cleanSnapshots);
 
         try (TextFileThreadTransaction transaction = TextFileThreadTransaction.open()) {
 
@@ -43,6 +49,8 @@ public final class Update extends CommonSubcommand implements Runnable {
             else
                 log(operationsCount + " files updated");
         }
+
+        MavenUtil.setCleanM2Snapshots(previousCleanSnapshots);
     }
 
     static void executeUpdateTasks(DevProjectModule workingModule, UpdateTasks tasks) {

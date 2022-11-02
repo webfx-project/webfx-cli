@@ -1,5 +1,6 @@
 package dev.webfx.cli.modulefiles;
 
+import dev.webfx.cli.core.MavenUtil;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.cli.core.M2ProjectModule;
 import dev.webfx.cli.modulefiles.abstr.PathBasedXmlModuleFileImpl;
@@ -77,6 +78,7 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
     }
 
     private static Path getWebFxModuleFilePathAndDownloadIfMissing(M2ProjectModule module) {
+        MavenUtil.cleanM2ModuleSnapshotIfRequested(module);
         // Before returning the standard path (which points to the "-webfx.xml" file in this maven project repository),
         // we check if there is no existing parent with an export-snapshot that already includes all info about that
         // module, because it will be much quicker to use (no additional webfx.xml or sources to download).
