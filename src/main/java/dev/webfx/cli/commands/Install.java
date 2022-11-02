@@ -18,6 +18,7 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.*;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -51,7 +52,13 @@ public final class Install extends CommonSubcommand {
                 case LINUX: osToken = "linux"; break;
             }
             Logger.log("Checking for update on " + GITHUB_GRAAL_RELEASE_PAGE_URL);
-            String pageContent = downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL);
+            //String pageContent = downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL);
+            String pageContent;
+            try (InputStream stream = getClass().getResourceAsStream("/dev/webfx/cli/graalvm/github_release_snapshot.html")) {
+                pageContent = new String(Objects.requireNonNull(stream).readAllBytes());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             Pattern pattern = Pattern.compile("href=\"(.*/gluonhq/graal/releases/download/.*-java17-" + osToken + "-\\S*)\"", 1);
             Matcher matcher = pattern.matcher(pageContent);
             if (!matcher.find()) {
