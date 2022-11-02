@@ -129,7 +129,13 @@
         <library name="java.management"/>
         <library name="java.management.rmi"/>
         <library name="java.naming"/>
-        <library name="java.net.http"/>
+
+        <library name="java.net.http">
+            <exported-packages>
+                <package>java.net.http</package>
+            </exported-packages>
+        </library>
+
         <library name="java.prefs"/>
         <library name="java.rmi"/>
         <library name="java.scripting"/>
