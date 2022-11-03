@@ -72,7 +72,7 @@ public final class Rename extends CommonSubcommand {
                 childrenModulesInDepth
                         .filter(m ->
                                 // Dependent modules
-                                !m.getUnfilteredDirectModules().filter(dm -> dm == module).isEmpty()
+                                !m.getMainJavaSourceRootAnalyzer().getUnfilteredDirectDependencies().filter(dep -> dep.getDestinationModule() == module).isEmpty()
                                         // Implementing modules
                                         || m.implementsModule(module)
                         )
