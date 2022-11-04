@@ -16,6 +16,7 @@ module webfx.cli {
     exports dev.webfx.cli.modulefiles;
     exports dev.webfx.cli.modulefiles.abstr;
     exports dev.webfx.cli.sourcegenerators;
+    exports dev.webfx.cli.util.hashlist;
     exports dev.webfx.cli.util.javacode;
     exports dev.webfx.cli.util.os;
     exports dev.webfx.cli.util.process;

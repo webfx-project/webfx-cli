@@ -569,9 +569,7 @@ public final class JavaSourceRootAnalyzer {
         ProjectModuleImpl executableModule = executableSourceRoot.getProjectModule();
         if (!executableModule.isExecutable())
             return ReusableStream.empty();
-        boolean mainCall = executableSourceRoot == collectingSourceRoot;
-        if (mainCall)
-            Logger.log("collectExecutableModuleProviders() for " + executableModule.getName());
+
         ProjectModuleImpl collectingModule = collectingSourceRoot.getProjectModule();
         List<ProjectModule> walkingModules = new HashList<>();
         walkingModules.add(collectingModule);
@@ -586,6 +584,7 @@ public final class JavaSourceRootAnalyzer {
 
         while (walkingIndex < walkingModules.size()) {
 
+            // Collecting the required and optional services (SPI) used by this module and transitive dependencies
             for (; walkingIndex < walkingModules.size(); walkingIndex++) {
                 ProjectModule projectModule = walkingModules.get(walkingIndex);
                 JavaSourceRootAnalyzer projectAnalyzer = projectModule.getMainJavaSourceRootAnalyzer();
@@ -593,31 +592,50 @@ public final class JavaSourceRootAnalyzer {
                 optionalServices.addAll(projectAnalyzer.getUsedOptionalJavaServices().collect(Collectors.toList()));
             }
 
-            requiredServices.forEach(spi -> {
-                if (providerModules.get(spi) == null) {
+            // Resolving the required services (finding the most relevant modules that implement these SPIs - only one module per SPI)
+            for (Iterator<String> it = requiredServices.iterator(); it.hasNext(); ) {
+                String spi = it.next();
+                if (providerModules.get(spi) != null) // already resolved
+                    it.remove(); // We remove this service from requiredServices, so this list contains only unresolved services
+                else {
                     ReusableStream<ProjectModule> requiredModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, collectingModule.getTarget(), true);
                     if (requiredModules.isEmpty())
                         requiredModules = RootModule.findModulesProvidingJavaService(requiredSearchScope, spi, collectingModule.getTarget(), true);
                     requiredModules.findFirst().ifPresent(requiredModule -> {
-                        providerModules.put(spi, Collections.singletonList(requiredModule));
-                        walkingModules.add(requiredModule);
-                        walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(requiredModule.getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders())).collect(Collectors.toList()));
+                        providerModules.put(spi, Collections.singletonList(requiredModule)); // singleton list because there only 1 instance for required services
+                        if (collectingSourceRoot == executableSourceRoot) {
+                            // Adding the module implementing the service to the walking modules (for subsequent research on next loop)
+                            walkingModules.add(requiredModule);
+                            // Also adding all its transitive dependencies
+                            walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(requiredModule.getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders())).collect(Collectors.toList()));
+                        }
+                        it.remove(); // We remove this service because it is now resolved
                     });
                 }
-            });
+            }
 
+            // Resolving the optional services (finding all modules that implement these SPIs)
             optionalServices.forEach(spi -> {
                 List<ProjectModule> optionalModules = providerModules.get(spi);
                 if (optionalModules == null)
                     providerModules.put(spi, optionalModules = new HashList<>(RootModule.findModulesProvidingJavaService(optionalSearchScope, spi, collectingModule.getTarget(), false).collect(Collectors.toList())));
                 List<ProjectModule> additionalOptionalModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, collectingModule.getTarget(), false).collect(Collectors.toList());
                 optionalModules.addAll(additionalOptionalModules);
-                walkingModules.addAll(additionalOptionalModules);
+                if (collectingSourceRoot == executableSourceRoot)
+                    walkingModules.addAll(additionalOptionalModules);
             });
 
-            if (executableSourceRoot != collectingSourceRoot)
+            // We don't collect subsequent providers when the collecting source root differs from the executable source
+            // root - which happens when this method is called from resolveInterfaceDependencyIfExecutable().
+            if (collectingSourceRoot != executableSourceRoot)
                 break;
+
+            // Otherwise, we loop for collecting the possible subsequent providers (because the modules we just added
+            // for the providers may themselves require additional providers)
         }
+
+        if (collectingSourceRoot == executableSourceRoot)
+            requiredServices.forEach(spi -> Logger.verbose("No provider found for " + spi + " among " + requiredSearchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList())));
 
         return ReusableStream.fromIterable(providerModules.entrySet())
                 .map(entry -> new Providers(entry.getKey(), ReusableStream.fromIterable(entry.getValue())));
