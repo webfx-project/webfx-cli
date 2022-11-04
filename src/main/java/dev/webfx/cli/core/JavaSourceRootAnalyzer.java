@@ -3,6 +3,7 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.DevJavaModuleInfoFile;
 import dev.webfx.cli.modulefiles.M2WebFxModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
+import dev.webfx.cli.util.hashlist.HashList;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
@@ -548,50 +549,78 @@ public final class JavaSourceRootAnalyzer {
         return executableImplicitProvidersCache;
     }
 
+    /**
+     * If the module is executable, this method returns the list of all providers required for its execution.
+     *
+     * @return a stream of all providers (empty for non-executable modules)
+     */
     private ReusableStream<Providers> collectExecutableProviders() {
         return collectExecutableModuleProviders(this, this);
     }
 
+    /**
+     * This is the static implementation of collectExecutableModuleProviders() that takes 2 arguments:
+     * @param executableSourceRoot the source root analyzer of the executable module
+     * @param collectingSourceRoot the source root analyzer of the module we are collecting the provider for
+     * @return a stream of all providers (empty for non-executable modules)
+     */
     private static ReusableStream<Providers> collectExecutableModuleProviders(JavaSourceRootAnalyzer executableSourceRoot, JavaSourceRootAnalyzer collectingSourceRoot) {
+        // Returning an empty stream if the module is not executable
         ProjectModuleImpl executableModule = executableSourceRoot.getProjectModule();
         if (!executableModule.isExecutable())
             return ReusableStream.empty();
-        Set<ProjectModule> allProviderModules = new HashSet<>();
-        Set<String> allSpiClassNames = new HashSet<>();
-        return ReusableStream.concat(
-                // Collecting single/required SPI providers
-                executableSourceRoot.collectProviders(collectingSourceRoot.getProjectModule(), true, allProviderModules, allSpiClassNames),
-                // Collecting multiple/optional SPI providers
-                executableSourceRoot.collectProviders(collectingSourceRoot.getProjectModule(), false, allProviderModules, allSpiClassNames),
-                // Collecting subsequent single/required SPI providers
-                ReusableStream.create(() -> new HashSet<>(executableSourceRoot == collectingSourceRoot ? allProviderModules : Collections.emptySet()).spliterator())
-                        .flatMap(m -> collectingSourceRoot.collectProviders(m, true, allProviderModules, allSpiClassNames)),
-                // Collecting subsequent multiple/optional SPI providers
-                ReusableStream.create(() -> new HashSet<>(executableSourceRoot == collectingSourceRoot ? allProviderModules : Collections.emptySet()).spliterator())
-                        .flatMap(m -> collectingSourceRoot.collectProviders(m, false, allProviderModules, allSpiClassNames))
-        );
-    }
+        boolean mainCall = executableSourceRoot == collectingSourceRoot;
+        if (mainCall)
+            Logger.log("collectExecutableModuleProviders() for " + executableModule.getName());
+        ProjectModuleImpl collectingModule = collectingSourceRoot.getProjectModule();
+        List<ProjectModule> walkingModules = new HashList<>();
+        walkingModules.add(collectingModule);
+        walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(collectingSourceRoot.getTransitiveDependenciesWithoutImplicitProviders())).collect(Collectors.toList()));
+        List<String/* SPI */> requiredServices = new HashList<>();
+        ReusableStream<ProjectModule> requiredSearchScope = executableSourceRoot.getRequiredProvidersModulesSearchScope();
+        List<String/* SPI */> optionalServices = new HashList<>();
+        ReusableStream<ProjectModule> optionalSearchScope = executableSourceRoot.getOptionalProvidersModulesSearchScope();
+        Map<String/* SPI */, List<ProjectModule>> providerModules = new HashMap<>();
 
-    private ReusableStream<Providers> collectProviders(ProjectModule module, boolean single, Set<ProjectModule> allProviderModules, Set<String> allSpiClassNames) {
-        ReusableStream<ProjectModule> searchScope = single ?
-                getRequiredProvidersModulesSearchScope() :
-                /* Adding provider modules in the optional scope because they may also provide optional , ex: webfx-platform-shared-gwt also declares a module initializer   */
-                ReusableStream.concat(getOptionalProvidersModulesSearchScope(), ReusableStream.create(allProviderModules::spliterator)).distinct();
-        ReusableStream<Module> stackWithoutImplicitProviders = ReusableStream.concat(ReusableStream.of(module), mapDestinationModules(module.getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders()));
-        return ProjectModule.filterProjectModules(stackWithoutImplicitProviders)
-                .flatMap(m -> single ? m.getMainJavaSourceRootAnalyzer().getUsedRequiredJavaServices() : m.getMainJavaSourceRootAnalyzer().getUsedOptionalJavaServices())
-                .map(spiClassName -> {
-                    if (allSpiClassNames.contains(spiClassName))
-                        return null; // returning null to avoid rework
-                    allSpiClassNames.add(spiClassName);
-                    Providers providers = new Providers(spiClassName, RootModule.findModulesProvidingJavaService(searchScope, spiClassName, module.getTarget(), single));
-                    providers.getProviderModules().collect(Collectors.toCollection(() -> allProviderModules));
-                    if (providers.getProviderClassNames().count() == 0)
-                        Logger.verbose("No provider found for " + spiClassName + " among " + searchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList()));
-                    return providers;
-                })
-                .filter(Objects::nonNull) // Removing nulls
-                ;
+        int walkingIndex = 0;
+
+        while (walkingIndex < walkingModules.size()) {
+
+            for (; walkingIndex < walkingModules.size(); walkingIndex++) {
+                ProjectModule projectModule = walkingModules.get(walkingIndex);
+                JavaSourceRootAnalyzer projectAnalyzer = projectModule.getMainJavaSourceRootAnalyzer();
+                requiredServices.addAll(projectAnalyzer.getUsedRequiredJavaServices().collect(Collectors.toList()));
+                optionalServices.addAll(projectAnalyzer.getUsedOptionalJavaServices().collect(Collectors.toList()));
+            }
+
+            requiredServices.forEach(spi -> {
+                if (providerModules.get(spi) == null) {
+                    ReusableStream<ProjectModule> requiredModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, collectingModule.getTarget(), true);
+                    if (requiredModules.isEmpty())
+                        requiredModules = RootModule.findModulesProvidingJavaService(requiredSearchScope, spi, collectingModule.getTarget(), true);
+                    requiredModules.findFirst().ifPresent(requiredModule -> {
+                        providerModules.put(spi, Collections.singletonList(requiredModule));
+                        walkingModules.add(requiredModule);
+                        walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(requiredModule.getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders())).collect(Collectors.toList()));
+                    });
+                }
+            });
+
+            optionalServices.forEach(spi -> {
+                List<ProjectModule> optionalModules = providerModules.get(spi);
+                if (optionalModules == null)
+                    providerModules.put(spi, optionalModules = new HashList<>(RootModule.findModulesProvidingJavaService(optionalSearchScope, spi, collectingModule.getTarget(), false).collect(Collectors.toList())));
+                List<ProjectModule> additionalOptionalModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, collectingModule.getTarget(), false).collect(Collectors.toList());
+                optionalModules.addAll(additionalOptionalModules);
+                walkingModules.addAll(additionalOptionalModules);
+            });
+
+            if (executableSourceRoot != collectingSourceRoot)
+                break;
+        }
+
+        return ReusableStream.fromIterable(providerModules.entrySet())
+                .map(entry -> new Providers(entry.getKey(), ReusableStream.fromIterable(entry.getValue())));
     }
 
     ReusableStream<ModuleDependency> resolveInterfaceDependencyIfExecutable(ModuleDependency dependency) {
@@ -614,7 +643,7 @@ public final class JavaSourceRootAnalyzer {
                     if (concreteModule instanceof ProjectModuleImpl) // Added to solve cast problem, is it OK?
                         concreteModuleDependencies = ReusableStream.concat(
                                 concreteModuleDependencies,
-                                collectExecutableModuleProviders(this, ((ProjectModuleImpl) concreteModule).getMainJavaSourceRootAnalyzer())
+                                collectExecutableModuleProviders(this, concreteModule.getMainJavaSourceRootAnalyzer())
                                         .flatMap(Providers::getProviderModules)
                                         //.filter(m -> transitiveDependenciesWithoutImplicitProvidersCache.noneMatch(dep -> dep.getDestinationModule() == m)) // Removing modules already in transitive dependencies (no need to repeat them)
                                         .map(m -> ModuleDependency.createImplicitProviderDependency(projectModule, m))
