@@ -69,7 +69,7 @@ public class DevProjectModule extends ProjectModuleImpl {
         return homeDirectory != null ? homeDirectory.resolve("src/main/resources/") : null;
     }
 
-    private Path getMetaInfJavaServicesDirectory() {
+    public Path getMetaInfJavaServicesDirectory() {
         return getMainResourcesDirectory().resolve("META-INF/services/");
     }
 

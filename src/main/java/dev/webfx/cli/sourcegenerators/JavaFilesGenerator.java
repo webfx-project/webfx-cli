@@ -24,7 +24,7 @@ public class JavaFilesGenerator {
                             .forEach(providerClassName ->
                                     sb.append(providerClassName).append('\n')
                             );
-                    TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), module.getMainResourcesDirectory().resolve("META-INF/services/" + service));
+                    TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), module.getMetaInfJavaServicesDirectory().resolve(service));
                 });
     }
 }
