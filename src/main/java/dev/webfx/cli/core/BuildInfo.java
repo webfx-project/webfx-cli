@@ -19,8 +19,8 @@ public class BuildInfo {
         isForGwt = projectModule.getTarget().isMonoPlatform(Platform.GWT);
         isForTeaVm = projectModule.getTarget().isMonoPlatform(Platform.TEAVM);
         isForVertx = projectModule.getTarget().isMonoPlatform(Platform.JRE) && projectModule.getTarget().hasTag(TargetTag.VERTX);
+        isForOpenJfx = projectModule.getTarget().isMonoPlatform(Platform.JRE) && (projectModule.getTarget().hasTag(TargetTag.OPENJFX));
         isForGluon = projectModule.getTarget().isMonoPlatform(Platform.JRE) && projectModule.getTarget().hasTag(TargetTag.GLUON);
-        isForOpenJfx = projectModule.getTarget().isMonoPlatform(Platform.JRE) && (projectModule.getTarget().hasTag(TargetTag.OPENJFX) || isForGluon);
         isExecutable = projectModule.isExecutable();
         isRegistry = projectModule.getName().contains("-registry-") || projectModule.getName().endsWith("-registry");
     }

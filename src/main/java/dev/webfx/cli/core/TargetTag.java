@@ -151,6 +151,11 @@ public enum TargetTag {
     }
 
     private int gradePartitionCompatibility(TargetTag requestedTag) {
+        // We don't accept a tag that is deeper than the requested tag (related the same partition tag). For example,
+        // webfx-platform-shutdown-gluon is for gluon only, it shouldn't be taken for openjfx, which should take
+        // webfx-platform-shutdown-java (less deep) instead.
+        if (getPartitionTag() == requestedTag.getPartitionTag() && getPartitionDepth() > requestedTag.getPartitionDepth())
+            return -1;
         int grade = 0;
         Map<TargetTag, TargetTag> deepestMembers = getDeepestPartitionMembers();
         for (Map.Entry<TargetTag, TargetTag> requestedEntry : requestedTag.getDeepestPartitionMembers().entrySet()) {

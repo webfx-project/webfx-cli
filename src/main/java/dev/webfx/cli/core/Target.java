@@ -54,7 +54,7 @@ public final class Target {
         for (TargetTag requestedTag : requestedTarget.getTags()) {
             for (TargetTag tag : getTags()) {
                 int tagGrade = tag.gradeCompatibility(requestedTag);
-                if (tagGrade < 0 && tag.gradeCompatibility(requestedTag) < 0)
+                if (tagGrade < 0)
                     return tagGrade;
                 grade += tagGrade;
             }
