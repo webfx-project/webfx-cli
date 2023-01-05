@@ -73,11 +73,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     // Modules
     final ReusableStream<ModuleDependency> applicationDependencyCache =
             ReusableStream.create(() -> {
-                ProjectModule applicationModule = null;
-                if (isExecutable()) {
-                    String moduleName = getName();
-                    applicationModule = getRootModule().getModuleRegistry().getRegisteredProjectModule(moduleName.substring(0, moduleName.lastIndexOf('-')));
-                }
+                ProjectModule applicationModule = getApplicationModule();
                 return applicationModule != null ? ReusableStream.of(ModuleDependency.createApplicationDependency(this, applicationModule)) : ReusableStream.empty();
             });
 
@@ -117,6 +113,15 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     public RootModule getRootModule() {
         return rootModule;
+    }
+
+    public ProjectModule getApplicationModule() {
+        ProjectModule applicationModule = null;
+        if (isExecutable()) {
+            String moduleName = getName();
+            applicationModule = getRootModule().getModuleRegistry().getRegisteredProjectModule(moduleName.substring(0, moduleName.lastIndexOf('-')));
+        }
+        return applicationModule;
     }
 
     public Target getTarget() {

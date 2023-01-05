@@ -8,6 +8,7 @@ module webfx.cli {
     requires java.xml;
     requires org.apache.commons.compress;
     requires webfx.lib.reusablestream;
+    requires webfx.platform.meta;
 
     // Exported packages
     exports dev.webfx.cli;

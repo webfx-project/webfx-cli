@@ -4,6 +4,7 @@ import dev.webfx.cli.core.*;
 import dev.webfx.cli.sourcegenerators.GluonFilesGenerator;
 import dev.webfx.cli.sourcegenerators.GwtFilesGenerator;
 import dev.webfx.cli.sourcegenerators.JavaFilesGenerator;
+import dev.webfx.cli.sourcegenerators.MetaFileGenerator;
 import dev.webfx.cli.util.textfile.TextFileThreadTransaction;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import picocli.CommandLine.Command;
@@ -67,7 +68,6 @@ public final class Update extends CommonSubcommand implements Runnable {
         // Generating files for Java modules (module-info.java and META-INF/services)
         if (tasks.moduleInfoJava || tasks.metaInfServices)
             getWorkingAndChildrenModulesInDepth(workingModule)
-                    .filter(DevProjectModule::hasSourceDirectory)
                     .filter(DevProjectModule::hasMainJavaSourceDirectory)
                     .forEach(m -> {
                         boolean jre = m.getTarget().isPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
@@ -83,6 +83,11 @@ public final class Update extends CommonSubcommand implements Runnable {
             getWorkingAndChildrenModulesInDepth(workingModule)
                     .filter(m -> m.isExecutable(Platform.GWT))
                     .forEach(GwtFilesGenerator::generateGwtFiles);
+
+        // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties)
+        getWorkingAndChildrenModulesInDepth(workingModule)
+                .filter(ProjectModule::isExecutable)
+                .forEach(MetaFileGenerator::generateExecutableModuleMetaResourceFile);
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
         getWorkingAndChildrenModulesInDepth(workingModule)

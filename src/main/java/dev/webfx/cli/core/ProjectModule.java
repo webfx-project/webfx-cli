@@ -3,6 +3,7 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.lib.reusablestream.ReusableStream;
+import dev.webfx.platform.meta.Meta;
 
 import java.nio.file.Path;
 import java.util.function.Predicate;
@@ -68,7 +69,18 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getEmbedResources() {
-        return getWebFxModuleFile().getEmbedResources();
+        return ReusableStream.concat(
+                getWebFxModuleFile().getEmbedResources(),
+                getMetaResource()
+        );
+    }
+
+    default ReusableStream<String> getMetaResource() {
+        return isExecutable() ? ReusableStream.of(Meta.META_EXE_RESOURCE_FILE_PATH) : ReusableStream.empty();
+    }
+
+    default ReusableStream<String> getMetaResourcePackage() {
+        return isExecutable() ? ReusableStream.of(Meta.META_EXE_PACKAGE) : ReusableStream.empty();
     }
 
     default ReusableStream<String> getSystemProperties() {
