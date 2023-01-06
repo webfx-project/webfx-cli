@@ -76,7 +76,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                             // 2) <resourcesList> => lists all resource files potentially used by the application
                             + "<resourcesList>\n"
                             + projectModule.getOpenPackages()
-                            .map(p -> "<list>" + p.replace('.', '/') + "/*$</list>")
+                            .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+</list>")
                             .collect(Collectors.joining("\n"))
                             + "</resourcesList>"
             );
