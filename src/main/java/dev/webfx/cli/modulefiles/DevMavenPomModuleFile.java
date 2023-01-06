@@ -55,12 +55,31 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                         : buildInfo.isForVertx ? "pom_vertx_executable.xml"
                         : "pom_openjfx_executable.xml";
         String template = ResourceTextFileReader.readTemplate(templateFileName)
-                .replace("${groupId}",    ArtifactResolver.getGroupId(projectModule))
+                .replace("${groupId}", ArtifactResolver.getGroupId(projectModule))
                 .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
-                .replace("${version}",    ArtifactResolver.getVersion(projectModule))
+                .replace("${version}", ArtifactResolver.getVersion(projectModule))
                 .replace("${application.name}", getApplicationName(projectModule))
-                .replace("${application.displayName}", getApplicationDisplayName(projectModule))
-                ;
+                .replace("${application.displayName}", getApplicationDisplayName(projectModule));
+        // For the executable Gluon pom, we need to add some extra configuration required by the GluonFX plugin (attachList & resourcesList):
+        if (template.contains("${plugin.gluonfx.configuration}"))
+            template = template.replace("${plugin.gluonfx.configuration}",
+                    // 1) <attachList> => lists all the Gluon attach modules used by the application:
+                    "<attachList>\n" +
+                            projectModule.getMainJavaSourceRootAnalyzer().getTransitiveDependencies()
+                                    .map(ModuleDependency::getDestinationModule)
+                                    .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
+                                    .distinct()
+                                    .sorted()
+                                    .map(m -> "<list>" + m.getArtifactId() + "</list>")
+                                    .collect(Collectors.joining("\n"))
+                            + "</attachList>\n"
+                            // 2) <resourcesList> => lists all resource files potentially used by the application
+                            + "<resourcesList>\n"
+                            + projectModule.getOpenPackages()
+                            .map(p -> "<list>" + p.replace('.', '/') + "/*$</list>")
+                            .collect(Collectors.joining("\n"))
+                            + "</resourcesList>"
+            );
         Document document = XmlUtil.parseXmlString(template);
         Element documentElement = document.getDocumentElement();
         Node webFxMavenPomProjectNode = projectModule.getWebFxModuleFile().getMavenManualNode();

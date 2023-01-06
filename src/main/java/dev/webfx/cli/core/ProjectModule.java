@@ -75,6 +75,13 @@ public interface ProjectModule extends Module {
         );
     }
 
+    default ReusableStream<String> getOpenPackages() {
+        return ReusableStream.concat(
+                getResourcePackages(),
+                getMetaResourcePackage()
+        );
+    }
+
     default ReusableStream<String> getMetaResource() {
         return isExecutable() ? ReusableStream.of(Meta.META_EXE_RESOURCE_FILE_PATH) : ReusableStream.empty();
     }

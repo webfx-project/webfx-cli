@@ -8,6 +8,18 @@
 
     <dependencies/>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.gluonhq</groupId>
+                <artifactId>gluonfx-maven-plugin</artifactId>
+                <configuration>
+                    ${plugin.gluonfx.configuration}
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <!-- Redefining the gluon profiles here, so they can be activated when invoking this pom directly -->
     <!-- Note: activating a profile locally here will trigger the properties defined in webfx-parent -->
     <profiles>
