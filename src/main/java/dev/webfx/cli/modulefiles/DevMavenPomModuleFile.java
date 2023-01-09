@@ -65,19 +65,21 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             template = template.replace("${plugin.gluonfx.configuration}",
                     // 1) <attachList> => lists all the Gluon attach modules used by the application:
                     "<attachList>\n" +
-                            projectModule.getMainJavaSourceRootAnalyzer().getTransitiveDependencies()
-                                    .map(ModuleDependency::getDestinationModule)
+                            projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
                                     .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
                                     .distinct()
                                     .sorted()
                                     .map(m -> "<list>" + m.getArtifactId() + "</list>")
                                     .collect(Collectors.joining("\n"))
                             + "</attachList>\n"
-                            // 2) <resourcesList> => lists all resource files potentially used by the application
-                            + "<resourcesList>\n"
-                            + projectModule.getOpenPackages()
-                            .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+</list>")
-                            .collect(Collectors.joining("\n"))
+                    // 2) <resourcesList> => lists all resource files potentially used by the application
+                    + "<resourcesList>\n"
+                            + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
+                                    .flatMap(ProjectModule::getOpenPackages)
+                                    .distinct()
+                                    .sorted()
+                                    .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+</list>")
+                                    .collect(Collectors.joining("\n"))
                             + "</resourcesList>"
             );
         Document document = XmlUtil.parseXmlString(template);
