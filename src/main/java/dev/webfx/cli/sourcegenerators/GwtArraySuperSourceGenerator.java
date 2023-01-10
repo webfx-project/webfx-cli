@@ -19,7 +19,7 @@ final class GwtArraySuperSourceGenerator {
                 .sorted()
                 .forEach(className -> sb.append("            case \"").append(className).append("\": return new ").append(className).append("[length];\n"));
         TextFileReaderWriter.writeTextFileIfNewOrModified(
-                ResourceTextFileReader.readTemplate("Array.java")
+                ResourceTextFileReader.readTemplate("Array.javat")
                         .replace("${generatedCasesCode}", sb),
                 module.getMainResourcesDirectory().resolve("super/java/lang/reflect/Array.java"));
     }

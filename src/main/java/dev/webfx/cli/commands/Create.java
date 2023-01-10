@@ -122,7 +122,7 @@ public final class Create extends CommonSubcommand {
 
         @Override
         public Void call() throws Exception {
-            DevProjectModule module = aggregate ? createAggregateModule(name, true) : createSourceModule(name, ResourceTextFileReader.readTemplate("Class.java"), moduleClassName, false);
+            DevProjectModule module = aggregate ? createAggregateModule(name, true) : createSourceModule(name, ResourceTextFileReader.readTemplate("Class.javat"), moduleClassName, false);
             writeParentMavenModuleFile(module);
             return null;
         }
