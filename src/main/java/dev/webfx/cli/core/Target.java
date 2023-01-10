@@ -40,6 +40,10 @@ public final class Target {
         return Arrays.stream(getTags()).allMatch(tag -> tag.isPlatformSupported(platform));
     }
 
+    public boolean isAnyPlatformSupported(Platform platform) {
+        return Arrays.stream(getTags()).anyMatch(tag -> tag.isPlatformSupported(platform));
+    }
+
     public boolean isMonoPlatform() {
         return getSupportedPlatforms().length == 1;
     }
@@ -52,10 +56,18 @@ public final class Target {
     int gradeTargetMatch(Target requestedTarget) {
         int grade = 0;
         for (TargetTag requestedTag : requestedTarget.getTags()) {
-            for (TargetTag tag : getTags()) {
+            TargetTag[] tags = getTags();
+            for (TargetTag tag : tags) {
                 int tagGrade = tag.gradeCompatibility(requestedTag);
-                if (tagGrade < 0)
-                    return tagGrade;
+                // If tagGrade is negative, it's likely that this tag is incompatible with the requested target,
+                // unless we find another tag in the list that is the requested tag.
+                // For example: webfx-kit-platform-audio-openjfx-gwt provides the same implementation for both OpenJFX
+                // and GWT. If the requested tag is OpenJFX, then tagGrade will be negative when grading GWT, but
+                // this negative grade should be ignored in this case, because the module has also the tag OpenJFX.
+                if (tagGrade < 0 && tags.length > 1 && Arrays.stream(tags).anyMatch(t -> t == requestedTag))
+                    tagGrade = 0; // ignoring the negative grade in this case
+                if (tagGrade < 0) // Otherwise for all other cases, if the grade is negative,
+                    return tagGrade; // then it's incompatible with the requested target, so we return that negative grade
                 grade += tagGrade;
             }
         }
