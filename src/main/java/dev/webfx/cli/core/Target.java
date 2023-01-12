@@ -37,11 +37,13 @@ public final class Target {
     }
 
     public boolean isPlatformSupported(Platform platform) {
-        return Arrays.stream(getTags()).allMatch(tag -> tag.isPlatformSupported(platform));
+        // Note: if there is no platform-specific tag, then it's a generic module that supports all platforms
+        return tags.length == 0 || Arrays.stream(tags).allMatch(tag -> tag.isPlatformSupported(platform));
     }
 
     public boolean isAnyPlatformSupported(Platform platform) {
-        return Arrays.stream(getTags()).anyMatch(tag -> tag.isPlatformSupported(platform));
+        // Note: if there is no platform-specific tag, then it's a generic module that supports any platform
+        return tags.length == 0 || Arrays.stream(tags).anyMatch(tag -> tag.isPlatformSupported(platform));
     }
 
     public boolean isMonoPlatform() {
