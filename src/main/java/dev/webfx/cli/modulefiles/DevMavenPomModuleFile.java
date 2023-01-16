@@ -3,6 +3,7 @@ package dev.webfx.cli.modulefiles;
 import dev.webfx.cli.core.Module;
 import dev.webfx.cli.core.*;
 import dev.webfx.cli.modulefiles.abstr.DevXmlModuleFileImpl;
+import dev.webfx.cli.modulefiles.abstr.GavApi;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
@@ -60,28 +61,36 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                 .replace("${version}", ArtifactResolver.getVersion(projectModule))
                 .replace("${application.name}", getApplicationName(projectModule))
                 .replace("${application.displayName}", getApplicationDisplayName(projectModule));
-        // For the executable Gluon pom, we need to add some extra configuration required by the GluonFX plugin (attachList & resourcesList):
-        if (template.contains("${plugin.gluonfx.configuration}"))
+        // For the executable Gluon pom, we need to add some extra configuration required by the GluonFX plugin:
+        if (template.contains("${plugin.gluonfx.configuration}")) {
+            String applicationLabel = projectModule.getApplicationLabel();
             template = template.replace("${plugin.gluonfx.configuration}",
                     // 1) <attachList> => lists all the Gluon attach modules used by the application:
                     "<attachList>\n" +
                             projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
                                     .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
+                                    .map(GavApi::getArtifactId)
                                     .distinct()
-                                    .sorted()
-                                    .map(m -> "<list>" + m.getArtifactId() + "</list>")
+                                    .stream().sorted()
+                                    .map(a -> "<list>" + a + "</list>")
                                     .collect(Collectors.joining("\n"))
                             + "</attachList>\n"
                     // 2) <resourcesList> => lists all resource files potentially used by the application
                     + "<resourcesList>\n"
                             + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
-                                    .flatMap(ProjectModule::getOpenPackages)
-                                    .distinct()
-                                    .sorted()
-                                    .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+</list>")
-                                    .collect(Collectors.joining("\n"))
+                            .flatMap(ProjectModule::getOpenPackages)
+                            .distinct()
+                            .stream().sorted()
+                            .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+</list>")
+                            .collect(Collectors.joining("\n"))
                             + "</resourcesList>"
+                    // 3) Application name (Android only for now)
+                    + (applicationLabel == null ? "" : "\n<releaseConfiguration>\n"
+                            + "<!-- Android -->\n"
+                            + "<appLabel>" + applicationLabel + "</appLabel>\n"
+                            + "</releaseConfiguration>")
             );
+        }
         Document document = XmlUtil.parseXmlString(template);
         Element documentElement = document.getDocumentElement();
         Node webFxMavenPomProjectNode = projectModule.getWebFxModuleFile().getMavenManualNode();

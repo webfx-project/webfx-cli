@@ -18,6 +18,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return getBooleanProjectAttributeValue("executable");
     }
 
+    default String getApplicationLabel() {
+        return getProjectAttributeValue("applicationLabel");
+    }
+
     default boolean isInterface() {
         return getBooleanProjectAttributeValue("interface");
     }
@@ -182,6 +186,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
 
     default ReusableStream<String> modulesUsingJavaClassFromExportSnapshot(Node javaClassUsageNode) {
         return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(javaClassUsageNode, "module"));
+    }
+
+    private String getProjectAttributeValue(String attribute) {
+        return XmlUtil.getAttributeValue(getXmlNode(), attribute);
     }
 
     private boolean getBooleanProjectAttributeValue(String attribute) {
