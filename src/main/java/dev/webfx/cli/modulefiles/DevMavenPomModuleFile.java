@@ -81,7 +81,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                             .flatMap(ProjectModule::getOpenPackages)
                             .distinct()
                             .stream().sorted()
-                            .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+</list>")
+                            .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
                             .collect(Collectors.joining("\n"))
                             + "</resourcesList>"
                     // 3) Application name (Android only for now)
