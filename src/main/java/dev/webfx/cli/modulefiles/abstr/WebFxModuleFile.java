@@ -18,6 +18,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return getBooleanProjectAttributeValue("executable");
     }
 
+    default String getApplicationId() {
+        return getProjectAttributeValue("applicationId");
+    }
+
     default String getApplicationLabel() {
         return getProjectAttributeValue("applicationLabel");
     }

@@ -117,13 +117,23 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     @Override
     public String getApplicationLabel() {
-        String executableLabel = ProjectModule.super.getApplicationLabel();
-        if (executableLabel == null) {
+        String applicationLabel = ProjectModule.super.getApplicationLabel();
+        if (applicationLabel == null) {
             ProjectModule applicationModule = getApplicationModule();
             if (applicationModule != null)
-                executableLabel = applicationModule.getApplicationLabel();
+                applicationLabel = applicationModule.getApplicationLabel();
         }
-        return executableLabel;
+        return applicationLabel;
+    }
+
+    public String getApplicationId() {
+        String applicationId = ProjectModule.super.getApplicationId();
+        if (applicationId == null) {
+            ProjectModule applicationModule = getApplicationModule();
+            if (applicationModule != null)
+                applicationId = applicationModule.getApplicationId();
+        }
+        return applicationId;
     }
 
     public ProjectModule getApplicationModule() {

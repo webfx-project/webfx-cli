@@ -99,6 +99,10 @@ public interface ProjectModule extends Module {
         return getWebFxModuleFile().isExecutable();
     }
 
+    default String getApplicationId() {
+        return getWebFxModuleFile().getApplicationId();
+    }
+
     default String getApplicationLabel() {
         return getWebFxModuleFile().getApplicationLabel();
     }

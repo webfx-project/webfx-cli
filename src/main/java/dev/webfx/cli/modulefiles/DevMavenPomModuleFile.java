@@ -63,33 +63,37 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                 .replace("${application.displayName}", getApplicationDisplayName(projectModule));
         // For the executable Gluon pom, we need to add some extra configuration required by the GluonFX plugin:
         if (template.contains("${plugin.gluonfx.configuration}")) {
-            String applicationLabel = projectModule.getApplicationLabel();
-            template = template.replace("${plugin.gluonfx.configuration}",
-                    // 1) <attachList> => lists all the Gluon attach modules used by the application:
-                    "<attachList>\n" +
-                            projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
-                                    .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
-                                    .map(GavApi::getArtifactId)
-                                    .distinct()
-                                    .stream().sorted()
-                                    .map(a -> "<list>" + a + "</list>")
-                                    .collect(Collectors.joining("\n"))
-                            + "</attachList>\n"
-                    // 2) <resourcesList> => lists all resource files potentially used by the application
-                    + "<resourcesList>\n"
-                            + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
-                            .flatMap(ProjectModule::getOpenPackages)
+            // 1) <attachList> => lists all the Gluon attach modules used by the application:
+            String gluonConfig = "<attachList>\n" +
+                    projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
+                            .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
+                            .map(GavApi::getArtifactId)
                             .distinct()
                             .stream().sorted()
-                            .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
+                            .map(a -> "<list>" + a + "</list>")
                             .collect(Collectors.joining("\n"))
-                            + "</resourcesList>"
-                    // 3) Application name (Android only for now)
-                    + (applicationLabel == null ? "" : "\n<releaseConfiguration>\n"
-                            + "<!-- Android -->\n"
-                            + "<appLabel>" + applicationLabel + "</appLabel>\n"
-                            + "</releaseConfiguration>")
-            );
+                    + "</attachList>\n";
+            // 2) <resourcesList> => lists all resource files potentially used by the application
+            gluonConfig += "<resourcesList>\n"
+                    + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
+                    .flatMap(ProjectModule::getOpenPackages)
+                    .distinct()
+                    .stream().sorted()
+                    .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
+                    .collect(Collectors.joining("\n"))
+                    + "</resourcesList>\n";
+            // 3) application identifier
+            String applicationId = projectModule.getApplicationId();
+            if (applicationId != null)
+                gluonConfig += "<appIdentifier>" + applicationId + "</appIdentifier>\n";
+            // 4) <releaseConfiguration> => application label
+            String applicationLabel = projectModule.getApplicationLabel();
+            if (applicationLabel != null)
+                gluonConfig += "<releaseConfiguration>\n"
+                        + "<!-- Android -->\n"
+                        + "<appLabel>" + applicationLabel + "</appLabel>\n"
+                        + "</releaseConfiguration>\n";
+            template = template.replace("${plugin.gluonfx.configuration}", gluonConfig);
         }
         Document document = XmlUtil.parseXmlString(template);
         Element documentElement = document.getDocumentElement();
