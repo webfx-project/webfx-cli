@@ -174,7 +174,7 @@ public final class Create extends CommonSubcommand {
 
         private DevProjectModule createTagApplicationModule(TargetTag targetTag) throws IOException {
             if (targetTag == null)
-                return createSourceModule(prefix + "-application", helloWorld ? "JavaFxHelloWorldApplication.java" : "JavaFxApplication.java", javaFxApplication, false);
+                return createSourceModule(prefix + "-application", helloWorld ? "JavaFxHelloWorldApplication.javat" : "JavaFxApplication.javat", javaFxApplication, false);
             return createSourceModule(prefix + "-application-" + targetTag.name().toLowerCase(), null, null, true);
         }
     }
