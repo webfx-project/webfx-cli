@@ -90,6 +90,8 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             String applicationLabel = projectModule.getApplicationLabel();
             if (applicationLabel != null)
                 gluonConfig += "<releaseConfiguration>\n"
+                        + "<!-- macOS/iOS -->\n"
+                        + "<bundleName>" + applicationLabel + "</bundleName>\n"
                         + "<!-- Android -->\n"
                         + "<appLabel>" + applicationLabel + "</appLabel>\n"
                         + "</releaseConfiguration>\n";
