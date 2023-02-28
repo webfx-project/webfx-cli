@@ -30,6 +30,7 @@ public final class WebFXHiddenFolder {
         Path hiddenVmFolder = getCliSubFolder("graalvm");
         Path binPath = ReusableStream.create(() -> Files.exists(hiddenVmFolder) ? SplitFiles.uncheckedWalk(hiddenVmFolder) : Spliterators.emptySpliterator())
                 .filter(path -> path.toFile().isDirectory() && "bin".equals(path.getFileName().toString()))
+                .sorted() // so that /bin is listed first, after other folders like /lib/installer/bin, etc...
                 .findFirst()
                 .orElse(null);
         return binPath == null ? null : binPath.getParent();
