@@ -75,7 +75,7 @@ public class CommonCommand {
     }
 
     protected void setUpLogger() {
-        Logger.setLogConsumer(object -> {
+        Logger.setLogTransformer(object -> {
             String message = null;
             List<IStyle> styles = null;
 
@@ -110,8 +110,10 @@ public class CommonCommand {
             if (styles != null) {
                 if (message == null)
                     message = object.toString();
-                System.out.println(COLOR_SCHEME.apply(message, styles));
+                return COLOR_SCHEME.apply(message, styles);
             }
+
+            return message;
         });
     }
 
