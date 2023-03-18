@@ -145,7 +145,7 @@ public final class XmlUtil {
     public static <T> ReusableStream<T> nodeListToReusableStream(NodeList nodeList, Function<Node, ? extends T> transformer) {
         if (nodeList == null)
             return ReusableStream.empty();
-        return ReusableStream.create(() -> new Spliterators.AbstractSpliterator<>(nodeList.getLength(), Spliterator.SIZED) {
+        return ReusableStream.create(() -> new Spliterators.AbstractSpliterator<T>(nodeList.getLength(), Spliterator.SIZED) {
             private int index = 0;
             @Override
             public boolean tryAdvance(Consumer<? super T> action) {

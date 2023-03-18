@@ -23,3 +23,9 @@ hs_err_pid*
 *.ipr
 *.iws
 *.iml
+
+### Eclipse IDE
+.classpath
+.project
+.settings/
+

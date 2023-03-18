@@ -50,7 +50,7 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
         if (!generatesExportSnapshot())
             return exportNodeWasPresent;
         // Exporting this and children modules in depth
-        DevProjectModule projectModule = getProjectModule();
+        DevProjectModule projectModule = (DevProjectModule) getProjectModule();
         final Node finalExportNode = exportNode;
         projectModule.getThisAndChildrenModulesInDepth()
                 .forEach(pm -> exportChildModuleProject(pm, finalExportNode));
@@ -100,7 +100,7 @@ public final class DevWebFxModuleFile extends DevXmlModuleFileImpl implements We
                 childModule.getChildrenModules().forEach(m -> XmlUtil.appendElementWithTextContent(modulesNode, "module", m.getName()));
             }
             // Trying to export the packages for the third-party libraries (so the import doesn't need to download their sources)
-            DevProjectModule projectModule = getProjectModule();
+            DevProjectModule projectModule = (DevProjectModule) getProjectModule();
             new ExportedWebFxModuleFile(projectModule, childProjectElement)
                     .getRequiredThirdPartyLibraryModules()
                     .filter(LibraryModule::shouldBeDownloadedInM2)

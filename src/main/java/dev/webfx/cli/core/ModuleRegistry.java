@@ -527,7 +527,7 @@ final public class ModuleRegistry {
      ******************************************************************************************************************/
 
     private static <T> ReusableStream<T> replayProcessingResume(ReusableStream<T> processingResume, List<? extends T> processedList) {
-        return ReusableStream.fromIterable(() -> new Iterator<>() {
+        return ReusableStream.fromIterable(() -> new Iterator<T>() {
 
             int lastIndex = -1;
             T next;

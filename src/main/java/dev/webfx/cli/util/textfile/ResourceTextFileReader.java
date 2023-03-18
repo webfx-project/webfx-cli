@@ -24,8 +24,7 @@ public final class ResourceTextFileReader {
     }
 
     public static String readResourceTextFile(String fileName) throws IOException {
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        try (InputStream is = classLoader.getResourceAsStream(fileName)) {
+    	try (InputStream is = ResourceTextFileReader.class.getResourceAsStream("/" + fileName)) {
             if (is == null)
                 return null;
             try (InputStreamReader isr = new InputStreamReader(is); BufferedReader reader = new BufferedReader(isr)) {

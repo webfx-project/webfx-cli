@@ -43,7 +43,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
 
     @Override
     public Document createInitialDocument() {
-        DevProjectModule projectModule = getProjectModule();
+        DevProjectModule projectModule = (DevProjectModule) getProjectModule();
         boolean isRootModule = projectModule instanceof RootModule;
         BuildInfo buildInfo = projectModule.getBuildInfo();
         String templateFileName =
@@ -124,7 +124,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
 
     @Override
     public boolean updateDocument(Document document) {
-        DevProjectModule module = getProjectModule();
+        DevProjectModule module = (DevProjectModule) getProjectModule();
         if (module.isAggregate()) {
             appendElementWithTextContentIfNotAlreadyExists("packaging", "pom", true);
             if (module.getWebFxModuleFile().isAggregate())
