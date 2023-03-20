@@ -20,7 +20,9 @@ public final class Logger {
     }
 
     public static void log(Object message) {
-        logConsumer.accept(logTransformer.apply(message));
+        message = logTransformer.apply(message);
+        if (message != null)
+            logConsumer.accept(message);
     }
 
     public static void warning(Object message) {

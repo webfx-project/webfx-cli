@@ -113,7 +113,7 @@ public class CommonCommand {
                 return COLOR_SCHEME.apply(message, styles);
             }
 
-            return message;
+            return null;
         });
     }
 
