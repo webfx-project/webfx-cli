@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * @author Bruno Salmon
  */
-public class Export {
+public class ExportGoal {
 
     private final static String EXPORT_SNAPSHOT_TAG = "export-snapshot";
     private final static String EXPORT_SECTION_COMMENT = "\n" +
@@ -38,10 +38,10 @@ public class Export {
             "     ";
 
     // This method is called by the WebFX Maven plugin
-    public static int export(String projectDirectory, String targetDirectory) {
+    public static int export(String projectDirectory, String webfxXmlArtifactPath) {
         try {
             CommandWorkspace workspace = new CommandWorkspace(projectDirectory);
-            Path artifactPath = Path.of(targetDirectory, "webfx-artifact", "webfx.xml");
+            Path artifactPath = Path.of(webfxXmlArtifactPath);
             Files.createDirectories(artifactPath.getParent());
             DevWebFxModuleFile webFxModuleFile = workspace.getWorkingDevProjectModule().getWebFxModuleFile();
             Document document = exportDocument(webFxModuleFile);
@@ -52,7 +52,7 @@ public class Export {
             }
             return 0;
         } catch (Exception e) {
-            Logger.log(e.getMessage());
+            Logger.log("ERROR: " + e.getMessage());
             return -1;
         }
     }
