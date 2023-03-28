@@ -25,7 +25,7 @@ public final class Init extends CommonSubcommand implements Callable<Void> {
         return null;
     }
 
-    static void execute(String artifact, CommandWorkspace workspace) {
+    public static void execute(String artifact, CommandWorkspace workspace) {
         Path projectDirectoryPath = workspace.getProjectDirectoryPath();
         workspace.setWorkspaceDirectoryPath(projectDirectoryPath.getParent());
         String[] split = artifact.split(":");
