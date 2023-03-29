@@ -125,6 +125,8 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
     @Override
     public boolean updateDocument(Document document) {
         DevProjectModule module = getProjectModule();
+        if (module.getWebFxModuleFile().skipMavenPomUpdate())
+            return false;
         if (module.isAggregate()) {
             appendElementWithTextContentIfNotAlreadyExists("packaging", "pom", true);
             if (module.getWebFxModuleFile().isAggregate())
