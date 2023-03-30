@@ -38,37 +38,41 @@ public final class ArtifactResolver {
         String moduleName = module.getName();
         if (ModuleRegistry.isJdkModule(module) || isJdkEmulationModule(moduleName) && !(isForGwt && isExecutable))
             return null; // No external dependency is required
+        if (isForGwt && isExecutable) {
+            switch (moduleName) {
+                case "elemental2-core":
+                case "elemental2-dom":
+                    return null; // Already included by default
+                case "gwt-user":
+                    return "gwt-dev";
+            }
+        }
+        boolean mustBeJavaFxEmul = isForGwt || isRegistry;
         switch (moduleName) {
             //case "gwt-charts":
             case "jsinterop-base":
             case "jsinterop-annotations":
                 return null;
             case "webfx-kit-javafxbase-emul":
-                return isForGwt || isRegistry ? moduleName : "javafx-base";
+                return mustBeJavaFxEmul ? moduleName : "javafx-base";
             case "webfx-kit-javafxgraphics-emul":
-                return isForGwt || isRegistry ? moduleName : "javafx-graphics";
+                return mustBeJavaFxEmul ? moduleName : "javafx-graphics";
             case "webfx-kit-javafxcontrols-emul":
-                return isForGwt || isRegistry ? moduleName : "javafx-controls";
+                return mustBeJavaFxEmul ? moduleName : "javafx-controls";
             case "webfx-kit-javafxmedia-emul":
-                return isForGwt || isRegistry ? moduleName : "javafx-media";
+                return mustBeJavaFxEmul ? moduleName : "javafx-media";
             case "webfx-kit-javafxweb-emul":
-                return isForGwt || isRegistry ? moduleName : "javafx-web";
-        }
-        if (isRegistry && "javafx-graphics".equals(moduleName))
-            return "webfx-kit-javafxgraphics-emul";
-        if (isForGwt && isExecutable) {
-            switch (moduleName) {
-                case "elemental2-core":
-                case "elemental2-dom":
-                case "javafx-base":
-                case "javafx-graphics":
-                case "javafx-controls":
-                case "javafx-media":
-                case "javafx-web":
-                    return null;
-                case "gwt-user":
-                    return "gwt-dev";
-            }
+                return mustBeJavaFxEmul ? moduleName : "javafx-web";
+            case "javafx-base":
+                return mustBeJavaFxEmul ? "webfx-kit-javafxbase-emul" : moduleName;
+            case "javafx-graphics":
+                return mustBeJavaFxEmul ? "webfx-kit-javafxgraphics-emul" : moduleName;
+            case "javafx-controls":
+                return mustBeJavaFxEmul ? "webfx-kit-javafxcontrols-emul" : moduleName;
+            case "javafx-media":
+                return mustBeJavaFxEmul ? "webfx-kit-javafxmedia-emul" : moduleName;
+            case "javafx-web":
+                return mustBeJavaFxEmul ? "webfx-kit-javafxweb-emul" : moduleName;
         }
         String artifactId = module.getArtifactId();
         if (artifactId != null)
@@ -92,8 +96,15 @@ public final class ArtifactResolver {
 
     static String getGroupId(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
-        if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
-            module = ((ProjectModule) module).getRootModule().searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+        boolean isJavaFxModule = moduleName.startsWith("javafx-");
+        boolean isJavaFxEmulModule = RootModule.isJavaFxEmulModule(moduleName);
+        boolean mustBeJavaFxEmul = isForGwt || isRegistry;
+        if (isJavaFxModule || isJavaFxEmulModule) {
+            if (module instanceof ProjectModule)
+                module = ((ProjectModule) module).getRootModule().searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+            else if (isJavaFxEmulModule || mustBeJavaFxEmul)
+                return "dev.webfx"; // hardcoded because we don't have access to the root module in this case TODO: try another way to access the root module
+        }
         return module.getGroupId();
     }
 
@@ -113,8 +124,15 @@ public final class ArtifactResolver {
 
     static String getVersion(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
         String moduleName = module.getName();
-        if (module instanceof ProjectModule && (moduleName.startsWith("javafx-") || !isForGwt && !isRegistry && RootModule.isJavaFxEmulModule(moduleName)))
-            module = ((ProjectModule) module).getRootModule().searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+        boolean isJavaFxModule = moduleName.startsWith("javafx-");
+        boolean isJavaFxEmulModule = RootModule.isJavaFxEmulModule(moduleName);
+        boolean mustBeJavaFxEmul = isForGwt || isRegistry;
+        if (isJavaFxModule || isJavaFxEmulModule) {
+            if (module instanceof ProjectModule)
+                module = ((ProjectModule) module).getRootModule().searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+            else if (isJavaFxEmulModule || mustBeJavaFxEmul)
+                return "${webfx.version}"; // hardcoded because we don't have access to the root module in this case TODO: try another way to access the root module
+        }
         return module.getVersion();
     }
 
@@ -145,14 +163,14 @@ public final class ArtifactResolver {
         if (!isForGwt && !isForOpenJfx && !isExecutable && !isRegistry)
             switch (module.getName()) {
                 case "javafx-base":
-                case "webfx-kit-javafxbase-emul":
                 case "javafx-graphics":
-                case "webfx-kit-javafxgraphics-emul":
                 case "javafx-controls":
-                case "webfx-kit-javafxcontrols-emul":
                 case "javafx-media":
-                case "webfx-kit-javafxmedia-emul":
                 case "javafx-web":
+                case "webfx-kit-javafxbase-emul":
+                case "webfx-kit-javafxgraphics-emul":
+                case "webfx-kit-javafxcontrols-emul":
+                case "webfx-kit-javafxmedia-emul":
                 case "webfx-kit-javafxweb-emul":
                     return "provided";
             }
