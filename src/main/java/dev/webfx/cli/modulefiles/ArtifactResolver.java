@@ -21,13 +21,12 @@ public final class ArtifactResolver {
     }
 
     public static String getArtifactId(Module module) {
-        if (module instanceof ProjectModuleImpl)
-            return getArtifactId((ProjectModuleImpl) module);
+        BuildInfo buildInfo = BuildInfoThreadLocal.getBuildInfo();
+        if (buildInfo == null && module instanceof ProjectModuleImpl)
+            buildInfo = ((ProjectModuleImpl) module).getBuildInfo();
+        if (buildInfo != null)
+            return getArtifactId(module, buildInfo);
         return getArtifactId(module, false, false, false);
-    }
-
-    static String getArtifactId(ProjectModuleImpl module) {
-        return getArtifactId(module, module.getBuildInfo());
     }
 
     static String getArtifactId(Module module, BuildInfo buildInfo) {
@@ -81,13 +80,12 @@ public final class ArtifactResolver {
     }
 
     public static String getGroupId(Module module) {
-        if (module instanceof ProjectModuleImpl)
-            return getGroupId((ProjectModuleImpl) module);
+        BuildInfo buildInfo = BuildInfoThreadLocal.getBuildInfo();
+        if (buildInfo == null && module instanceof ProjectModuleImpl)
+            buildInfo = ((ProjectModuleImpl) module).getBuildInfo();
+        if (buildInfo != null)
+            return getGroupId(module, buildInfo);
         return getGroupId(module, false, false, false);
-    }
-
-    static String getGroupId(ProjectModuleImpl module) {
-        return getGroupId(module, module.getBuildInfo());
     }
 
     static String getGroupId(Module module, BuildInfo buildInfo) {
@@ -109,13 +107,12 @@ public final class ArtifactResolver {
     }
 
     public static String getVersion(Module module) {
-        if (module instanceof ProjectModuleImpl)
-            return getVersion((ProjectModuleImpl) module);
+        BuildInfo buildInfo = BuildInfoThreadLocal.getBuildInfo();
+        if (buildInfo == null && module instanceof ProjectModuleImpl)
+            buildInfo = ((ProjectModuleImpl) module).getBuildInfo();
+        if (buildInfo != null)
+            return getVersion(module, buildInfo);
         return getVersion(module, false, false, false);
-    }
-
-    static String getVersion(ProjectModuleImpl module) {
-        return getVersion(module, module.getBuildInfo());
     }
 
     static String getVersion(Module module, BuildInfo buildInfo) {

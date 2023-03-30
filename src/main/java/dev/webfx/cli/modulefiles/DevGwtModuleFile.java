@@ -37,102 +37,105 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
         document.getDocumentElement().setAttribute("rename-to", getModule().getName().replaceAll("-", "_"));
         Node moduleSourceCommentNode = lookupNode("/module//comment()[2]");
         Node moduleSourceEndNode = moduleSourceCommentNode.getNextSibling();
-        // In the GWT module file, we need to list all transitive dependencies (not only direct dependencies) so that GWT can find all the sources required by the application
-        getProjectModule().getMainJavaSourceRootAnalyzer().getTransitiveDependencies()
-                .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
-                .stream().sorted(Map.Entry.comparingByKey())
-                .forEach(moduleGroup -> {
-                    Module module = moduleGroup.getKey();
-                    String moduleName = module.getName();
-                    // Ignoring emulated modules for 2 reasons:
-                    // 1) they are destined to the super source, not the source (so they don't need to be listed here)
-                    // 2) these modules have been shaded so the original source packages would start with emul (which would be incorrect) if they were listed here
-                    if (moduleName.startsWith("webfx-platform-emul-") && moduleName.endsWith("-gwt"))
-                        return;
-                    Node parentNode = moduleSourceEndNode.getParentNode();
-                    // Creating a node appender that inserts a node with the after a new line and indentation
-                    String newIndentedLine = "\n    ";
-                    Consumer<Node> nodeAppender = node -> {
-                        parentNode.insertBefore(document.createTextNode(newIndentedLine), moduleSourceEndNode);
-                        parentNode.insertBefore(node, moduleSourceEndNode);
-                    };
+        BuildInfo buildInfo = getProjectModule().getBuildInfo();
+        try (BuildInfoThreadLocal closable = BuildInfoThreadLocal.open(buildInfo)) { // To pass this buildInfo to ArtifactResolver when sorting the dependencies via Module.compareTo()
+            // In the GWT module file, we need to list all transitive dependencies (not only direct dependencies) so that GWT can find all the sources required by the application
+            getProjectModule().getMainJavaSourceRootAnalyzer().getTransitiveDependencies()
+                    .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
+                    .stream().sorted(Map.Entry.comparingByKey())
+                    .forEach(moduleGroup -> {
+                        Module module = moduleGroup.getKey();
+                        String moduleName = module.getName();
+                        // Ignoring emulated modules for 2 reasons:
+                        // 1) they are destined to the super source, not the source (so they don't need to be listed here)
+                        // 2) these modules have been shaded so the original source packages would start with emul (which would be incorrect) if they were listed here
+                        if (moduleName.startsWith("webfx-platform-emul-") && moduleName.endsWith("-gwt"))
+                            return;
+                        Node parentNode = moduleSourceEndNode.getParentNode();
+                        // Creating a node appender that inserts a node with the after a new line and indentation
+                        String newIndentedLine = "\n    ";
+                        Consumer<Node> nodeAppender = node -> {
+                            parentNode.insertBefore(document.createTextNode(newIndentedLine), moduleSourceEndNode);
+                            parentNode.insertBefore(node, moduleSourceEndNode);
+                        };
 
-                    // Creating a wrapper of the node appender that will drop all the unnecessary comments if there is
-                    // finally no elements (such as source, resource or configuration property) for that module.
-                    List<Comment> initialComments = new ArrayList<>();
-                    Boolean[] hasOnlyCommentsSoFar = {true}; // wrapping the boolean in an array so the lambda expression can change its value
-                    Consumer<Node> nodeAppenderIfNotOnlyComment = node -> {
-                        if (hasOnlyCommentsSoFar[0]) {
-                            if (node instanceof Comment) {
-                                initialComments.add((Comment) node);
-                                return;
+                        // Creating a wrapper of the node appender that will drop all the unnecessary comments if there is
+                        // finally no elements (such as source, resource or configuration property) for that module.
+                        List<Comment> initialComments = new ArrayList<>();
+                        Boolean[] hasOnlyCommentsSoFar = {true}; // wrapping the boolean in an array so the lambda expression can change its value
+                        Consumer<Node> nodeAppenderIfNotOnlyComment = node -> {
+                            if (hasOnlyCommentsSoFar[0]) {
+                                if (node instanceof Comment) {
+                                    initialComments.add((Comment) node);
+                                    return;
+                                }
+                                // First node that is not a comment
+                                initialComments.forEach(nodeAppender); // Writing back all initial comments
+                                initialComments.clear(); // Ok to free the memory now
+                                hasOnlyCommentsSoFar[0] = false; // Changing the boolean value
+                                // Now that all comments are written, we can append the node
                             }
-                            // First node that is not a comment
-                            initialComments.forEach(nodeAppender); // Writing back all initial comments
-                            initialComments.clear(); // Ok to free the memory now
-                            hasOnlyCommentsSoFar[0] = false; // Changing the boolean value
-                            // Now that all comments are written, we can append the node
-                        }
-                        nodeAppender.accept(node);
-                    };
-                    nodeAppenderIfNotOnlyComment.accept(document.createComment(createModuleSectionLine(moduleName)));
+                            nodeAppender.accept(node);
+                        };
+                        nodeAppenderIfNotOnlyComment.accept(document.createComment(createModuleSectionLine(moduleName)));
                     /* Commented because this "Used by " section doesn't always generate the same content (ex: different result when executed on a single repository or on the contrib repository)
                     moduleGroup.getValue()
                             .stream().sorted(Comparator.comparing(ModuleDependency::getSourceModule)) // Sorting by source module name instead of default (destination module name)
                             .forEach(dep -> nodeAppenderIfNotOnlyComment.accept(document.createComment(" used by " + dep.getSourceModule() + " (" + dep.getType() + ") ")));
                     */
-                    String gwtModuleName = getGwtModuleName(module);
-                    if (gwtModuleName != null) {
-                        Element inherits = document.createElement("inherits");
-                        inherits.setAttribute("name", gwtModuleName);
-                        nodeAppenderIfNotOnlyComment.accept(inherits);
-                    }
-                    ReusableStream<String> sourcePackages = ReusableStream.empty(), resourcePackages = sourcePackages, systemProperties = sourcePackages;
-                    if (module instanceof ProjectModule) {
-                        ProjectModule projectModule = (ProjectModule) module;
-                        resourcePackages = projectModule.getResourcePackages();
-                        sourcePackages = projectModule.getMainJavaSourceRootAnalyzer().getSourcePackages();
-                        systemProperties = projectModule.getSystemProperties();
-                    } else if (module instanceof LibraryModule && !ModuleRegistry.isJdkModule(module)) {
-                        boolean isGwtLibrary = gwtModuleName != null && (
-                                        gwtModuleName.startsWith("com.google.gwt") ||
-                                        gwtModuleName.startsWith("org.gwtproject") ||
-                                        gwtModuleName.startsWith("elemental2")) ||
-                        moduleName.startsWith("jsinterop");
-                        if (!isGwtLibrary) // No need to list the source packages for GWT libraries
-                            sourcePackages = ((LibraryModule) module).getExportedPackages();
-                    }
-                    sourcePackages
-                            .sorted()
-                            .forEach(p -> {
-                                Element sourceElement = document.createElement("source");
-                                sourceElement.setAttribute("path", p.replaceAll("\\.", "/"));
-                                nodeAppenderIfNotOnlyComment.accept(sourceElement);
-                            });
-                    resourcePackages
-                            .sorted()
-                            .forEach(p -> {
-                                Element resourceElement = document.createElement("resource");
-                                resourceElement.setAttribute("path", p.replaceAll("\\.", "/"));
-                                nodeAppenderIfNotOnlyComment.accept(resourceElement);
-                                Element publicElement = document.createElement("public");
-                                publicElement.setAttribute("path", "");
-                                publicElement.setAttribute("includes", p.replaceAll("\\.", "/") + "/");
-                                nodeAppenderIfNotOnlyComment.accept(publicElement);
-                            });
-                    // Declaring the system properties to ask GWT to replace the System.getProperty() calls with the
-                    // values at compile time.
-                    // Note: these properties are set with the -setProperty GWT compiler argument when calling the
-                    // GWT plugin in the root pom.xml
-                    systemProperties
-                            .sorted()
-                            .forEach(p -> {
-                                Element propertyElement = document.createElement("define-configuration-property");
-                                propertyElement.setAttribute("name", p);
-                                propertyElement.setAttribute("is_multi_valued", "false");
-                                nodeAppenderIfNotOnlyComment.accept(propertyElement);
-                            });
-                });
+                        String gwtModuleName = getGwtModuleName(module);
+                        if (gwtModuleName != null) {
+                            Element inherits = document.createElement("inherits");
+                            inherits.setAttribute("name", gwtModuleName);
+                            nodeAppenderIfNotOnlyComment.accept(inherits);
+                        }
+                        ReusableStream<String> sourcePackages = ReusableStream.empty(), resourcePackages = sourcePackages, systemProperties = sourcePackages;
+                        if (module instanceof ProjectModule) {
+                            ProjectModule projectModule = (ProjectModule) module;
+                            resourcePackages = projectModule.getResourcePackages();
+                            sourcePackages = projectModule.getMainJavaSourceRootAnalyzer().getSourcePackages();
+                            systemProperties = projectModule.getSystemProperties();
+                        } else if (module instanceof LibraryModule && !ModuleRegistry.isJdkModule(module)) {
+                            boolean isGwtLibrary = gwtModuleName != null && (
+                                    gwtModuleName.startsWith("com.google.gwt") ||
+                                            gwtModuleName.startsWith("org.gwtproject") ||
+                                            gwtModuleName.startsWith("elemental2")) ||
+                                    moduleName.startsWith("jsinterop");
+                            if (!isGwtLibrary) // No need to list the source packages for GWT libraries
+                                sourcePackages = ((LibraryModule) module).getExportedPackages();
+                        }
+                        sourcePackages
+                                .sorted()
+                                .forEach(p -> {
+                                    Element sourceElement = document.createElement("source");
+                                    sourceElement.setAttribute("path", p.replaceAll("\\.", "/"));
+                                    nodeAppenderIfNotOnlyComment.accept(sourceElement);
+                                });
+                        resourcePackages
+                                .sorted()
+                                .forEach(p -> {
+                                    Element resourceElement = document.createElement("resource");
+                                    resourceElement.setAttribute("path", p.replaceAll("\\.", "/"));
+                                    nodeAppenderIfNotOnlyComment.accept(resourceElement);
+                                    Element publicElement = document.createElement("public");
+                                    publicElement.setAttribute("path", "");
+                                    publicElement.setAttribute("includes", p.replaceAll("\\.", "/") + "/");
+                                    nodeAppenderIfNotOnlyComment.accept(publicElement);
+                                });
+                        // Declaring the system properties to ask GWT to replace the System.getProperty() calls with the
+                        // values at compile time.
+                        // Note: these properties are set with the -setProperty GWT compiler argument when calling the
+                        // GWT plugin in the root pom.xml
+                        systemProperties
+                                .sorted()
+                                .forEach(p -> {
+                                    Element propertyElement = document.createElement("define-configuration-property");
+                                    propertyElement.setAttribute("name", p);
+                                    propertyElement.setAttribute("is_multi_valued", "false");
+                                    nodeAppenderIfNotOnlyComment.accept(propertyElement);
+                                });
+                    });
+        }
         return true;
     }
 

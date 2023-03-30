@@ -1,5 +1,6 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.modulefiles.ArtifactResolver;
 import dev.webfx.cli.modulefiles.abstr.GavApi;
 
 /**
@@ -27,7 +28,17 @@ public interface Module extends GavApi, Comparable<Module> {
             if (m.getName().endsWith("-gwt"))
                 return 1;
         }
-        // Everything else is sorted by alphabetic order
-        return getName().compareTo(m.getName());
+        // Everything else is sorted in alphabetic order (using preferably the artifactId, otherwise the name)
+
+        // Note: ArtifactResolver will resolve the artifactId differently depending on the context (which is
+        // synthesised by BuildInfo). It will search first in BuildInfoThreadLocal. If not found, it will take it from
+        // the module if it's a project module, otherwise it will take BuildInfo default values.
+        String thisArtifactId = ArtifactResolver.getArtifactId(this);
+        if (thisArtifactId == null)
+            thisArtifactId = getName();
+        String mArtifactId = ArtifactResolver.getArtifactId(m);
+        if (mArtifactId == null)
+            mArtifactId = m.getName();
+        return thisArtifactId.compareTo(mArtifactId);
     }
 }

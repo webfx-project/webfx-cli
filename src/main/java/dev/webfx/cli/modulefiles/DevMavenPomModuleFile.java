@@ -183,50 +183,63 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
 
     private void addSourceRootDependencies(JavaSourceRootAnalyzer javaSourceRootAnalyzer, boolean test, Node dependenciesNode, Set<String> gas) {
         BuildInfo buildInfo = javaSourceRootAnalyzer.getProjectModule().getBuildInfo();
-        ReusableStream<ModuleDependency> dependencies = buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies() :
-                ReusableStream.concat(
-                        javaSourceRootAnalyzer.getDirectDependencies(),
-                        javaSourceRootAnalyzer.getTransitiveDependencies().filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER)
-                ).distinct();
-        dependencies
-                .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(moduleGroup -> {
-                    Module destinationModule = moduleGroup.getKey();
-                    if (destinationModule instanceof M2RootModule) {
-                        Module bomModule = ((M2RootModule) destinationModule).getLibraryModule().getRootModule();
-                        if (bomModule != null)
-                            destinationModule = bomModule;
-                    }
-                    String artifactId = ArtifactResolver.getArtifactId(destinationModule, buildInfo);
-                    if (artifactId != null) {
-                        String groupId = ArtifactResolver.getGroupId(destinationModule, buildInfo);
-                        // Destination modules are already unique but maybe some are actually resolved to the same groupId:artifactId
-                        String ga = groupId + ":" + artifactId;
-                        if (!gas.contains(ga)) { // Checking uniqueness to avoid malformed pom
-                            gas.add(ga);
-                            Node groupNode = XmlUtil.appendElementWithTextContent(dependenciesNode, "/dependency/groupId", groupId, true, false);
-                            Node dependencyNode = groupNode.getParentNode();
-                            XmlUtil.appendElementWithTextContent(dependencyNode, "/artifactId", artifactId);
-                            String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
-                            if (version != null)
-                                XmlUtil.appendElementWithTextContent(dependencyNode, "/version", version);
-                            String type = ArtifactResolver.getType(destinationModule);
-                            if (type != null)
-                                XmlUtil.appendElementWithTextContent(dependencyNode, "/type", type);
-                            String scope = test ? "test" : ArtifactResolver.getScope(moduleGroup, buildInfo);
-                            String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
-                            // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
-                            if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))
-                                XmlUtil.appendElementWithTextContent(dependencyNode, "/scope", scope);
-                            if (classifier != null)
-                                XmlUtil.appendElementWithTextContent(dependencyNode, "/classifier", classifier);
-                            if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
-                                XmlUtil.appendElementWithTextContent(dependencyNode, "/optional", "true");
+        try (BuildInfoThreadLocal closable = BuildInfoThreadLocal.open(buildInfo)) { // To pass this buildInfo to ArtifactResolver when sorting the dependencies via Module.compareTo()
+            // We need to get all dependencies of the module, to populate <dependencies> in the pom.xml
+            ReusableStream<ModuleDependency> dependencies =
+                    // For a GWT executable module, we need to list all transitive dependencies (to pull all the source code to compile by GWT)
+                    buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies() :
+                    // For other modules, we just need the direct dependencies, but also the implicit providers
+                    ReusableStream.concat(
+                            javaSourceRootAnalyzer.getDirectDependencies(),
+                            javaSourceRootAnalyzer.getTransitiveDependencies().filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER)
+                    ).distinct();
+            // Once we have these dependencies, we proceed them to populate the <dependencies> node
+            dependencies
+                    // The <dependencies> node actually lists the destination modules, which are the most important
+                    // objects to extract here, but to know if each module is optional or not (<optional>true</optional>),
+                    // we need to check if any dependency is optional. To prepare this job, we group the dependencies by
+                    // destination module. As a result we will get a map: key = destination module (most important) ->
+                    // value = list of all dependencies having that module as destination module (used for optional).
+                    .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
+                    // We sort the modules, so they don't appear in a random order in the pom (sorted mainly by artifactId - see Module.compareTo() for more info)
+                    .stream().sorted(Map.Entry.comparingByKey()) // Module.compareTo() calls ArtifactResolver.getArtifactId() which will find the buildInfo via BuildInfoThreadLocal
+                    .forEach(moduleGroup -> { // Map.Entry
+                        Module destinationModule = moduleGroup.getKey();
+                        if (destinationModule instanceof M2RootModule) {
+                            Module bomModule = ((M2RootModule) destinationModule).getLibraryModule().getRootModule();
+                            if (bomModule != null)
+                                destinationModule = bomModule;
                         }
-                    }
-                });
+                        String artifactId = ArtifactResolver.getArtifactId(destinationModule, buildInfo);
+                        // When ArtifactResolver returns null, it means that the module doesn't need to be listed
+                        if (artifactId != null) {
+                            String groupId = ArtifactResolver.getGroupId(destinationModule, buildInfo);
+                            // Destination modules are already unique but maybe some are actually resolved to the same groupId:artifactId
+                            String ga = groupId + ":" + artifactId;
+                            if (!gas.contains(ga)) { // Checking uniqueness to avoid malformed pom
+                                gas.add(ga);
+                                Node groupNode = XmlUtil.appendElementWithTextContent(dependenciesNode, "/dependency/groupId", groupId, true, false);
+                                Node dependencyNode = groupNode.getParentNode();
+                                XmlUtil.appendElementWithTextContent(dependencyNode, "/artifactId", artifactId);
+                                String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
+                                if (version != null)
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/version", version);
+                                String type = ArtifactResolver.getType(destinationModule);
+                                if (type != null)
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/type", type);
+                                String scope = test ? "test" : ArtifactResolver.getScope(moduleGroup, buildInfo);
+                                String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
+                                // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
+                                if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/scope", scope);
+                                if (classifier != null)
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/classifier", classifier);
+                                if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
+                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/optional", "true");
+                            }
+                        }
+                    });
+        }
     }
 
     public void addModule(Module module) {
