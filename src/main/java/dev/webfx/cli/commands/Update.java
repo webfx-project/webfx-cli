@@ -55,13 +55,6 @@ public final class Update extends CommonSubcommand implements Runnable {
     }
 
     static void executeUpdateTasks(DevProjectModule workingModule, UpdateTasks tasks) {
-/* Commented as it is now done in the WebFX Maven plugin
-        // Update webfx.xml if the working file is a root file
-        getWorkingAndChildrenModules(workingModule)
-                .filter(RootModule.class::isInstance)
-                .forEach(m -> m.getWebFxModuleFile().updateAndWrite());
-*/
-
         // Generating or updating Maven module files (pom.xml)
         if (tasks.mavenPom)
             getWorkingAndChildrenModulesInDepth(workingModule)
