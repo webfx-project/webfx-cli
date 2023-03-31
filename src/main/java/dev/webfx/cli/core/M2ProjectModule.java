@@ -178,7 +178,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     public void downloadArtifactClassifier(String classifier) {
-        MavenUtil.invokeDownloadMavenGoal("dependency:get -N -Dtransitive=false -Dartifact=" + getGroupId() + ":" + getArtifactId() + ":" + getVersion() + ":" + classifier);
+        MavenUtil.downloadArtifact(getGroupId(), getArtifactId(), getVersion(), classifier);
     }
 
 }

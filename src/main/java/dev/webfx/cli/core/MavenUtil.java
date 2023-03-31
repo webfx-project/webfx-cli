@@ -49,6 +49,20 @@ public final class MavenUtil {
         }
     }
 
+    private static MavenArtifactDownloader MAVEN_ARTIFACT_DOWNLOADER = MavenUtil::downloadArtifactProcess;
+
+    public static void setMavenArtifactDownloader(MavenArtifactDownloader mavenArtifactDownloader) {
+        MAVEN_ARTIFACT_DOWNLOADER = mavenArtifactDownloader;
+    }
+
+    public static void downloadArtifact(String groupId, String artifactId, String version, String classifier) {
+        MAVEN_ARTIFACT_DOWNLOADER.downloadArtifact(groupId, artifactId, version, classifier);
+    }
+
+    public static void downloadArtifactProcess(String groupId, String artifactId, String version, String classifier) {
+        invokeDownloadMavenGoal("dependency:get -N -Dtransitive=false -Dartifact=" + groupId + ":" + artifactId + ":" + version + ":" + classifier);
+    }
+
     public static int invokeMavenGoal(String goal) {
         return invokeMavenGoal(goal, new ProcessCall());
     }
