@@ -14,7 +14,6 @@ module webfx.cli {
     exports dev.webfx.cli;
     exports dev.webfx.cli.commands;
     exports dev.webfx.cli.core;
-    exports dev.webfx.cli.mavenplugin;
     exports dev.webfx.cli.modulefiles;
     exports dev.webfx.cli.modulefiles.abstr;
     exports dev.webfx.cli.sourcegenerators;
