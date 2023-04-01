@@ -92,16 +92,16 @@ public class CommonCommand {
                     message = message.substring(8).trim();
                 } else {
                     LogLevel messageLogLevel =
-                            message.startsWith("ERROR:")   ? LogLevel.error :
-                            message.startsWith("WARNING:") ? LogLevel.warning :
-                            message.startsWith("INFO:")    ? LogLevel.info :
-                            message.startsWith("VERBOSE:") ? LogLevel.verbose :
+                            message.startsWith("ERROR:")   || message.startsWith("[ERROR]")   ? LogLevel.error :
+                            message.startsWith("WARNING:") || message.startsWith("[WARNING]") ? LogLevel.warning :
+                            message.startsWith("INFO:")    || message.startsWith("[INFO]")    ? LogLevel.info :
+                            message.startsWith("VERBOSE:") || message.startsWith("[VERBOSE]") ? LogLevel.verbose :
                             null;
                     if (messageLogLevel == null)
                         styles = LogLevel.info.styles;
                     else {
                         LogLevel logLevel = getLogLevel();
-                        if (messageLogLevel.ordinal() <= (logLevel == null ? LogLevel.error : logLevel).ordinal())
+                        if (messageLogLevel.ordinal() <= (logLevel == null ? LogLevel.warning : logLevel).ordinal())
                             styles = messageLogLevel.styles;
                     }
                 }
