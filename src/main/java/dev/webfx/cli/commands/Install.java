@@ -298,7 +298,12 @@ public final class Install extends CommonSubcommand {
 
     static boolean checkOrFixXcodePathForGluon(boolean install) {
         // Fixing wrong Xcode path on macOS causing build failure (see issue https://github.com/gluonhq/substrate/issues/978)
-        String xcodePath = new ProcessCall("xcode-select", "-p").setLogsCall(install, false).setLogLineFilter(line -> install).executeAndWait().getLastResultLine();
+        String xcodePath = new ProcessCall("xcode-select", "-p")
+                .setLogsCalling(install)
+                .setLogsCallDuration(false)
+                .setLogLineFilter(line -> install)
+                .executeAndWait()
+                .getLastResultLine();
         String expectedXcodePath = "/Applications/Xcode.app/Contents/Developer";
         if (expectedXcodePath.equals(xcodePath)) {
             if (install)

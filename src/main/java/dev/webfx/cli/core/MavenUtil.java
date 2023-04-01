@@ -3,13 +3,15 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.abstr.GavApi;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
+import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
+import java.util.*;
 
 /**
  * @author Bruno Salmon
@@ -49,26 +51,66 @@ public final class MavenUtil {
         }
     }
 
+    private static final Path NOT_FOUND_ARTIFACTS_PATH = WebFXHiddenFolder.getMavenWorkspace().resolve("NOT_FOUND_ARTIFACTS.txt");
+    private static final Set<String> NOT_FOUND_ARTIFACTS = new HashSet<>();
+
+    static {
+        String content = TextFileReaderWriter.readTextFile(NOT_FOUND_ARTIFACTS_PATH);
+        if (content != null)
+            NOT_FOUND_ARTIFACTS.addAll(Arrays.asList(content.split("\n")));
+    }
+
+    private static void addNotFoundArtifact(String artifact) {
+        NOT_FOUND_ARTIFACTS.add(artifact);
+        try {
+            FileWriter fileWriter = new FileWriter(NOT_FOUND_ARTIFACTS_PATH.toFile(), true);
+            fileWriter.write(artifact);
+            fileWriter.write('\n');
+            fileWriter.close();
+            Logger.warning(artifact + " was not found in Maven repositories, and is now blacklisted in " + NOT_FOUND_ARTIFACTS_PATH);
+        } catch (IOException e) {
+            Logger.warning("Couldn't write to file " + NOT_FOUND_ARTIFACTS_PATH.getFileName());
+        }
+    }
+
     private static MavenArtifactDownloader MAVEN_ARTIFACT_DOWNLOADER = MavenUtil::downloadArtifactProcess;
 
     public static void setMavenArtifactDownloader(MavenArtifactDownloader mavenArtifactDownloader) {
         MAVEN_ARTIFACT_DOWNLOADER = mavenArtifactDownloader;
     }
 
-    public static void downloadArtifact(String groupId, String artifactId, String version, String classifier) {
-        MAVEN_ARTIFACT_DOWNLOADER.downloadArtifact(groupId, artifactId, version, classifier);
+    public static boolean downloadArtifact(String groupId, String artifactId, String version, String classifier) {
+        String artifact = groupId + ":" + artifactId + ":" + version + ":" + classifier;
+        if (!NOT_FOUND_ARTIFACTS.contains(artifact)) {
+            try {
+                return MAVEN_ARTIFACT_DOWNLOADER.downloadArtifact(groupId, artifactId, version, classifier);
+            } catch (ArtifactNotFoundException e) {
+                addNotFoundArtifact(artifact);
+            }
+        }
+        return false;
     }
 
-    public static void downloadArtifactProcess(String groupId, String artifactId, String version, String classifier) {
-        invokeDownloadMavenGoal("dependency:get -N -Dtransitive=false -Dartifact=" + groupId + ":" + artifactId + ":" + version + ":" + classifier);
+    private static boolean downloadArtifactProcess(String groupId, String artifactId, String version, String classifier) {
+        ProcessCall processCall = new ProcessCall();
+        processCall
+                .setLogLineFilter(line -> line.startsWith("Downloading"))
+                .setErrorLineFilter(line -> {
+                    boolean error = line.contains("ERROR");
+                    if (error && isNotFoundArtifactError(line))
+                        processCall.setLogsError(false);
+                    return error;
+                });
+        int result = invokeMavenGoal("dependency:get -N -Dtransitive=false -Dartifact=" + groupId + ":" + artifactId + ":" + version + ":" + classifier, processCall);
+        return result == 0;
+    }
+
+    public static boolean isNotFoundArtifactError(String error) {
+        return error.contains(" was not found in ") || error.contains(" Could not find artifact ");
     }
 
     public static int invokeMavenGoal(String goal) {
         return invokeMavenGoal(goal, new ProcessCall());
-    }
-
-    public static int invokeDownloadMavenGoal(String goal) {
-        return invokeMavenGoal(goal, new ProcessCall().setLogLineFilter(line -> line.startsWith("Downloading")));
     }
 
     public static int invokeMavenGoal(String goal, ProcessCall processCall) {
@@ -85,8 +127,12 @@ public final class MavenUtil {
             processCall
                     //.setErrorLineFilter(line -> line.contains("ERROR")) // Commented as it prevents colors
                     .executeAndWait();
-            if (processCall.getLastErrorLine() != null)
+            if (processCall.hasErrorLines()) { // Happens only if the caller previously called setErrorLineFilter()
+                String firstErrorLine = processCall.getFirstErrorLine();
+                if (isNotFoundArtifactError(firstErrorLine))
+                    throw new ArtifactNotFoundException(firstErrorLine);
                 throw new CliException("Error(s) detected during Maven invocation:\n" + String.join("\n", processCall.getErrorLines()));
+            }
             return processCall.getExitCode();
         }/* else {
             processCall.logCallCommand();

@@ -41,6 +41,8 @@ public class ProcessCall {
 
     private boolean logsCallDuration = true;
 
+    private boolean logsError = true;
+
     private StreamGobbler inputStreamGobbler, errorStreamGobbler;
 
     private int exitCode;
@@ -135,9 +137,18 @@ public class ProcessCall {
         return this;
     }
 
-    public ProcessCall setLogsCall(boolean logsCalling, boolean logsCallDuration) {
+    public ProcessCall setLogsCalling(boolean logsCalling) {
         this.logsCalling = logsCalling;
+        return this;
+    }
+
+    public ProcessCall setLogsCallDuration(boolean logsCallDuration) {
         this.logsCallDuration = logsCallDuration;
+        return this;
+    }
+
+    public ProcessCall setLogsError(boolean logsError) {
+        this.logsError = logsError;
         return this;
     }
 
@@ -146,7 +157,7 @@ public class ProcessCall {
             boolean log = false;
             if (errorLineFilter != null && errorLineFilter.test(removeEscapeSequences(line))) {
                 errorLines.add(line);
-                log = true;
+                log = logsError;
             }
             if (logLineFilter == null || logLineFilter.test(removeEscapeSequences(line)))
                 log = true;
@@ -187,9 +198,17 @@ public class ProcessCall {
         return lastResultLine;
     }
 
+    public boolean hasErrorLines() {
+        return !getErrorLines().isEmpty();
+    }
+
     public List<String> getErrorLines() {
         waitForStreamGobblerCompleted();
         return errorLines;
+    }
+
+    public String getFirstErrorLine() {
+        return getErrorLines().isEmpty() ? null : errorLines.get(0);
     }
 
     public String getLastErrorLine() {

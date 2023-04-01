@@ -74,7 +74,8 @@ public final class Bump extends CommonSubcommand {
                             Logger.log((switchedBranch ? "CLI version of " + branch + " branch: " : "New version: ") +
                                     new ProcessCall("java", "-jar", cliJarPath.toAbsolutePath().toString(), "--version")
                                             .setLogLineFilter(line -> false)
-                                            .setLogsCall(false, false)
+                                            .setLogsCalling(false)
+                                            .setLogsCallDuration(false)
                                             .executeAndWait()
                                             .getLastResultLine()
                             );
@@ -88,7 +89,8 @@ public final class Bump extends CommonSubcommand {
         private ProcessCall newCliProcessCall(String... commandTokens) {
             return new ProcessCall(commandTokens)
                     .setWorkingDirectory(cliRepositoryPath)
-                    .setLogsCall(false, false);
+                    .setLogsCallDuration(false)
+                    .setLogsCallDuration(false);
         }
 
     }
