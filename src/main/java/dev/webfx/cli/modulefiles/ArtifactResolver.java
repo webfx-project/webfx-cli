@@ -96,12 +96,20 @@ public final class ArtifactResolver {
         String moduleName = module.getName();
         boolean isJavaFxModule = moduleName.startsWith("javafx-");
         boolean isJavaFxEmulModule = RootModule.isJavaFxEmulModule(moduleName);
-        boolean mustBeJavaFxEmul = isForGwt || isRegistry;
+        boolean mustBeJavaFxEmulModule = isForGwt || isRegistry;
         if (isJavaFxModule || isJavaFxEmulModule) {
+            RootModule rootModule = null;
             if (module instanceof ProjectModule)
-                module = ((ProjectModule) module).getRootModule().searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
-            else if (isJavaFxEmulModule || mustBeJavaFxEmul)
-                return "dev.webfx"; // hardcoded because we don't have access to the root module in this case TODO: try another way to access the root module
+                rootModule = ((ProjectModule) module).getRootModule();
+            else {
+                BuildInfo buildInfo = BuildInfoThreadLocal.getBuildInfo();
+                if (buildInfo != null)
+                    rootModule = buildInfo.projectModule.getRootModule();
+            }
+            if (rootModule != null)
+                module = rootModule.searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+            else if (isJavaFxEmulModule || mustBeJavaFxEmulModule)
+                return "dev.webfx"; // hardcoded because we don't have access to the root module in this case
         }
         return module.getGroupId();
     }
@@ -123,12 +131,20 @@ public final class ArtifactResolver {
         String moduleName = module.getName();
         boolean isJavaFxModule = moduleName.startsWith("javafx-");
         boolean isJavaFxEmulModule = RootModule.isJavaFxEmulModule(moduleName);
-        boolean mustBeJavaFxEmul = isForGwt || isRegistry;
+        boolean mustBeJavaFxEmulModule = isForGwt || isRegistry;
         if (isJavaFxModule || isJavaFxEmulModule) {
+            RootModule rootModule = null;
             if (module instanceof ProjectModule)
-                module = ((ProjectModule) module).getRootModule().searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
-            else if (isJavaFxEmulModule || mustBeJavaFxEmul)
-                return "${webfx.version}"; // hardcoded because we don't have access to the root module in this case TODO: try another way to access the root module
+                rootModule = ((ProjectModule) module).getRootModule();
+            else {
+                BuildInfo buildInfo = BuildInfoThreadLocal.getBuildInfo();
+                if (buildInfo != null)
+                    rootModule = buildInfo.projectModule.getRootModule();
+            }
+            if (rootModule != null)
+                module = rootModule.searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
+            else if (isJavaFxEmulModule || mustBeJavaFxEmulModule)
+                return "${webfx.version}"; // hardcoded because we don't have access to the root module in this case
         }
         return module.getVersion();
     }
