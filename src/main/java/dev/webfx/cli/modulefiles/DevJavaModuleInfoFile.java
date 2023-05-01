@@ -28,6 +28,8 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
     @Override
     public void writeFile() {
         DevProjectModule module = getProjectModule();
+        if (module.getWebFxModuleFile().skipJavaModuleInfoUpdate())
+            return;
         StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n\nmodule ").append(getJavaModuleName()).append(" {\n");
         processSection(sb, "Direct dependencies modules", "requires",
                 ReusableStream.fromIterable(

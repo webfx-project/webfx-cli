@@ -144,6 +144,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return !fileExists() || lookupNode("update-options/skip-maven-pom") != null;
     }
 
+    default boolean skipJavaModuleInfoUpdate() {
+        return !fileExists() || lookupNode("update-options/skip-java-module-info") != null;
+    }
+
     default boolean generatesExportSnapshot() {
         return lookupNode("update-options/generate-export-snapshot") != null;
     }
