@@ -89,7 +89,7 @@ public final class Bump extends CommonSubcommand {
         private ProcessCall newCliProcessCall(String... commandTokens) {
             return new ProcessCall(commandTokens)
                     .setWorkingDirectory(cliRepositoryPath)
-                    .setLogsCallDuration(false)
+                    .setLogsCalling(false)
                     .setLogsCallDuration(false);
         }
 
