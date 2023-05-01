@@ -61,7 +61,17 @@
             </exported-packages>
         </library>
 
-        <library name="java.compiler"/>
+        <library name="java.compiler">
+            <exported-packages>
+                <package>javax.annotation.processing</package>
+                <package>javax.lang.model</package>
+                <package>javax.lang.model.element</package>
+                <package>javax.lang.model.type</package>
+                <package>javax.lang.model.util</package>
+                <package>javax.tools</package>
+            </exported-packages>
+        </library>
+
         <library name="java.datatransfer"/>
 
         <library name="java.desktop">
