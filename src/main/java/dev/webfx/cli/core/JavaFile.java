@@ -59,10 +59,8 @@ public final class JavaFile implements Comparable<JavaFile> {
     }
 
     String getPackageName() {
-        if (packageName == null) {
-            int lastDotIndex = getClassName().lastIndexOf('.');
-            packageName = className.substring(0, lastDotIndex);
-        }
+        if (packageName == null)
+            packageName = getPackageNameFromJavaClass(getClassName());
         return packageName;
     }
 
@@ -111,11 +109,11 @@ public final class JavaFile implements Comparable<JavaFile> {
     private static String lastJavaClass;
     private static String lastPackageName;
 
-    static String getPackageNameFromJavaClass(String javaClass) {
+    public static String getPackageNameFromJavaClass(String javaClass) {
         if (javaClass == lastJavaClass)
             return lastPackageName;
         lastJavaClass = javaClass;
         int lastDotIndex = javaClass.lastIndexOf('.');
-        return lastPackageName = javaClass.substring(0, lastDotIndex);
+        return lastPackageName = lastDotIndex < 0 ? "" : javaClass.substring(0, lastDotIndex);
     }
 }
