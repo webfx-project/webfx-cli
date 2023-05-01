@@ -1,8 +1,6 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.core.DevProjectModule;
-import dev.webfx.cli.core.DevRootModule;
-import dev.webfx.cli.core.TargetTag;
+import dev.webfx.cli.core.*;
 import dev.webfx.cli.modulefiles.DevMavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
@@ -11,11 +9,12 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
+import javax.lang.model.SourceVersion;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
-
+import java.util.regex.Pattern;
 /**
  * @author Bruno Salmon
  */
@@ -26,6 +25,10 @@ subcommands = {
         Create.Module.class,
 })
 public final class Create extends CommonSubcommand {
+
+    javax.lang.model.SourceVersion x;
+
+    public static final Pattern PACKAGE_NAME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9.]*$");
 
     static abstract class CreateSubCommand extends CommonSubcommand implements Callable<Void> {
 
@@ -155,6 +158,7 @@ public final class Create extends CommonSubcommand {
 
         @Override
         public Void call() throws Exception {
+            validateParameters();
             if ("!".equals(project))
                 project = prefix;
             if (prefix == null) {
@@ -170,6 +174,11 @@ public final class Create extends CommonSubcommand {
             writeParentMavenModuleFile(applicationModule);
             new Update().run();
             return null;
+        }
+
+        private void validateParameters() {
+            if (javaFxApplication != null && (!SourceVersion.isName(javaFxApplication) || javaFxApplication.contains("$")))
+                throw new CliException("'" + javaFxApplication + "' is not a valid java class name");
         }
 
         private DevProjectModule createTagApplicationModule(TargetTag targetTag) throws IOException {
