@@ -96,6 +96,8 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
     }
 
     private static String getJavaModuleName(Module module) {
+        // Some WebFX modules are emulating Java(FX) modules, so they must have the same Java module name (as the user
+        // application code is expecting)
         String moduleName = module.getName();
         switch (moduleName) {
             case "java-nio-emul":
@@ -107,6 +109,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
             case "webfx-kit-javafxgraphics-emul":
                 return "javafx.graphics";
             case "webfx-kit-javafxmedia-emul":
+            case "webfx-kit-javafxmedia-gluon":
                 return "javafx.media";
             case "webfx-kit-javafxweb-emul":
                 return "javafx.web";

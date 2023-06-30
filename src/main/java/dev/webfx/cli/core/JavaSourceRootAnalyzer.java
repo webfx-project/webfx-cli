@@ -271,6 +271,7 @@ public final class JavaSourceRootAnalyzer {
                             ReusableStream.create(() -> ReusableStream.concat(
                                                     ReusableStream.of(
                                                             getProjectModule().getRootModule(),
+                                                            //getProjectModule().getRootModule().searchRegisteredProjectModule("modality"),
                                                             getProjectModule().getRootModule().searchRegisteredProjectModule("webfx-platform"),
                                                             getProjectModule().getRootModule().searchRegisteredProjectModule("webfx-kit")
                                                     ),
@@ -690,11 +691,13 @@ public final class JavaSourceRootAnalyzer {
                     rootModule.searchRegisteredModule("gwt-time")
             );
         if (projectModule.isExecutable(Platform.JRE)) {
-            if (projectModule.getTarget().hasTag(TargetTag.OPENJFX) || projectModule.getTarget().hasTag(TargetTag.GLUON)) {
-                boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().contains("webfx-kit-javafxmedia-emul"));
+            boolean isForOpenJFX = projectModule.getTarget().hasTag(TargetTag.OPENJFX);
+            boolean isForGluon = projectModule.getTarget().hasTag(TargetTag.GLUON);
+            if (isForOpenJFX || isForGluon) {
+                boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().startsWith("webfx-kit-javafxmedia"));
                 return usesMedia ? ReusableStream.of(
                         rootModule.searchRegisteredModule("webfx-kit-openjfx"),
-                        rootModule.searchRegisteredModule("webfx-kit-javafxmedia-emul"),
+                        rootModule.searchRegisteredModule(isForGluon ? "webfx-kit-javafxmedia-gluon" : "webfx-kit-javafxmedia-emul"),
                         rootModule.searchRegisteredModule("webfx-platform-boot-java")
                 ) : ReusableStream.of(
                         rootModule.searchRegisteredModule("webfx-kit-openjfx"),
