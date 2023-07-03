@@ -93,11 +93,12 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
         if (dependencies.stream().noneMatch(d -> d.destinationModule == destinationModule)) { // Avoiding infinite recursion
             dependencies.add(this);
             // We don't include the webfx-kit dependencies (as they may just be finally mapped to simple JavaFX modules)
-            if (destinationModule.getName().startsWith("webfx-kit-javafx")
+            String destinationModuleName = destinationModule.getName();
+            if (destinationModuleName.startsWith("webfx-kit-javafx")
                     // Except for GWT executables (which use only WebFX modules and need them all)
                     && !targetModule.isExecutable(Platform.GWT)
                     // Also except for Gluon modules using media => they need webfx-kit-javafxmedia-gluon + transitive dependencies such as webfx-platform-audio-gluon, Gluon Attach audio, etc...
-                    && !destinationModule.getName().equals("webfx-kit-javafxmedia-gluon"))
+                    && !destinationModuleName.equals("webfx-kit-javafxmedia-gluon"))
                 return;
             ProjectModule pm = destinationModule instanceof ProjectModule ? (ProjectModule) destinationModule : null;
             if (pm != null)

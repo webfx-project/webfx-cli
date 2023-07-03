@@ -113,6 +113,8 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
                 return "javafx.media";
             case "webfx-kit-javafxweb-emul":
                 return "javafx.web";
+            case "webfx-kit-javafxfxml-emul":
+                return "javafx.fxml";
             default:
                 if (module instanceof DevProjectModule) {
                     DevProjectModule projectModule = (DevProjectModule) module;

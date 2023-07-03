@@ -556,7 +556,8 @@ public final class JavaSourceRootAnalyzer {
      * @return a stream of all providers (empty for non-executable modules)
      */
     private ReusableStream<Providers> collectExecutableProviders() {
-        return collectExecutableModuleProviders(this, this);
+        ReusableStream<Providers> providers = collectExecutableModuleProviders(this, this);
+        return providers;
     }
 
     /**
@@ -574,7 +575,12 @@ public final class JavaSourceRootAnalyzer {
         ProjectModuleImpl collectingModule = collectingSourceRoot.getProjectModule();
         List<ProjectModule> walkingModules = new HashList<>();
         walkingModules.add(collectingModule);
-        walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(collectingSourceRoot.getTransitiveDependenciesWithoutImplicitProviders())).collect(Collectors.toList()));
+        walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(
+                collectingSourceRoot.getTransitiveDependenciesWithoutImplicitProviders()
+                        // Note: the previous stream may contain interface modules, so we resolve them here because the
+                        // implementing modules may also declare additional providers
+                        .flatMap(collectingSourceRoot::resolveInterfaceDependencyIfExecutable)
+                )).collect(Collectors.toList()));
         List<String/* SPI */> requiredServices = new HashList<>();
         ReusableStream<ProjectModule> requiredSearchScope = executableSourceRoot.getRequiredProvidersModulesSearchScope();
         List<String/* SPI */> optionalServices = new HashList<>();
@@ -693,19 +699,17 @@ public final class JavaSourceRootAnalyzer {
         if (projectModule.isExecutable(Platform.JRE)) {
             boolean isForOpenJFX = projectModule.getTarget().hasTag(TargetTag.OPENJFX);
             boolean isForGluon = projectModule.getTarget().hasTag(TargetTag.GLUON);
-            if (isForOpenJFX || isForGluon) {
-                boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().startsWith("webfx-kit-javafxmedia"));
-                return usesMedia ? ReusableStream.of(
-                        rootModule.searchRegisteredModule("webfx-kit-openjfx"),
-                        rootModule.searchRegisteredModule(isForGluon ? "webfx-kit-javafxmedia-gluon" : "webfx-kit-javafxmedia-emul"),
-                        rootModule.searchRegisteredModule("webfx-platform-boot-java")
-                ) : ReusableStream.of(
-                        rootModule.searchRegisteredModule("webfx-kit-openjfx"),
-                        rootModule.searchRegisteredModule("webfx-platform-boot-java")
-                );
-            }
-            return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
-                    .filter(RootModule::isJavaFxEmulModule);
+            if (!isForOpenJFX && !isForGluon)
+                return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
+                        .filter(RootModule::isJavaFxEmulModule);
+            boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().startsWith("webfx-kit-javafxmedia"));
+            boolean usesFxml = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().equals("javafx-fxml") || m.getName().equals("webfx-kit-javafxfxml-emul"));
+            return ReusableStream.of(
+                    rootModule.searchRegisteredModule("webfx-platform-boot-java"),
+                    rootModule.searchRegisteredModule("webfx-kit-openjfx"),
+                    !usesMedia ? null : rootModule.searchRegisteredModule(isForGluon ? "webfx-kit-javafxmedia-gluon" : "webfx-kit-javafxmedia-emul"),
+                    !usesFxml ? null : rootModule.searchRegisteredModule("webfx-kit-javafxfxml-emul")
+            ).filter(Objects::nonNull);
         }
         return ReusableStream.empty();
     }

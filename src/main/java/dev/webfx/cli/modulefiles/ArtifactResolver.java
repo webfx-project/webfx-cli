@@ -62,6 +62,8 @@ public final class ArtifactResolver {
                 return mustBeJavaFxEmul ? moduleName : "javafx-media";
             case "webfx-kit-javafxweb-emul":
                 return mustBeJavaFxEmul ? moduleName : "javafx-web";
+            case "webfx-kit-javafxfxml-emul":
+                return mustBeJavaFxEmul ? moduleName : "javafx-fxml";
             case "javafx-base":
                 return mustBeJavaFxEmul ? "webfx-kit-javafxbase-emul" : moduleName;
             case "javafx-graphics":
@@ -72,6 +74,8 @@ public final class ArtifactResolver {
                 return mustBeJavaFxEmul ? "webfx-kit-javafxmedia-emul" : moduleName;
             case "javafx-web":
                 return mustBeJavaFxEmul ? "webfx-kit-javafxweb-emul" : moduleName;
+            case "javafx-fxml":
+                return mustBeJavaFxEmul ? "webfx-kit-javafxfxml-emul" : moduleName;
         }
         String artifactId = module.getArtifactId();
         if (artifactId != null)
@@ -180,11 +184,13 @@ public final class ArtifactResolver {
                 case "javafx-controls":
                 case "javafx-media":
                 case "javafx-web":
+                case "javafx-fxml":
                 case "webfx-kit-javafxbase-emul":
                 case "webfx-kit-javafxgraphics-emul":
                 case "webfx-kit-javafxcontrols-emul":
                 case "webfx-kit-javafxmedia-emul":
                 case "webfx-kit-javafxweb-emul":
+                case "webfx-kit-javafxfxml-emul":
                     return "provided";
             }
         return null;
