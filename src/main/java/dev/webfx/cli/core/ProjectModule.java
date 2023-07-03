@@ -64,6 +64,18 @@ public interface ProjectModule extends Module {
         );
     }
 
+    default ReusableStream<ProjectModule> getRequiredProvidersSearchScopeWithinWebFxLibraries() { // Should be overridden to use a cache
+        return getWebFxModuleFile().getRequiredWebFxLibraryModules()
+                .flatMap(this::getRequiredProvidersSearchScopeWithinThisAndTransitiveWebFxLibraries);
+    }
+
+    private ReusableStream<ProjectModule> getRequiredProvidersSearchScopeWithinThisAndTransitiveWebFxLibraries(LibraryModule thisWebFxLibrary) {
+        ProjectModule thisWebFxModule = searchRegisteredProjectModule(thisWebFxLibrary.getName());
+        boolean isLeafModuleWithNoProviders = !thisWebFxModule.isAggregate() && thisWebFxModule.getProvidedJavaServices().isEmpty();
+        ReusableStream<ProjectModule> transitiveWebFxLibraries = thisWebFxModule.getRequiredProvidersSearchScopeWithinWebFxLibraries();
+        return isLeafModuleWithNoProviders ? transitiveWebFxLibraries : ReusableStream.concat(ReusableStream.of(thisWebFxModule), transitiveWebFxLibraries);
+    }
+
     default ReusableStream<String> getResourcePackages() {
         return getWebFxModuleFile().getResourcePackages();
     }

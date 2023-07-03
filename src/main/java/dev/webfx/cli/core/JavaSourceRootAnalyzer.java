@@ -269,17 +269,9 @@ public final class JavaSourceRootAnalyzer {
             ReusableStream.concat(
                             transitiveProjectModulesWithoutImplicitProvidersCache,
                             ReusableStream.create(() -> ReusableStream.concat(
-                                                    ReusableStream.of(
-                                                            getProjectModule().getRootModule(),
-                                                            //getProjectModule().getRootModule().searchRegisteredProjectModule("modality"),
-                                                            getProjectModule().getRootModule().searchRegisteredProjectModule("webfx-platform"),
-                                                            getProjectModule().getRootModule().searchRegisteredProjectModule("webfx-kit")
-                                                    ),
-                                                    getProjectModule().getRootModule().searchRegisteredProjectModuleStartingWith("webfx-stack"),
-                                                    getProjectModule().getRootModule().searchRegisteredProjectModuleStartingWith("webfx-extras"),
-                                                    getProjectModule().getRootModule().searchRegisteredProjectModuleStartingWith("webfx-framework")
-                                            )
-                                    )
+                                                    ReusableStream.of(getProjectModule().getRootModule()),
+                                                    getProjectModule().getRootModule().getRequiredProvidersSearchScopeWithinWebFxLibraries()
+                                            ))
                                     .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
                                     .filter(m -> m.isCompatibleWithTargetModule(getProjectModule()))
                     )
@@ -678,7 +670,7 @@ public final class JavaSourceRootAnalyzer {
                             .distinct()
                             ;
                 }
-                String message = "No concrete module found for interface module " + module + " in executable module " + this + " among " + searchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList());
+                String message = "No concrete module found for interface module " + module + " in executable module " + projectModule + " among " + searchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList());
                 //if (isModuleUnderRootHomeDirectory(this))
                 Logger.warning(message);
                 //else

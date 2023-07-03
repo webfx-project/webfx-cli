@@ -272,12 +272,24 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     }
 
     private ReusableStream<LibraryModule> requiredLibraryModulesCache;
+    private ReusableStream<ProjectModule> transitiveWebFxLibraryProjectModulesCache;
 
     @Override
     public ReusableStream<LibraryModule> getRequiredLibraryModules() {
         if (requiredLibraryModulesCache == null)
             requiredLibraryModulesCache = ProjectModule.super.getRequiredLibraryModules().cache();
         return requiredLibraryModulesCache;
+    }
+
+    @Override
+    public ReusableStream<ProjectModule> getRequiredProvidersSearchScopeWithinWebFxLibraries() {
+        if (transitiveWebFxLibraryProjectModulesCache == null) {
+            transitiveWebFxLibraryProjectModulesCache = ProjectModule.super.getRequiredProvidersSearchScopeWithinWebFxLibraries().distinct().cache();
+            /*StringBuilder sb = new StringBuilder(">>> " + this + ": ");
+            transitiveWebFxLibraryProjectModulesCache.forEach(m -> sb.append(m).append(' '));
+            System.out.println(sb);*/
+        }
+        return transitiveWebFxLibraryProjectModulesCache;
     }
 
     /******************************
