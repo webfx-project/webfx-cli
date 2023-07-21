@@ -122,7 +122,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
                     if (abstractModule != null && !abstractModule.equals(""))
                         moduleName = projectModule.getRootModule().searchRegisteredModule(abstractModule).getName();
                 }
-                return moduleName.replaceAll("[^a-zA-Z0-9]", ".");
+                return moduleName.replaceAll("[^a-zA-Z0-9_]", ".");
         }
     }
 }
