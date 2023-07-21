@@ -109,7 +109,8 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
             case "webfx-kit-javafxgraphics-emul":
                 return "javafx.graphics";
             case "webfx-kit-javafxmedia-emul":
-                return "javafx.media";
+            case "webfx-kit-javafxmedia-gluon":
+                 return "javafx.media";
             case "webfx-kit-javafxweb-emul":
                 return "javafx.web";
             case "webfx-kit-javafxfxml-emul":
