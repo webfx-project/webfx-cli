@@ -198,7 +198,7 @@ public enum TargetTag {
         }
     }
 
-    static TargetTag fromTagBName(String tagName) {
+    static TargetTag fromTagName(String tagName) {
         return Arrays.stream(TargetTag.values())
                 .filter(tag -> tagName.equals(tag.getTagName()))
                 .findFirst()
@@ -207,7 +207,8 @@ public enum TargetTag {
 
     public static TargetTag[] parseTags(String text) {
         return Arrays.stream(text.split("-"))
-                .map(TargetTag::fromTagBName)
+                .skip(1) // Ignoring first tag (ex: gluon-image-issue-application-gwt => for gwt, not gluon)
+                .map(TargetTag::fromTagName)
                 .filter(Objects::nonNull)
                 .toArray(TargetTag[]::new);
     }
