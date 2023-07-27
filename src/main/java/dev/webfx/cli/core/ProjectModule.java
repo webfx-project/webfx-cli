@@ -174,6 +174,8 @@ public interface ProjectModule extends Module {
 
     RootModule getRootModule();
 
+    Path getHomeDirectory();
+
     boolean hasSourceDirectory();
 
     Path getSourceDirectory();

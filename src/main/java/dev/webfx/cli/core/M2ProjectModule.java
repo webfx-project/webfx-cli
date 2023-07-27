@@ -40,7 +40,8 @@ public class M2ProjectModule extends ProjectModuleImpl {
         m2ProjectHomeDirectory = MavenUtil.M2_LOCAL_REPOSITORY.resolve(groupId.replace('.', '/')).resolve(artifactId).resolve(version);
     }
 
-    public Path getM2ProjectHomeDirectory() {
+    @Override
+    public Path getHomeDirectory() {
         return m2ProjectHomeDirectory;
     }
 

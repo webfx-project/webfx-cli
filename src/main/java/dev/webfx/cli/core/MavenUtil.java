@@ -38,7 +38,7 @@ public final class MavenUtil {
 
     public static void cleanM2ModuleSnapshotIfRequested(M2ProjectModule module) {
         if (CLEAN_M2_SNAPSHOTS && module.isSnapshotVersion()) {
-            Path m2Path = module.getM2ProjectHomeDirectory();
+            Path m2Path = module.getHomeDirectory();
             if (Files.exists(m2Path))
                 try {
                     Files.walk(m2Path)

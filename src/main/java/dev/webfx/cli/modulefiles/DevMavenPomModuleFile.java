@@ -249,9 +249,9 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         }
     }
 
-    public void addModule(Module module) {
-        String artifactId = ((DevProjectModule) module).getHomeDirectory().getFileName().toString();
-        appendElementWithTextContentIfNotAlreadyExists("modules/module", artifactId, true, false);
+    public void addModule(ProjectModule module) {
+        String mavenModuleName = module.getHomeDirectory().getFileName().toString();
+        appendElementWithTextContentIfNotAlreadyExists("modules/module", mavenModuleName, true, false);
     }
 
 }
