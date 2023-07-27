@@ -26,8 +26,13 @@ public class DevProjectModule extends ProjectModuleImpl {
      ************************/
 
     public DevProjectModule(Path homeDirectory, ProjectModule parentModule) {
+        // The module name is the name of the home directory, unless a different name is specified in webfx.xml
         super(homeDirectory.toAbsolutePath().getFileName().toString(), parentModule);
         this.homeDirectory = homeDirectory;
+        // When specified, the module name specified in webfx.xml is finally preferred over the name of the home directory
+        String webFxName = getWebFxModuleFile().getName();
+        if (webFxName != null)
+            this.name = webFxName;
     }
 
     /*************************
