@@ -178,6 +178,9 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             XmlUtil.appendElementWithTextContent(parentNode, "groupId", parentGroupId);
             XmlUtil.appendElementWithTextContent(parentNode, "artifactId", ArtifactResolver.getArtifactId(parentModule));
             XmlUtil.appendElementWithTextContent(parentNode, "version", parentVersion);
+            // Adding <relativePath/> when the parent module is not the parent directory module
+            if (parentModule != module.getParentDirectoryModule())
+                XmlUtil.createAndAppendElement(parentNode, "relativePath");
         }
         Node modelVersionNode = lookupNode("modelVersion");
         if (modelVersionNode == null)
@@ -247,7 +250,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
     }
 
     public void addModule(Module module) {
-        String artifactId = ArtifactResolver.getArtifactId(module);
+        String artifactId = ((DevProjectModule) module).getHomeDirectory().getFileName().toString();
         appendElementWithTextContentIfNotAlreadyExists("modules/module", artifactId, true, false);
     }
 
