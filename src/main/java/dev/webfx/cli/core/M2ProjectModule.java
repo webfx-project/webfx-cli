@@ -49,12 +49,12 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     @Override
-    public M2ProjectModule fetchParentModule() {
-        return (M2ProjectModule) super.fetchParentModule();
+    public M2ProjectModule getParentModule() {
+        return (M2ProjectModule) super.getParentModule();
     }
 
     public boolean isWebFxModuleFileExpected() { // Should be overridden in M2RootModule
-        return fetchParentModule().isWebFxModuleFileExpected();
+        return getParentModule().isWebFxModuleFileExpected();
     }
 
     @Override
@@ -73,7 +73,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     public M2WebFxModuleFile getWebFxModuleFileWithExportSnapshotContainingThisModule() {
         M2ProjectModule moduleWithExport = this;
-        while ((moduleWithExport.getParentModule() != null && (moduleWithExport = moduleWithExport.fetchParentModule()) != null)) {
+        while ((moduleWithExport.getParentModule() != null && (moduleWithExport = moduleWithExport.getParentModule()) != null)) {
             if (moduleWithExport.getWebFxModuleFile().lookupExportedSnapshotProjectElement(this) != null)
                 return moduleWithExport.getWebFxModuleFile();
         }

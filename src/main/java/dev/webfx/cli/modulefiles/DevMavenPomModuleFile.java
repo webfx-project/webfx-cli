@@ -44,10 +44,13 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
     @Override
     public Document createInitialDocument() {
         DevProjectModule projectModule = getProjectModule();
-        boolean isRootModule = projectModule instanceof RootModule;
+        // The project is a root module from Maven point of view if it's a root module (from WebFX point of view) or
+        // if the parent module is not the parent directory module (ex: kbs3-modality-fork is a root module for Maven,
+        // even when placed under kbs3 directory and listed in webfx.xml)
+        boolean isMavenRootModule = projectModule instanceof RootModule || projectModule.getParentModule() != projectModule.getParentDirectoryModule();
         BuildInfo buildInfo = projectModule.getBuildInfo();
         String templateFileName =
-                isRootModule ? (((RootModule) projectModule).isInlineWebFxParent() ? "pom_root_inline.xml" : "pom_root.xml")
+                isMavenRootModule ? "pom_root.xml" // (((RootModule) projectModule).isInlineWebFxParent() ? "pom_root_inline.xml" : "pom_root.xml")
                         : isAggregate() ? "pom_aggregate.xml"
                         : !buildInfo.isExecutable ? "pom_not_executable.xml"
                         : buildInfo.isForGwt ? "pom_gwt_executable.xml"
@@ -157,7 +160,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         String version = ArtifactResolver.getVersion(module);
         // Getting the GAV for the parent module
         Module parentModule = module instanceof DevRootModule && !module.getMavenModuleFile().fileExists() ? null // This happens on first pom.xml creation with "webfx init" => no parent yet
-                : module.fetchParentModule(); // Otherwise, we fetch the parent module (this may invoke mvn)
+                : module.getParentModule(); // Otherwise, we fetch the parent module (this may invoke mvn)
         String parentGroupId = parentModule == null ? null : ArtifactResolver.getGroupId(parentModule);
         String parentVersion = parentModule == null ? null : ArtifactResolver.getVersion(parentModule);
         if (version != null && !version.equals(parentVersion))
@@ -165,7 +168,8 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         prependElementWithTextContentIfNotAlreadyExists("artifactId", artifactId, true);
         if (groupId != null && !groupId.equals(parentGroupId))
             prependElementWithTextContentIfNotAlreadyExists("groupId", groupId, true);
-        if (parentModule != null && lookupNode("parent/artifactId") == null) {
+        // Adding the <parent/> section in pom.xml (when parentModule is not null)
+        if (parentModule != null) {
             Node parentNode = lookupNode("parent");
             if (parentNode == null)
                 parentNode = createAndPrependElement("parent", true);

@@ -86,28 +86,30 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                     .cache();
 
 
+    private final ProjectModule parentDirectoryModule;
     private ProjectModule parentModule;
     private final RootModule rootModule;
     private Target target;
     private boolean checkReadGavFromModuleFiles;
     private boolean checkParentFromModuleFiles;
 
-    public ProjectModuleImpl(String name, ProjectModule parentModule) {
+    public ProjectModuleImpl(String name, ProjectModule parentDirectoryModule) {
         super(name);
-        this.parentModule = parentModule;
+        this.parentDirectoryModule = parentDirectoryModule;
         ProjectModule m = this;
         while (m != null && !(m instanceof RootModule))
-            m = m.getParentModule();
+            m = m.getParentDirectoryModule();
         rootModule = (RootModule) m;
     }
 
-    public ProjectModule fetchParentModule() {
-        checkParentFromModuleFiles();
-        return parentModule;
+    @Override
+    public ProjectModule getParentDirectoryModule() {
+        return parentDirectoryModule;
     }
 
     @Override
     public ProjectModule getParentModule() {
+        checkParentFromModuleFiles();
         return parentModule;
     }
 
@@ -154,13 +156,15 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private void checkReadGavFromModuleFiles() {
         if (!checkReadGavFromModuleFiles) {
             checkReadGavFromModuleFiles = true;
-            readGavFromModuleFile(
-                    // Reading GAV from webfx.xml (and parents) unless webfx.xml doesn't exist or maven update is skipped
-                    getWebFxModuleFile().fileExists() && !getWebFxModuleFile().skipMavenPomUpdate() ? getWebFxModuleFile()
-                            // in that case, pom.xml is the reference to read the GAV for this module
-                            : getMavenModuleFile()
-            );
+            readGavFromModuleFile(getMostRelevantGavModuleFile());
         }
+    }
+
+    private XmlGavModuleFile getMostRelevantGavModuleFile() {
+        // Reading GAV from webfx.xml (and parents) unless webfx.xml doesn't exist or maven update is skipped
+        return getWebFxModuleFile().fileExists() && !getWebFxModuleFile().skipMavenPomUpdate() ? getWebFxModuleFile()
+                // in that case, pom.xml is the reference to read the GAV for this module
+                : getMavenModuleFile();
     }
 
     private void readGavFromModuleFile(XmlGavModuleFile gavModuleFile) {
@@ -184,17 +188,25 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private void checkParentFromModuleFiles() {
         if (!checkParentFromModuleFiles) {
             checkParentFromModuleFiles = true;
-            if (parentModule == null)
-                lookupParentFromModuleFile(getWebFxModuleFile().fileExists() ? getWebFxModuleFile() : getMavenModuleFile());
-        }
-    }
-
-    private void lookupParentFromModuleFile(XmlGavModuleFile gavModuleFile) {
-        if (parentModule == null) {
-            String lookupParentName = gavModuleFile.lookupParentName();
-            String parentName = lookupParentName != null ? lookupParentName : "webfx-parent";
-            if (!parentName.equals(getName()))
-                parentModule = getRootModule().searchRegisteredProjectModule(parentName);
+            if (parentModule == null) {
+                if (this instanceof M2ProjectModule)
+                    parentModule = parentDirectoryModule;
+                else {
+                    XmlGavModuleFile gavModuleFile = getMostRelevantGavModuleFile();
+                    String lookupParentName = gavModuleFile.lookupParentName(); // TODO: Always null with pom.xml?
+                    // If no parent is specified, we take the parent directory module as the parent (if exists)
+                    if (lookupParentName == null && parentDirectoryModule != null)
+                        parentModule = parentDirectoryModule;
+                    else { // Otherwise
+                        // If no parent is specified (and no parent directory module), we take "webfx-parent" by default
+                        if (lookupParentName == null)
+                            lookupParentName = "webfx-parent";
+                        // Then we search the module from its name
+                        if (!lookupParentName.equals(getName())) // parent shouldn't be this module
+                            parentModule = getRootModule().searchRegisteredProjectModule(lookupParentName);
+                    }
+                }
+            }
         }
     }
 

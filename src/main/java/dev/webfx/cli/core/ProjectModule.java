@@ -13,9 +13,10 @@ import java.util.function.Predicate;
  */
 public interface ProjectModule extends Module {
 
+    ProjectModule getParentDirectoryModule();
+
     ProjectModule getParentModule();
 
-    ProjectModule fetchParentModule();
 
     /*************************
      ***** Basic streams *****
@@ -65,7 +66,7 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<ProjectModule> getRequiredProvidersSearchScopeWithinWebFxLibraries() { // Should be overridden to use a cache
-        return getWebFxModuleFile().getRequiredWebFxLibraryModules()
+        return getThisAndChildrenModules().flatMap(p -> p.getWebFxModuleFile().getRequiredWebFxLibraryModules()).distinct()
                 .flatMap(this::getRequiredProvidersSearchScopeWithinThisAndTransitiveWebFxLibraries);
     }
 
