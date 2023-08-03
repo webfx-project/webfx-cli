@@ -12,7 +12,7 @@ public final class Target {
 
     Target(ProjectModule module) {
         this.module = module;
-        this.tags = TargetTag.parseTags(module.getName());
+        this.tags = TargetTag.parseTags(module.getName(), true);
     }
 
     public Target(TargetTag... tags) {

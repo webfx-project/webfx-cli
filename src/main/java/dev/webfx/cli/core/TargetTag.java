@@ -205,9 +205,9 @@ public enum TargetTag {
                 .orElse(null);
     }
 
-    public static TargetTag[] parseTags(String text) {
+    public static TargetTag[] parseTags(String text, boolean skipFirstToken) {
         return Arrays.stream(text.split("-"))
-                .skip(1) // Ignoring first tag (ex: gluon-image-issue-application-gwt => for gwt, not gluon)
+                .skip(skipFirstToken ? 1 : 0) // Ignoring first tag for module names (ex: gluon-image-issue-application-gwt => for gwt, not gluon)
                 .map(TargetTag::fromTagName)
                 .filter(Objects::nonNull)
                 .toArray(TargetTag[]::new);

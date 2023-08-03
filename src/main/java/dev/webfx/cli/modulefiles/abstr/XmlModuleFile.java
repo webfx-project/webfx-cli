@@ -50,7 +50,7 @@ public interface XmlModuleFile extends ModuleFile, XmlDocumentApi {
 
     private Target getTargetAttributeValue(Node node, String attribute) {
         String stringValue = XmlUtil.getAttributeValue(node, attribute);
-        return stringValue == null ? null : new Target(TargetTag.parseTags(stringValue));
+        return stringValue == null ? null : new Target(TargetTag.parseTags(stringValue, false));
     }
 
 }
