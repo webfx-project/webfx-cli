@@ -3,6 +3,7 @@
 
     <exported-packages>
         <source-packages/>
+        <resource-packages/>
     </exported-packages>
 
     <dependencies>

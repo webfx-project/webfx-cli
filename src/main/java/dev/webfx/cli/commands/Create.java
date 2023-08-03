@@ -1,6 +1,9 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.core.*;
+import dev.webfx.cli.core.CliException;
+import dev.webfx.cli.core.DevProjectModule;
+import dev.webfx.cli.core.DevRootModule;
+import dev.webfx.cli.core.TargetTag;
 import dev.webfx.cli.modulefiles.DevMavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
@@ -14,7 +17,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
-import java.util.regex.Pattern;
 /**
  * @author Bruno Salmon
  */
@@ -25,10 +27,6 @@ subcommands = {
         Create.Module.class,
 })
 public final class Create extends CommonSubcommand {
-
-    javax.lang.model.SourceVersion x;
-
-    public static final Pattern PACKAGE_NAME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9.]*$");
 
     static abstract class CreateSubCommand extends CommonSubcommand implements Callable<Void> {
 

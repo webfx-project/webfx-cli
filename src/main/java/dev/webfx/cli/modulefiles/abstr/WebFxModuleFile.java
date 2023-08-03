@@ -66,8 +66,12 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupNodeListTextContent("exported-packages/source-packages/exclude-package");
     }
 
-    default ReusableStream<String> getResourcePackages() {
+    default ReusableStream<String> getExplicitResourcePackages() {
         return lookupNodeListTextContent("exported-packages/resource-package");
+    }
+
+    default boolean areResourcePackagesAutomaticallyExported() {
+        return lookupNode("exported-packages/resource-packages") != null;
     }
 
     default ReusableStream<String> implementedInterfaces() {
@@ -158,6 +162,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
 
     default ReusableStream<String> javaSourcePackagesFromExportSnapshot() {
         return lookupNodeListTextContent("source-packages/package");
+    }
+
+    default ReusableStream<String> resourcePackagesFromExportSnapshot() {
+        return lookupNodeListTextContent("resource-packages/package");
     }
 
     default boolean hasDetectedUsedBySourceModulesFromExportSnapshot() {

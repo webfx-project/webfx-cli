@@ -158,6 +158,32 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     @Override
+    public boolean hasMainResourcesDirectory() {
+        return hasSourceDirectory();
+    }
+
+    @Override
+    public Path getMainResourcesDirectory() {
+        // Same as source directory (there is no main/resources subdirectory in the -sources.jar artifact)
+        return getSourceDirectory();
+    }
+
+    private final ReusableStream<String> fileResourcePackagesCache =
+            ReusableStream.create(() -> {
+                        M2WebFxModuleFile webFxModuleFile = getWebFxModuleFile();
+                        if (webFxModuleFile.isExported())
+                            return webFxModuleFile.resourcePackagesFromExportSnapshot();
+                        return ReusableStream.empty();
+                    })
+                    .cache()
+                    .name("resourcePackagesCache");
+
+    @Override
+    public ReusableStream<String> getFileResourcePackages() {
+        return fileResourcePackagesCache;
+    }
+
+    @Override
     public boolean hasTestJavaSourceDirectory() {
         return false;
     }

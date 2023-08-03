@@ -4,8 +4,10 @@ import dev.webfx.cli.modulefiles.*;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
+import javax.lang.model.SourceVersion;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Spliterators;
 
 /**
  * @author Bruno Salmon
@@ -13,13 +15,31 @@ import java.nio.file.Path;
 public class DevProjectModule extends ProjectModuleImpl {
 
     private final Path homeDirectory;
-    private Boolean hasSourceDirectory, hasMainJavaSourceDirectory, hasTestJavaSourceDirectory;
+    private Boolean hasSourceDirectory, hasMainJavaSourceDirectory, hasMainResourcesDirectory, hasTestJavaSourceDirectory;
     private DevJavaModuleInfoFile mainJavaModuleInfoFile;
     private DevWebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
 
     private DevGwtModuleFile gwtModuleFile;
     private DevGwtHtmlFile gwtHtmlFile;
+
+    private final ReusableStream<String> fileResourcePackagesCache =
+            ReusableStream.create(() -> ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
+                            hasMainResourcesDirectory() ? SplitFiles.uncheckedWalk(getMainResourcesDirectory()) : Spliterators.emptySpliterator())
+                    // We want to filter directories that are not empty. To do that by walking through files and getting their parent directory
+                    .filter(path -> !Files.isDirectory(path))
+                    .map(Path::getParent)
+                    // We remove duplicates (because the directory was repeated by the number of files in it)
+                    .distinct()
+                    // We get the relative path from the resource directory
+                    .map(path -> getMainResourcesDirectory().relativize(path))
+                    // We transform the path into a package name
+                    .map(path -> path.toString().replace('/', '.')))
+                    // We ignore those not following the Java package name convention (this includes META-INF)
+                    .filter(pkg -> SourceVersion.isName(pkg) && !pkg.contains("$"))
+                    .cache()
+                    .name("resourcePackagesCache");
+
 
     /************************
      ***** Constructors *****
@@ -70,6 +90,7 @@ public class DevProjectModule extends ProjectModuleImpl {
         return homeDirectory != null ? homeDirectory.resolve("src/test/java/") : null;
     }
 
+    @Override
     public Path getMainResourcesDirectory() {
         return homeDirectory != null ? homeDirectory.resolve("src/main/resources/") : null;
     }
@@ -113,6 +134,18 @@ public class DevProjectModule extends ProjectModuleImpl {
         if (hasMainJavaSourceDirectory == null)
             hasMainJavaSourceDirectory = hasSourceDirectory() && pathExists(getMainJavaSourceDirectory());
         return hasMainJavaSourceDirectory;
+    }
+
+    @Override
+    public boolean hasMainResourcesDirectory() {
+        if (hasMainResourcesDirectory == null)
+            hasMainResourcesDirectory = hasSourceDirectory() && pathExists(getMainJavaSourceDirectory());
+        return hasMainResourcesDirectory;
+    }
+
+    @Override
+    public ReusableStream<String> getFileResourcePackages() {
+        return fileResourcePackagesCache;
     }
 
     public boolean hasTestJavaSourceDirectory() {

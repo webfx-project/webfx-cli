@@ -77,8 +77,18 @@ public interface ProjectModule extends Module {
         return isLeafModuleWithNoProviders ? transitiveWebFxLibraries : ReusableStream.concat(ReusableStream.of(thisWebFxModule), transitiveWebFxLibraries);
     }
 
+    default ReusableStream<String> getExplicitResourcePackages() {
+        return getWebFxModuleFile().getExplicitResourcePackages();
+    }
+
+    ReusableStream<String> getFileResourcePackages();
+
     default ReusableStream<String> getResourcePackages() {
-        return getWebFxModuleFile().getResourcePackages();
+        return ReusableStream.concat(
+                getExplicitResourcePackages(),
+                getMetaResourcePackage(),
+                getWebFxModuleFile().areResourcePackagesAutomaticallyExported() ? getFileResourcePackages() : ReusableStream.empty()
+        ).distinct();
     }
 
     default ReusableStream<String> getEmbedResources() {
@@ -89,10 +99,7 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getOpenPackages() {
-        return ReusableStream.concat(
-                getResourcePackages(),
-                getMetaResourcePackage()
-        );
+        return getResourcePackages();
     }
 
     default ReusableStream<String> getMetaResource() {
@@ -183,6 +190,10 @@ public interface ProjectModule extends Module {
     boolean hasMainJavaSourceDirectory();
 
     Path getMainJavaSourceDirectory();
+
+    boolean hasMainResourcesDirectory();
+
+    Path getMainResourcesDirectory();
 
     boolean hasTestJavaSourceDirectory();
 
