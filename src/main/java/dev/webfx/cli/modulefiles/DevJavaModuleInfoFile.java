@@ -113,10 +113,10 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
             case "webfx-kit-javafxfxml-emul":
                 return "javafx.fxml";
             default:
-                if (module instanceof DevProjectModule) {
-                    DevProjectModule projectModule = (DevProjectModule) module;
+                if (module instanceof ProjectModule) {
+                    ProjectModule projectModule = (ProjectModule) module;
                     String abstractModule = projectModule.implementedInterfaces().findFirst().orElse(null);
-                    if (abstractModule != null && !abstractModule.equals(""))
+                    if (abstractModule != null && !abstractModule.isEmpty())
                         moduleName = projectModule.getRootModule().searchRegisteredModule(abstractModule).getName();
                 }
                 return moduleName.replaceAll("[^a-zA-Z0-9_]", ".");
