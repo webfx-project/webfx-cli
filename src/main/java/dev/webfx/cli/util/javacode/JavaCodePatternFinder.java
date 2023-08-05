@@ -45,8 +45,8 @@ class JavaCodePatternFinder implements Iterable<String> {
 
             private boolean isInsideStringOrComment(int index) {
                 return blockCommentFinder.isInsideStringOrComment(index)
-                        || inlineCommentFinder.isInsideStringOrComment(index) && inlineCommentFinder.stringOrCommentStartIndex > blockCommentFinder.stringOrCommentEndIndex
-                        || stringFinder.isInsideStringOrComment(index) && stringFinder.stringOrCommentStartIndex > blockCommentFinder.stringOrCommentEndIndex
+                        || inlineCommentFinder.isInsideStringOrComment(index)
+                        || stringFinder.isInsideStringOrComment(index)
                         ;
             }
         };
