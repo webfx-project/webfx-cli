@@ -51,17 +51,17 @@ public final class JavaSourceRootAnalyzer {
      */
     private final ReusableStream<String> javaSourcePackagesCache =
             ReusableStream.create(() -> {
-                ProjectModule projectModule = getProjectModule();
-                if (projectModule.isAggregate())
-                    return ReusableStream.empty();
-                WebFxModuleFile webFxModuleFile = projectModule.getWebFxModuleFile();
-                if (projectModule instanceof M2ProjectModule && ((M2WebFxModuleFile) webFxModuleFile).isExported())
-                    return webFxModuleFile.javaSourcePackagesFromExportSnapshot();
-                return javaSourceFilesCache
-                        .map(JavaFile::getPackageName)
-                        .distinct();
-            })
-            .name("javaSourcePackagesCache");
+                        ProjectModule projectModule = getProjectModule();
+                        if (projectModule.isAggregate())
+                            return ReusableStream.empty();
+                        WebFxModuleFile webFxModuleFile = projectModule.getWebFxModuleFile();
+                        if (projectModule instanceof M2ProjectModule && ((M2WebFxModuleFile) webFxModuleFile).isExported())
+                            return webFxModuleFile.javaSourcePackagesFromExportSnapshot();
+                        return javaSourceFilesCache
+                                .map(JavaFile::getPackageName)
+                                .distinct();
+                    })
+                    .name("javaSourcePackagesCache");
 
     /**
      * Returns all java services directly used by this module and that are required. Each service is returned as the
@@ -77,8 +77,7 @@ public final class JavaSourceRootAnalyzer {
                     })
                     .distinct()
                     .cache()
-                    .name("usedRequiredJavaServicesCache")
-            ;
+                    .name("usedRequiredJavaServicesCache");
 
     /**
      * Returns all java services directly used by this module and that are optional. Each service is returned as the
@@ -94,8 +93,7 @@ public final class JavaSourceRootAnalyzer {
                     })
                     .distinct()
                     .cache()
-                    .name("usedOptionalJavaServicesCache")
-            ;
+                    .name("usedOptionalJavaServicesCache");
 
     /**
      * Returns all java services directly used by this module (both required and optional). Each service is returned as
@@ -129,8 +127,8 @@ public final class JavaSourceRootAnalyzer {
      */
     private final ReusableStream<String> usedJavaPackagesCache =
             ReusableStream.create(() -> ReusableStream.concat(
-                                     javaSourceFilesCache.flatMap(JavaFile::getUsedJavaPackages),
-                                     getProjectModule().getProvidedJavaServices().map(spi -> spi.substring(0, spi.lastIndexOf('.'))) // package of the SPI (ex: javafx.application if SPI = javafx.application.Application)
+                                    javaSourceFilesCache.flatMap(JavaFile::getUsedJavaPackages),
+                                    getProjectModule().getProvidedJavaServices().map(spi -> spi.substring(0, spi.lastIndexOf('.'))) // package of the SPI (ex: javafx.application if SPI = javafx.application.Application)
                             )
                     )
                     .distinct()
@@ -169,11 +167,11 @@ public final class JavaSourceRootAnalyzer {
      */
     private final ReusableStream<ModuleDependency> sourceDirectDependenciesCache =
             ReusableStream.create(() ->
-                ReusableStream.concat(
-                        getProjectModule().explicitSourceDependenciesCache,
-                        detectedByCodeAnalyzerSourceDependenciesCache,
-                        getProjectModule().undetectedByCodeAnalyzerSourceDependenciesCache
-            )).name("sourceDirectDependenciesCache");
+                    ReusableStream.concat(
+                            getProjectModule().explicitSourceDependenciesCache,
+                            detectedByCodeAnalyzerSourceDependenciesCache,
+                            getProjectModule().undetectedByCodeAnalyzerSourceDependenciesCache
+                    )).name("sourceDirectDependenciesCache");
 
     /**
      * Returns all the direct module dependencies without emulation and implicit providers modules (such as platform
@@ -184,14 +182,14 @@ public final class JavaSourceRootAnalyzer {
      */
     private final ReusableStream<ModuleDependency> directDependenciesWithoutEmulationAndImplicitProvidersCache =
             ReusableStream.create(() ->
-                ReusableStream.concat(
-                            sourceDirectDependenciesCache,
-                            getProjectModule().resourceDirectDependenciesCache,
-                            getProjectModule().applicationDependencyCache,
-                            getProjectModule().pluginDirectDependenciesCache
-                    )
-                    .distinct()
-                    .cache()
+                    ReusableStream.concat(
+                                    sourceDirectDependenciesCache,
+                                    getProjectModule().resourceDirectDependenciesCache,
+                                    getProjectModule().applicationDependencyCache,
+                                    getProjectModule().pluginDirectDependenciesCache
+                            )
+                            .distinct()
+                            .cache()
             ).name("directDependenciesWithoutEmulationAndImplicitProvidersCache");
 
     /**
@@ -269,9 +267,9 @@ public final class JavaSourceRootAnalyzer {
             ReusableStream.concat(
                             transitiveProjectModulesWithoutImplicitProvidersCache,
                             ReusableStream.create(() -> ReusableStream.concat(
-                                                    ReusableStream.of(getProjectModule().getRootModule()),
-                                                    getProjectModule().getRootModule().getRequiredProvidersSearchScopeWithinWebFxLibraries()
-                                            ))
+                                            ReusableStream.of(getProjectModule().getRootModule()),
+                                            getProjectModule().getRootModule().getRequiredProvidersSearchScopeWithinWebFxLibraries()
+                                    ))
                                     .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
                                     .filter(m -> m.isCompatibleWithTargetModule(getProjectModule()))
                     )
@@ -554,6 +552,7 @@ public final class JavaSourceRootAnalyzer {
 
     /**
      * This is the static implementation of collectExecutableModuleProviders() that takes 2 arguments:
+     *
      * @param executableSourceRoot the source root analyzer of the executable module
      * @param collectingSourceRoot the source root analyzer of the module we are collecting the provider for
      * @return a stream of all providers (empty for non-executable modules)
@@ -572,7 +571,7 @@ public final class JavaSourceRootAnalyzer {
                         // Note: the previous stream may contain interface modules, so we resolve them here because the
                         // implementing modules may also declare additional providers
                         .flatMap(collectingSourceRoot::resolveInterfaceDependencyIfExecutable)
-                )).collect(Collectors.toList()));
+        )).collect(Collectors.toList()));
         List<String/* SPI */> requiredServices = new HashList<>();
         ReusableStream<ProjectModule> requiredSearchScope = executableSourceRoot.getRequiredProvidersModulesSearchScope();
         List<String/* SPI */> optionalServices = new HashList<>();
@@ -657,18 +656,15 @@ public final class JavaSourceRootAnalyzer {
                     // In case these dependencies have a SPI, collecting the providers and adding their associated implicit dependencies
                     // Ex: interface = [webfx-extras-visual-]grid-registry, concrete = [...]-grid-registry-spi, provider = [...]-grid-peers-javafx
                     // TODO: See if we can move this up to the generic steps when building dependencies
-                    if (concreteModule instanceof ProjectModuleImpl) // Added to solve cast problem, is it OK?
-                        concreteModuleDependencies = ReusableStream.concat(
-                                concreteModuleDependencies,
-                                collectExecutableModuleProviders(this, concreteModule.getMainJavaSourceRootAnalyzer())
-                                        .flatMap(Providers::getProviderModules)
-                                        //.filter(m -> transitiveDependenciesWithoutImplicitProvidersCache.noneMatch(dep -> dep.getDestinationModule() == m)) // Removing modules already in transitive dependencies (no need to repeat them)
-                                        .map(m -> ModuleDependency.createImplicitProviderDependency(projectModule, m))
-                        );
-                    return concreteModuleDependencies
+                    return ReusableStream.concat(
+                                    concreteModuleDependencies,
+                                    collectExecutableModuleProviders(this, concreteModule.getMainJavaSourceRootAnalyzer())
+                                            .flatMap(Providers::getProviderModules)
+                                            //.filter(m -> transitiveDependenciesWithoutImplicitProvidersCache.noneMatch(dep -> dep.getDestinationModule() == m)) // Removing modules already in transitive dependencies (no need to repeat them)
+                                            .map(m -> ModuleDependency.createImplicitProviderDependency(projectModule, m))
+                            )
                             .filter(dep -> !(dep.getDestinationModule() instanceof ProjectModule && ((ProjectModule) dep.getDestinationModule()).isInterface()))
-                            .distinct()
-                            ;
+                            .distinct();
                 }
                 String message = "No concrete module found for interface module " + module + " in executable module " + projectModule + " among " + searchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList());
                 //if (isModuleUnderRootHomeDirectory(this))
