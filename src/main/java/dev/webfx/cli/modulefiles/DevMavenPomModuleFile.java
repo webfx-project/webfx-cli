@@ -134,17 +134,13 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             appendElementWithTextContentIfNotAlreadyExists("packaging", "pom", true);
             if (module.getWebFxModuleFile().isAggregate())
                 module.getChildrenModules().forEach(this::addModule);
-            else
+            else // means that it's just a pom.xml without webfx.xml
                 return false;
         } else {
             if (!module.hasSourceDirectory()) // Ex: webfx-parent, webfx-stack-parent
                 return false;
             Node dependenciesNode = lookupOrCreateNode("dependencies");
             XmlUtil.removeChildren(dependenciesNode);
-            if (!recreateOnUpdateAndWrite()) {
-                dependenciesNode.appendChild(document.createTextNode(" "));
-                dependenciesNode.appendChild(document.createComment(" Dependencies managed by WebFX (DO NOT EDIT MANUALLY) "));
-            }
             Set<String> gas = new HashSet<>(); // set of groupId:artifactId listed so far in the pom dependencies - used for duplicate removal below
             // Always running the main java source root dependencies even if there is no main java source directory (ex: gwt modules)
             addSourceRootDependencies(module.getMainJavaSourceRootAnalyzer(), false, dependenciesNode, gas);
@@ -153,6 +149,18 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                 addSourceRootDependencies(module.getTestJavaSourceRootAnalyzer(), true, dependenciesNode, gas);
             if (!gas.isEmpty() && dependenciesNode.getParentNode() == null)
                 appendIndentNode(dependenciesNode, true);
+        }
+        ReusableStream<MavenRepository> mavenRepositories = module.mavenRepositories();
+        if (mavenRepositories.count() > 0) { // For now, we keep the possible <repositories/> section in pom.xml for retro-compatibility
+            Node repositoriesNode = lookupOrCreateNode("repositories");
+            XmlUtil.removeChildren(repositoriesNode);
+            mavenRepositories.forEach(mr -> {
+                Element repositoryElement = XmlUtil.createAndAppendElement(repositoriesNode, "repository", false);
+                XmlUtil.appendElementWithTextContent(repositoryElement, "id", mr.getId());
+                XmlUtil.appendElementWithTextContent(repositoryElement, "url", mr.getUrl());
+                XmlUtil.appendElementWithTextContent(repositoryElement, "releases/enabled", String.valueOf(!mr.isSnapshot()), false);
+                XmlUtil.appendElementWithTextContent(repositoryElement, "snapshots/enabled", String.valueOf(mr.isSnapshot()), false);
+            });
         }
         // Getting the GAV for this module
         String groupId = ArtifactResolver.getGroupId(module);

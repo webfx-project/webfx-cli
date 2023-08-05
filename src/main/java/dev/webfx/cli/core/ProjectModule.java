@@ -163,6 +163,10 @@ public interface ProjectModule extends Module {
         return implementations;
     }
 
+    default ReusableStream<MavenRepository> mavenRepositories() {
+        return getWebFxModuleFile().mavenRepositories().cache();
+    }
+
     default ReusableStream<String> getExportedJavaPackages() {
         ReusableStream<String> exportedPackages = getWebFxModuleFile().getExplicitExportedPackages();
         if (getWebFxModuleFile().areSourcePackagesAutomaticallyExported())
@@ -223,7 +227,7 @@ public interface ProjectModule extends Module {
     ///// Dependencies
 
     default boolean implementsModule(Module module) {
-        return this != module && (getName().startsWith(module.getName()) || getWebFxModuleFile().implementedInterfaces().anyMatch(m -> module.getName().equals(m)));
+        return this != module && (getName().startsWith(module.getName()) || implementedInterfaces().anyMatch(m -> module.getName().equals(m)));
     }
 
     Target getTarget();

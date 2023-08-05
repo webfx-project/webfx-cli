@@ -140,6 +140,17 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         });
     }
 
+    default ReusableStream<MavenRepository> mavenRepositories() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("maven-repositories/*"), node -> {
+            String id = XmlUtil.getAttributeValue(node, "id");
+            if (id == null)
+                throw new CliException("Missing id attribute in " + getModule().getName() + " Maven module declaration: " + XmlUtil.formatXmlText(node));
+            String url = node.getTextContent();
+            boolean snapshot = node.getNodeName().equals("snapshot-repository");
+            return new MavenRepository(id, url, snapshot);
+        });
+    }
+
     default Node getHtmlNode() {
         return lookupNode("html");
     }
