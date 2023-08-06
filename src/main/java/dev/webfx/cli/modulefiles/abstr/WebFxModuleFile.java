@@ -34,6 +34,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return getBooleanProjectAttributeValue("interface");
     }
 
+    default String getDeployRepositoryId() {
+        return getProjectAttributeValue("deployRepositoryId");
+    }
+
     default boolean hasAutoInjectionConditions() {
         return lookupNode("module-auto-injection-conditions") != null;
     }

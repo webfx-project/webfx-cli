@@ -53,6 +53,10 @@ public interface XmlNodeApi {
         XmlUtil.appendIndentNode(node, getOrCreateXmlNode(), linefeed);
     }
 
+    default void prependIndentNode(Node node, boolean linefeed) {
+        XmlUtil.prependIndentNode(node, getOrCreateXmlNode(), linefeed);
+    }
+
     default Element appendElementWithTextContent(String xpath, String text, boolean... linefeeds) {
         return XmlUtil.appendElementWithTextContent(getOrCreateXmlNode(), xpath, text, linefeeds);
     }

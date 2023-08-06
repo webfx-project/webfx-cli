@@ -152,14 +152,21 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         }
         ReusableStream<MavenRepository> mavenRepositories = module.mavenRepositories();
         if (mavenRepositories.count() > 0) { // For now, we keep the possible <repositories/> section in pom.xml for retro-compatibility
-            Node repositoriesNode = lookupOrCreateNode("repositories");
-            XmlUtil.removeChildren(repositoriesNode);
+            Node repositoriesNode = createOrEmptySectionNode("repositories");
+            String deployRepositoryId = module.getWebFxModuleFile().getDeployRepositoryId();
+            Node distributionManagementNode = deployRepositoryId == null ? null : createOrEmptySectionNode("distributionManagement");
             mavenRepositories.forEach(mr -> {
-                Element repositoryElement = XmlUtil.createAndAppendElement(repositoriesNode, "repository", false);
-                XmlUtil.appendElementWithTextContent(repositoryElement, "id", mr.getId());
-                XmlUtil.appendElementWithTextContent(repositoryElement, "url", mr.getUrl());
-                XmlUtil.appendElementWithTextContent(repositoryElement, "releases/enabled", String.valueOf(!mr.isSnapshot()), false);
-                XmlUtil.appendElementWithTextContent(repositoryElement, "snapshots/enabled", String.valueOf(mr.isSnapshot()), false);
+                if (deployRepositoryId == null || !deployRepositoryId.equals(mr.getId())) {
+                    Element repositoryElement = XmlUtil.createAndAppendElement(repositoriesNode, "repository");
+                    XmlUtil.appendElementWithTextContent(repositoryElement, "id", mr.getId());
+                    XmlUtil.appendElementWithTextContent(repositoryElement, "url", mr.getUrl());
+                    XmlUtil.appendElementWithTextContent(repositoryElement, "releases/enabled", String.valueOf(!mr.isSnapshot()));
+                    XmlUtil.appendElementWithTextContent(repositoryElement, "snapshots/enabled", String.valueOf(mr.isSnapshot()));
+                } else {
+                    Element repositoryElement = XmlUtil.createAndAppendElement(distributionManagementNode,  mr.isSnapshot() ? "snapshotRepository" : "repository");
+                    XmlUtil.appendElementWithTextContent(repositoryElement, "id", mr.getId());
+                    XmlUtil.appendElementWithTextContent(repositoryElement, "url", mr.getUrl());
+                }
             });
         }
         // Getting the GAV for this module
@@ -172,17 +179,13 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         String parentGroupId = parentModule == null ? null : ArtifactResolver.getGroupId(parentModule);
         String parentVersion = parentModule == null ? null : ArtifactResolver.getVersion(parentModule);
         if (version != null && !version.equals(parentVersion))
-            prependElementWithTextContentIfNotAlreadyExists("version", version, true);
-        prependElementWithTextContentIfNotAlreadyExists("artifactId", artifactId, true);
+            prependElementWithTextContentIfNotAlreadyExists("version", version);
+        prependElementWithTextContentIfNotAlreadyExists("artifactId", artifactId);
         if (groupId != null && !groupId.equals(parentGroupId))
-            prependElementWithTextContentIfNotAlreadyExists("groupId", groupId, true);
+            prependElementWithTextContentIfNotAlreadyExists("groupId", groupId);
         // Adding the <parent/> section in pom.xml (when parentModule is not null)
         if (parentModule != null) {
-            Node parentNode = lookupNode("parent");
-            if (parentNode == null)
-                parentNode = createAndPrependElement("parent", true);
-            else
-                XmlUtil.removeChildren(parentNode);
+            Node parentNode = createOrEmptySectionNode("parent");
             XmlUtil.appendElementWithTextContent(parentNode, "groupId", parentGroupId);
             XmlUtil.appendElementWithTextContent(parentNode, "artifactId", ArtifactResolver.getArtifactId(parentModule));
             XmlUtil.appendElementWithTextContent(parentNode, "version", parentVersion);
@@ -260,6 +263,15 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
     public void addModule(ProjectModule module) {
         String mavenModuleName = module.getHomeDirectory().getFileName().toString();
         appendElementWithTextContentIfNotAlreadyExists("modules/module", mavenModuleName, true, false);
+    }
+
+    private Node createOrEmptySectionNode(String xpath) {
+        Node sectionNode = lookupNode(xpath);
+        if (sectionNode == null)
+            sectionNode = createAndPrependElement(xpath, true);
+        else
+            XmlUtil.removeChildren(sectionNode);
+        return sectionNode;
     }
 
 }

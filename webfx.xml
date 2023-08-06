@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project>
+<project name="webfx-cli">
 
     <exported-packages>
         <source-packages/>
@@ -22,6 +22,10 @@
         <library artifact="org.apache.commons:commons-compress:1.21" name="org.apache.commons.compress"/>
 
     </required-libraries>
+
+    <maven-repositories>
+        <snapshot-repository id="webfx-snapshots">https://oss.sonatype.org/content/repositories/snapshots/</snapshot-repository>
+    </maven-repositories>
 
     <maven-pom-manual>
         <properties>
