@@ -18,7 +18,7 @@ public final class GluonFilesGenerator {
                 .filter(Objects::nonNull)
                 .distinct()
                 .forEach(json -> { // Json String (expecting a Json array [ ... ])
-                    // Removing the possible first empty lines
+                    // Removing the possible first white spaces
                     json = json.replaceAll("\\n\\s+\\n", "\n");
                     // Removing the brackets, because all arrays are merged into 1
                     int openBracketIndex = json.indexOf('[');
@@ -28,6 +28,8 @@ public final class GluonFilesGenerator {
                         // Also removing left indentation (extra indentation can come from webfx.xml export)
                         json = json.replace("\n" + " ".repeat(openBracketIndex), "\n");
                     }
+                    // Removing the possible last white spaces
+                    json = json.replaceAll("(?m)\\n\\s+$", "\n");
                     if (!json.isEmpty()) {
                         if (sb.length() > 0)
                             sb.append(",");
