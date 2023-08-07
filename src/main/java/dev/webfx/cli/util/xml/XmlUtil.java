@@ -353,6 +353,18 @@ public final class XmlUtil {
                         addSpacesBefore(childNode, deltaSpacesBefore);
                     else if (!(childNode instanceof Text))
                         indentNode(childNode, level + 1, true);
+                    else if (deltaSpacesBefore > 0) {
+                        // Shifting all lines of non-blank texts (such as html, GraalVM json) to keep a homogeneous
+                        // indent along the text block. Without doing that, `webfx update` may generate a different
+                        // indent when generating index.html or reflection.json depending on if the info is taken from
+                        // the local webfx.xml or the exported webfx.xml.
+                        Text text = (Text) childNode;
+                        String textContent = text.getTextContent();
+                        if (!textContent.isBlank()) {
+                            textContent = textContent.replace("\n", "\n" + " ".repeat(deltaSpacesBefore));
+                            text.setTextContent(textContent);
+                        }
+                    }
                 }
                 if (n > 1) {
                     Node lastChild = node.getLastChild();
