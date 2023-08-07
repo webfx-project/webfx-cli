@@ -101,7 +101,7 @@ public final class MavenUtil {
                         processCall.setLogsError(false);
                     return error;
                 });
-        int result = invokeMavenGoal("dependency:get -N -Dtransitive=false -Dartifact=" + groupId + ":" + artifactId + ":" + version + ":" + classifier, processCall);
+        int result = invokeMavenGoal("dependency:get -N -U -Dtransitive=false -Dartifact=" + groupId + ":" + artifactId + ":" + version + ":" + classifier, processCall);
         return result == 0;
     }
 
