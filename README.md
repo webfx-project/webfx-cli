@@ -1,3 +1,11 @@
+![Deploy to Sonatype](https://github.com/webfx-project/webfx-cli/actions/workflows/build-and-deploy-to-sonatype.yml/badge.svg)
+![Scc Code Count Badge](https://sloc.xyz/github/webfx-project/webfx-cli/?category=code)
+![Scc Blanks Count Badge](https://sloc.xyz/github/webfx-project/webfx-cli/?category=blanks)
+![Scc Lines Count Badge](https://sloc.xyz/github/webfx-project/webfx-cli/?category=lines)
+![Scc Comments Count Badge](https://sloc.xyz/github/webfx-project/webfx-cli/?category=comments)
+![Scc COCOMO Badge](https://sloc.xyz/github/webfx-project/webfx-cli/?category=cocomo)
+![Discover Vulnerabilities Using CodeQL](https://github.com/webfx-project/webfx-cli/actions/workflows/discover-vulnerabilities.yml/badge.svg)
+
 # WebFX CLI
 
 The WebFX CLI is the Command Line Interface for WebFX. It's an essential tool for developing WebFX applications.
