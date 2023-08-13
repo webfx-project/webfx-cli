@@ -30,19 +30,25 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
         DevProjectModule module = getProjectModule();
         if (module.getWebFxModuleFile().skipJavaModuleInfoUpdate())
             return;
-        StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n\nmodule ").append(getJavaModuleName()).append(" {\n");
+        StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n");
+        String description = module.getWebFxModuleFile().getDescription();
+        if (description != null) {
+            description = description.replace("&", "&amp;");
+            sb.append("\n/**\n * " + description + "\n */");
+        }
+        sb.append("\nmodule ").append(getJavaModuleName()).append(" {\n");
         processSection(sb, "Direct dependencies modules", "requires",
                 ReusableStream.fromIterable(
-                        module.getMainJavaSourceRootAnalyzer().getDirectDependencies()
-                        // Modules with "runtime", "test" or "verify" scope must not have a "requires" clause (since they are invisible for the source module).
-                        // Exception is made however for JDK modules (since they are always visible) and may be needed (ex: java.sql for Vert.x)
-                        .filter(d -> (!"runtime".equals(d.getScope()) && !"test".equals(d.getScope()) && !"verify".equals(d.getScope())) || ModuleRegistry.isJdkModule(d.getDestinationModule()))
-                        // Grouping by destination module
-                        .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
-                )
-                .map(this::getJavaModuleNameWithStaticOrTransitivePrefixIfApplicable)
-                .filter(Objects::nonNull)
-                .distinct()
+                                module.getMainJavaSourceRootAnalyzer().getDirectDependencies()
+                                        // Modules with "runtime", "test" or "verify" scope must not have a "requires" clause (since they are invisible for the source module).
+                                        // Exception is made however for JDK modules (since they are always visible) and may be needed (ex: java.sql for Vert.x)
+                                        .filter(d -> (!"runtime".equals(d.getScope()) && !"test".equals(d.getScope()) && !"verify".equals(d.getScope())) || ModuleRegistry.isJdkModule(d.getDestinationModule()))
+                                        // Grouping by destination module
+                                        .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
+                        )
+                        .map(this::getJavaModuleNameWithStaticOrTransitivePrefixIfApplicable)
+                        .filter(Objects::nonNull)
+                        .distinct()
         );
 
         processSection(sb, "Exported packages", "exports",
@@ -107,7 +113,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
                 return "javafx.graphics";
             case "webfx-kit-javafxmedia-emul":
             case "webfx-kit-javafxmedia-gluon":
-                 return "javafx.media";
+                return "javafx.media";
             case "webfx-kit-javafxweb-emul":
                 return "javafx.web";
             case "webfx-kit-javafxfxml-emul":

@@ -46,6 +46,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return lookupNode("modules") != null;
     }
 
+    default String getDescription() {
+        return lookupNodeTextContent("description");
+    }
+
     default boolean shouldTakeChildrenModuleNamesFromPomInstead() {
         return !isAggregate(); // Default behaviour: yes if there is no <modules/> section
     }
