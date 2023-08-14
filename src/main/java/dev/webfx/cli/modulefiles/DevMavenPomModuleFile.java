@@ -169,6 +169,12 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                 }
             });
         }
+        String description = module.getWebFxModuleFile().getDescription();
+        if (description != null) {
+            // Removing blocks intended for javadoc only
+            description = JavaDocBlock.interpretJavaDocBlock(description, true);
+            prependElementWithTextContentIfNotAlreadyExists("description", description, true);
+        }
         // Getting the GAV for this module
         String groupId = ArtifactResolver.getGroupId(module);
         String artifactId = ArtifactResolver.getArtifactId(module);
