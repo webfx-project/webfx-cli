@@ -5,6 +5,7 @@ import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
 import javax.lang.model.SourceVersion;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Spliterators;
@@ -27,7 +28,18 @@ public class DevProjectModule extends ProjectModuleImpl {
             ReusableStream.create(() -> ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
                             hasMainResourcesDirectory() ? SplitFiles.uncheckedWalk(getMainResourcesDirectory()) : Spliterators.emptySpliterator())
                     // We want to filter directories that are not empty. To do that by walking through files and getting their parent directory
-                    .filter(path -> !Files.isDirectory(path))
+                    .filter(path -> {
+                        if (Files.isDirectory(path))
+                            return false;
+                        // We also ignore hidden files
+                        try {
+                            if (Files.isHidden(path))
+                                return false;
+                        } catch (IOException e) {
+                            return false;
+                        }
+                        return true;
+                    })
                     .map(Path::getParent)
                     // We remove duplicates (because the directory was repeated by the number of files in it)
                     .distinct()
