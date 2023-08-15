@@ -172,7 +172,9 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         String description = module.getWebFxModuleFile().getDescription();
         if (description != null) {
             // Removing blocks intended for javadoc only
-            description = JavaDocBlock.interpretJavaDocBlock(description, true);
+            description = DescriptionUtil.interpretJavaDocBlock(description, true);
+            // Escaping the description for xml
+            description = DescriptionUtil.escapeXml(description);
             prependElementWithTextContentIfNotAlreadyExists("description", description, true);
         }
         // Getting the GAV for this module

@@ -33,7 +33,9 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
         StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n");
         String description = module.getWebFxModuleFile().getDescription();
         if (description != null) {
-            description = JavaDocBlock.interpretJavaDocBlock(description, false);
+            description = DescriptionUtil.interpretJavaDocBlock(description, false);
+            // Escaping the description for html
+            description = DescriptionUtil.escapeHtml(description);
             sb.append("\n/**\n * " + description + "\n */");
         }
         sb.append("\nmodule ").append(getJavaModuleName()).append(" {\n");
