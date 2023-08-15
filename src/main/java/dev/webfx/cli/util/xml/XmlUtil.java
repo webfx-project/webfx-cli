@@ -114,7 +114,10 @@ public final class XmlUtil {
     }
 
     public static Node lookupNodeWithTextContent(Object item, String xpath, String text) {
-        return lookupNode(item, xpath + "[text() = '" + text + "']");
+        if (text.indexOf('\'') == -1) // General case when the text doesn't contain single quotes
+            return lookupNode(item, xpath + "[text() = '" + text + "']");
+        // When the text contains single quotes, we need to escape them
+        return lookupNode(item, xpath + "[text() = concat('" + text.replace("'", "',\"'\",'") + "', '')]");
     }
 
     public static Element lookupElementWithAttributeValue(Object item, String xpath, String attribute, String value) {
