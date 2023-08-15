@@ -34,7 +34,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
         String description = module.getWebFxModuleFile().getDescription();
         if (description != null) {
             description = DescriptionUtil.interpretJavaDocBlock(description, false);
-            // Escaping the description for html
+            // Escaping the description for html (ex: "&" -> "&amp;")
             description = DescriptionUtil.escapeHtml(description);
             sb.append("\n/**\n * " + description + "\n */");
         }

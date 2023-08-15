@@ -173,8 +173,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         if (description != null) {
             // Removing blocks intended for javadoc only
             description = DescriptionUtil.interpretJavaDocBlock(description, true);
-            // Escaping the description for xml
-            description = DescriptionUtil.escapeXml(description);
+            // Not sure why, but we don't need to escape special characters (ex: "&") and the generated xml is correct (ex: "&amp;")
             prependElementWithTextContentIfNotAlreadyExists("description", description, true);
         }
         // Getting the GAV for this module
