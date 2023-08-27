@@ -20,9 +20,11 @@ public class DevProjectModule extends ProjectModuleImpl {
     private DevJavaModuleInfoFile mainJavaModuleInfoFile;
     private DevWebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
-
     private DevGwtModuleFile gwtModuleFile;
     private DevGwtHtmlFile gwtHtmlFile;
+    // The webfx root module of the application repository which may be different from the root module in case of
+    // aggregate modules with different submodules (each submodule is a different app repo with its own root webfx module).
+    private DevProjectModule webFxRootModule;
 
     private final ReusableStream<String> fileResourcePackagesCache =
             ReusableStream.create(() -> ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
@@ -71,6 +73,22 @@ public class DevProjectModule extends ProjectModuleImpl {
      ***** Basic getters *****
      *************************/
 
+    public DevProjectModule getWebFxRootModule() {
+        if (webFxRootModule == null) {
+            ProjectModule pm = getWebFxModuleFile().fileExists() ? this : null;
+            while (pm != null) {
+                // We can detect the webfx root module through its break in the modules hierarchy: its parent module
+                // (ex: webfx-parent) is different from the parent directory module (ex: aggregate module).
+                ProjectModule parentDirectoryModule = pm.getParentDirectoryModule();
+                if (parentDirectoryModule != pm.getParentModule())
+                    break;
+                pm = parentDirectoryModule;
+            }
+            webFxRootModule = (DevProjectModule) pm;
+        }
+        return webFxRootModule;
+    }
+
     public DevWebFxModuleFile getWebFxModuleFile() {
         if (webFxModuleFile == null)
             webFxModuleFile = new DevWebFxModuleFile(this);
@@ -82,7 +100,6 @@ public class DevProjectModule extends ProjectModuleImpl {
             mavenPomModuleFile = new DevMavenPomModuleFile(this);
         return mavenPomModuleFile;
     }
-
 
     public Path getHomeDirectory() {
         return homeDirectory;

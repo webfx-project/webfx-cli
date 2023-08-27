@@ -267,8 +267,11 @@ public final class JavaSourceRootAnalyzer {
             ReusableStream.concat(
                             transitiveProjectModulesWithoutImplicitProvidersCache,
                             ReusableStream.create(() -> ReusableStream.concat(
-                                            ReusableStream.of(getProjectModule().getRootModule()),
-                                            getProjectModule().getRootModule().getRequiredProvidersSearchScopeWithinWebFxLibraries()
+                                            // Note: it's important to start from the WebFX root module and not the root
+                                            // module to make this work with aggregate repositories, otherwise the
+                                            // search scope will mix with other application repositories.
+                                            ReusableStream.of(getWebFxRootModule()),
+                                            getWebFxRootModule().getRequiredProvidersSearchScopeWithinWebFxLibraries()
                                     ))
                                     .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
                                     .filter(m -> m.isCompatibleWithTargetModule(getProjectModule()))
@@ -372,7 +375,8 @@ public final class JavaSourceRootAnalyzer {
      */
     private final ReusableStream<ModuleDependency> transitiveDependenciesCache =
             transitiveDependenciesWithoutFinalExecutableResolutionsCache
-                    .filter(dep -> dep.getExecutableTarget() == null) // Removing dependencies declared with an executable target (because moved to direct dependencies)
+                    // Removing dependencies declared with an executable target if this module is not executable or with incompatible target
+                    .filter(dep -> dep.getExecutableTarget() == null || getProjectModule().isExecutable() && dep.getExecutableTarget().gradeTargetMatch(getProjectModule().getTarget()) >= 0)
                     .flatMap(this::resolveInterfaceDependencyIfExecutable) // Resolving interface modules
                     .distinct()
                     .cache()
@@ -390,6 +394,12 @@ public final class JavaSourceRootAnalyzer {
 
     public ProjectModuleImpl getProjectModule() {
         return projectModule;
+    }
+
+    public ProjectModule getWebFxRootModule() {
+        if (projectModule instanceof DevProjectModule)
+            return ((DevProjectModule) projectModule).getWebFxRootModule();
+        return projectModule.getRootModule();
     }
 
     ///// Java classes
@@ -509,7 +519,7 @@ public final class JavaSourceRootAnalyzer {
     public ReusableStream<Module> getThisAndTransitiveModules() {
         return ReusableStream.concat(
                 ReusableStream.of(projectModule),
-                getTransitiveDependencies().map(ModuleDependency::getDestinationModule)
+                ProjectModule.mapDestinationModules(getTransitiveDependencies())
         );
     }
 
@@ -586,8 +596,10 @@ public final class JavaSourceRootAnalyzer {
             for (; walkingIndex < walkingModules.size(); walkingIndex++) {
                 ProjectModule projectModule = walkingModules.get(walkingIndex);
                 JavaSourceRootAnalyzer projectAnalyzer = projectModule.getMainJavaSourceRootAnalyzer();
-                requiredServices.addAll(projectAnalyzer.getUsedRequiredJavaServices().collect(Collectors.toList()));
-                optionalServices.addAll(projectAnalyzer.getUsedOptionalJavaServices().collect(Collectors.toList()));
+                List<String> projectRequiredJavaServices = projectAnalyzer.getUsedRequiredJavaServices().collect(Collectors.toList());
+                requiredServices.addAll(projectRequiredJavaServices);
+                List<String> projectOptionalJavaServices = projectAnalyzer.getUsedOptionalJavaServices().collect(Collectors.toList());
+                optionalServices.addAll(projectOptionalJavaServices);
             }
 
             // Resolving the required services (finding the most relevant modules that implement these SPIs - only one module per SPI)
@@ -605,7 +617,12 @@ public final class JavaSourceRootAnalyzer {
                             // Adding the module implementing the service to the walking modules (for subsequent research on next loop)
                             walkingModules.add(requiredModule);
                             // Also adding all its transitive dependencies
-                            walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(requiredModule.getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders())).collect(Collectors.toList()));
+                            List<ProjectModule> requiredModuleTransitiveDependencies =
+                                    ProjectModule.filterProjectModules(mapDestinationModules(
+                                            requiredModule.getMainJavaSourceRootAnalyzer()
+                                                    .getTransitiveDependenciesWithoutImplicitProviders()))
+                                            .collect(Collectors.toList());
+                            walkingModules.addAll(requiredModuleTransitiveDependencies);
                         }
                         it.remove(); // We remove this service because it is now resolved
                     });

@@ -142,7 +142,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         ProjectModule applicationModule = null;
         if (isExecutable()) {
             String moduleName = getName();
-            applicationModule = getRootModule().getModuleRegistry().getRegisteredProjectModule(moduleName.substring(0, moduleName.lastIndexOf('-')));
+            applicationModule = getModuleRegistry().getRegisteredProjectModule(moduleName.substring(0, moduleName.lastIndexOf('-')));
         }
         return applicationModule;
     }
