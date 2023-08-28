@@ -2,9 +2,8 @@ package dev.webfx.cli.core;
 
 import dev.webfx.lib.reusablestream.ReusableStream;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Bruno Salmon
@@ -170,5 +169,10 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
 
     public static ModuleDependency createImplicitProviderDependency(Module srcModule, Module dstModule) {
         return createDependency(srcModule, dstModule, Type.IMPLICIT_PROVIDER);
+    }
+
+    public static Map<Module, List<Module>> createDependencyGraph(ReusableStream<ModuleDependency> dependencies) {
+        return dependencies.collect(Collectors.groupingBy(ModuleDependency::getSourceModule,
+                Collectors.mapping(ModuleDependency::getDestinationModule, Collectors.toList())));
     }
 }

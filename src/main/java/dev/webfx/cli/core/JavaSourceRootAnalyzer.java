@@ -249,6 +249,7 @@ public final class JavaSourceRootAnalyzer {
     private final ReusableStream<ModuleDependency> transitiveDependenciesWithoutImplicitProvidersCache =
             directDependenciesWithoutImplicitProvidersCache
                     .flatMap(ModuleDependency::collectThisAndTransitiveDependencies)
+                    .filter(dep -> dep.getExecutableTarget() == null || getProjectModule().isExecutable() && dep.getExecutableTarget().gradeTargetMatch(getProjectModule().getTarget()) >= 0)
                     .distinct()
                     .cache()
                     .name("transitiveDependenciesWithoutImplicitProvidersCache");

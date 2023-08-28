@@ -44,11 +44,13 @@ public final class TextFileReaderWriter {
         }
     }
 
+    public static void deleteTextFile(Path path) {
+        writeTextFile(null, path);
+    }
+
     static void commit(TextFileOperation op) {
         try {
-            if (op.content == null) // Delete file
-                Files.deleteIfExists(op.path);
-            else { // Write file
+            if (op.content != null) { // Write file
                 boolean exists = Files.exists(op.path);
                 if (!exists)
                     Files.createDirectories(op.path.getParent()); // Creating all necessary directories
@@ -57,6 +59,9 @@ public final class TextFileReaderWriter {
                 writer.flush();
                 writer.close();
                 Logger.log((exists ? "Updated " :  "Created " ) + op.path);
+            } else { // Delete file
+                if (Files.deleteIfExists(op.path))
+                    Logger.log("Deleted " + op.path);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

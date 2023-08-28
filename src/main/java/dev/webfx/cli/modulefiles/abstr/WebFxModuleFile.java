@@ -90,6 +90,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("properties/*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
     }
 
+    default ReusableStream<ModuleProperty> getConfigurationVariables() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("configuration-variables/*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
+    }
+
     default boolean areUsedBySourceModulesDependenciesAutomaticallyAdded() {
         return lookupNode("dependencies/used-by-source-modules") != null;
     }

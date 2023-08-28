@@ -15,7 +15,6 @@ import java.nio.file.Path;
 public class M2ProjectModule extends ProjectModuleImpl {
 
     private final Path m2ProjectHomeDirectory;
-
     private M2MavenPomModuleFile mavenPomModuleFile;
     private M2WebFxModuleFile webFxModuleFile;
     private Boolean hasSourceDirectory;
@@ -160,6 +159,17 @@ public class M2ProjectModule extends ProjectModuleImpl {
     @Override
     public boolean hasMainResourcesDirectory() {
         return hasSourceDirectory();
+    }
+
+    @Override
+    public boolean hasMainWebFxSourceDirectory() {
+        return hasSourceDirectory();
+    }
+
+    @Override
+    public Path getMainWebFxSourceDirectory() {
+        // Same as source directory (there is no main/webfx subdirectory in the -sources.jar artifact)
+        return getSourceDirectory();
     }
 
     @Override

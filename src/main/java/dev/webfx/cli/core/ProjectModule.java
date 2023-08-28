@@ -3,8 +3,10 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.lib.reusablestream.ReusableStream;
+import dev.webfx.platform.conf.SourcesConfig;
 import dev.webfx.platform.meta.Meta;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 
@@ -86,7 +88,7 @@ public interface ProjectModule extends Module {
     default ReusableStream<String> getResourcePackages() {
         return ReusableStream.concat(
                 getExplicitResourcePackages(),
-                getMetaResourcePackage(),
+                //getMetaResourcePackage(), // Not necessary actually
                 getWebFxModuleFile().areResourcePackagesAutomaticallyExported() ? getFileResourcePackages() : ReusableStream.empty()
         ).distinct();
     }
@@ -94,7 +96,8 @@ public interface ProjectModule extends Module {
     default ReusableStream<String> getEmbedResources() {
         return ReusableStream.concat(
                 getWebFxModuleFile().getEmbedResources(),
-                getMetaResource()
+                getMetaResource(),
+                getSourcesRootConfigResource()
         );
     }
 
@@ -106,9 +109,15 @@ public interface ProjectModule extends Module {
         return isExecutable() ? ReusableStream.of(Meta.META_EXE_RESOURCE_FILE_PATH) : ReusableStream.empty();
     }
 
+    default ReusableStream<String> getSourcesRootConfigResource() {
+        return isExecutable() && Files.exists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH) : ReusableStream.empty();
+    }
+
+/*
     default ReusableStream<String> getMetaResourcePackage() {
         return isExecutable() ? ReusableStream.of(Meta.META_EXE_PACKAGE) : ReusableStream.empty();
     }
+*/
 
     default ReusableStream<String> getSystemProperties() {
         return getWebFxModuleFile().getSystemProperties();
@@ -198,6 +207,10 @@ public interface ProjectModule extends Module {
     boolean hasMainResourcesDirectory();
 
     Path getMainResourcesDirectory();
+
+    boolean hasMainWebFxSourceDirectory();
+
+    Path getMainWebFxSourceDirectory();
 
     boolean hasTestJavaSourceDirectory();
 
@@ -363,7 +376,7 @@ public interface ProjectModule extends Module {
     }
 
     static ReusableStream<Module> mapDestinationModules(ReusableStream<ModuleDependency> dependencies) {
-        return dependencies.map(ModuleDependency::getDestinationModule);
+        return dependencies.map(ModuleDependency::getDestinationModule).distinct();
     }
 
 }

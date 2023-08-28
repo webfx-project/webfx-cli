@@ -1,10 +1,7 @@
 package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.*;
-import dev.webfx.cli.sourcegenerators.GluonFilesGenerator;
-import dev.webfx.cli.sourcegenerators.GwtFilesGenerator;
-import dev.webfx.cli.sourcegenerators.JavaFilesGenerator;
-import dev.webfx.cli.sourcegenerators.MetaFileGenerator;
+import dev.webfx.cli.sourcegenerators.*;
 import dev.webfx.cli.util.textfile.TextFileThreadTransaction;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import picocli.CommandLine.Command;
@@ -82,7 +79,10 @@ public final class Update extends CommonSubcommand implements Runnable {
         // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties)
         getWorkingAndChildrenModulesInDepth(workingModule)
                 .filter(ProjectModule::isExecutable)
-                .forEach(MetaFileGenerator::generateExecutableModuleMetaResourceFile);
+                .forEach(module -> {
+                    MetaFileGenerator.generateExecutableModuleMetaResourceFile(module);
+                    RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module);
+                });
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
         getWorkingAndChildrenModulesInDepth(workingModule)

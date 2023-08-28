@@ -16,7 +16,7 @@ import java.util.Spliterators;
 public class DevProjectModule extends ProjectModuleImpl {
 
     private final Path homeDirectory;
-    private Boolean hasSourceDirectory, hasMainJavaSourceDirectory, hasMainResourcesDirectory, hasTestJavaSourceDirectory;
+    private Boolean hasSourceDirectory, hasMainJavaSourceDirectory, hasMainResourcesDirectory, hasMainWebFxDirectory, hasTestJavaSourceDirectory;
     private DevJavaModuleInfoFile mainJavaModuleInfoFile;
     private DevWebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
@@ -115,6 +115,11 @@ public class DevProjectModule extends ProjectModuleImpl {
     }
 
     @Override
+    public Path getMainWebFxSourceDirectory() {
+        return homeDirectory != null ? homeDirectory.resolve("src/main/webfx/") : null;
+    }
+
+    @Override
     public Path getTestJavaSourceDirectory() {
         return homeDirectory != null ? homeDirectory.resolve("src/test/java/") : null;
     }
@@ -170,6 +175,13 @@ public class DevProjectModule extends ProjectModuleImpl {
         if (hasMainResourcesDirectory == null)
             hasMainResourcesDirectory = hasSourceDirectory() && pathExists(getMainJavaSourceDirectory());
         return hasMainResourcesDirectory;
+    }
+
+    @Override
+    public boolean hasMainWebFxSourceDirectory() {
+        if (hasMainWebFxDirectory == null)
+            hasMainWebFxDirectory = hasSourceDirectory() && pathExists(getMainWebFxSourceDirectory());
+        return hasMainWebFxDirectory;
     }
 
     @Override
