@@ -79,7 +79,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             // 2) <resourcesList> => lists all resource files potentially used by the application
             gluonConfig += "<resourcesList>\n"
                     + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
-                    .flatMap(ProjectModule::getOpenPackages)
+                    .flatMap(ProjectModule::getResourcePackages)
                     .distinct()
                     .stream().sorted()
                     .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")

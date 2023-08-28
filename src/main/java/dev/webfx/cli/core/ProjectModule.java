@@ -85,15 +85,16 @@ public interface ProjectModule extends Module {
 
     ReusableStream<String> getFileResourcePackages();
 
-    default ReusableStream<String> getResourcePackages() {
+    default ReusableStream<String> getResourcePackages() { // Direct calls: 1) DevGwtModuleFile (to list resources packages in GWT module) & 2) DevMavenPomModuleFile to generate the resourcesList for Gluon modules
         return ReusableStream.concat(
                 getExplicitResourcePackages(),
-                //getMetaResourcePackage(), // Not necessary actually
+                getMetaResourcePackage(),
+                getSourcesRootConfigResourcePackage(),
                 getWebFxModuleFile().areResourcePackagesAutomaticallyExported() ? getFileResourcePackages() : ReusableStream.empty()
         ).distinct();
     }
 
-    default ReusableStream<String> getEmbedResources() {
+    default ReusableStream<String> getEmbedResources() { // Direct call: GwtEmbedResourcesBundleSourceGenerator (to generate GWT bundles)
         return ReusableStream.concat(
                 getWebFxModuleFile().getEmbedResources(),
                 getMetaResource(),
@@ -101,23 +102,26 @@ public interface ProjectModule extends Module {
         );
     }
 
-    default ReusableStream<String> getOpenPackages() {
-        return getResourcePackages();
+    default ReusableStream<String> getOpenPackages() { // Direct call: DevJavaModuleInfoFile (to generate opens packages)
+        // Not necessary to open packages on final executable modules
+        return isExecutable() ? ReusableStream.empty() : getResourcePackages();
     }
 
     default ReusableStream<String> getMetaResource() {
         return isExecutable() ? ReusableStream.of(Meta.META_EXE_RESOURCE_FILE_PATH) : ReusableStream.empty();
     }
 
+    default ReusableStream<String> getMetaResourcePackage() {
+        return isExecutable() ? ReusableStream.of(Meta.META_EXE_PACKAGE) : ReusableStream.empty();
+    }
+
     default ReusableStream<String> getSourcesRootConfigResource() {
         return isExecutable() && Files.exists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH) : ReusableStream.empty();
     }
 
-/*
-    default ReusableStream<String> getMetaResourcePackage() {
-        return isExecutable() ? ReusableStream.of(Meta.META_EXE_PACKAGE) : ReusableStream.empty();
+    default ReusableStream<String> getSourcesRootConfigResourcePackage() {
+        return isExecutable() && Files.exists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE) : ReusableStream.empty();
     }
-*/
 
     default ReusableStream<String> getSystemProperties() {
         return getWebFxModuleFile().getSystemProperties();

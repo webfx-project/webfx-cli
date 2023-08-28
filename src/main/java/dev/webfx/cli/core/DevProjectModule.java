@@ -173,7 +173,7 @@ public class DevProjectModule extends ProjectModuleImpl {
     @Override
     public boolean hasMainResourcesDirectory() {
         if (hasMainResourcesDirectory == null)
-            hasMainResourcesDirectory = hasSourceDirectory() && pathExists(getMainJavaSourceDirectory());
+            hasMainResourcesDirectory = hasSourceDirectory() && pathExists(getMainResourcesDirectory());
         return hasMainResourcesDirectory;
     }
 

@@ -90,16 +90,16 @@ public final class RootConfigFileGenerator {
     private static void appendKeyObject(String prefix, ReadOnlyKeyObject config, StringBuilder sb, boolean[] appendedHeader, String moduleName) {
         ReadOnlyIndexedArray keys = config.keys();
         for (int i = 0; i < keys.size(); i++) {
-            if (!appendedHeader[0]) {
-                sb.append("\n# From ").append(moduleName).append('\n');
-                appendedHeader[0] = true;
-            }
             String key = keys.getString(i);
             Object o = config.get(key);
             String newPrefix = prefix == null ? key : prefix + '.' + key;
             if (o instanceof ReadOnlyKeyObject)
                 appendKeyObject(newPrefix, (ReadOnlyKeyObject) o, sb, appendedHeader, moduleName);
             else {
+                if (!appendedHeader[0]) {
+                    sb.append("\n# From ").append(moduleName).append('\n');
+                    appendedHeader[0] = true;
+                }
                 if (sb.toString().contains("\n" + newPrefix + " = "))
                     sb.append('#');
                 sb.append(newPrefix).append(" = ").append(o).append(('\n'));

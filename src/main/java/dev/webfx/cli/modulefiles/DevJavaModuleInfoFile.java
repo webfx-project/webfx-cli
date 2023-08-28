@@ -57,7 +57,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
                 module.getExportedJavaPackages()
         );
         processSection(sb, "Resources packages", "opens",
-                module.getResourcePackages()
+                module.getOpenPackages()
         );
         processSection(sb, "Used services", "uses",
                 module.getMainJavaSourceRootAnalyzer().getUsedJavaServices()
