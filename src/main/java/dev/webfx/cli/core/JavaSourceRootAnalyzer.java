@@ -609,9 +609,9 @@ public final class JavaSourceRootAnalyzer {
                 if (providerModules.get(spi) != null) // already resolved
                     it.remove(); // We remove this service from requiredServices, so this list contains only unresolved services
                 else {
-                    ReusableStream<ProjectModule> requiredModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, executableModule.getTarget(), true);
+                    ReusableStream<ProjectModule> requiredModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, executableModule, true);
                     if (requiredModules.isEmpty())
-                        requiredModules = RootModule.findModulesProvidingJavaService(requiredSearchScope, spi, executableModule.getTarget(), true);
+                        requiredModules = RootModule.findModulesProvidingJavaService(requiredSearchScope, spi, executableModule, true);
                     requiredModules.findFirst().ifPresent(requiredModule -> {
                         providerModules.put(spi, Collections.singletonList(requiredModule)); // singleton list because there only 1 instance for required services
                         if (collectingSourceRoot == executableSourceRoot) {
@@ -634,8 +634,8 @@ public final class JavaSourceRootAnalyzer {
             optionalServices.forEach(spi -> {
                 List<ProjectModule> optionalModules = providerModules.get(spi);
                 if (optionalModules == null)
-                    providerModules.put(spi, optionalModules = new HashList<>(RootModule.findModulesProvidingJavaService(optionalSearchScope, spi, collectingModule.getTarget(), false).collect(Collectors.toList())));
-                List<ProjectModule> additionalOptionalModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, collectingModule.getTarget(), false).collect(Collectors.toList());
+                    providerModules.put(spi, optionalModules = new HashList<>(RootModule.findModulesProvidingJavaService(optionalSearchScope, spi, collectingModule, false).collect(Collectors.toList())));
+                List<ProjectModule> additionalOptionalModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, collectingModule, false).collect(Collectors.toList());
                 optionalModules.addAll(additionalOptionalModules);
                 if (collectingSourceRoot == executableSourceRoot)
                     walkingModules.addAll(additionalOptionalModules);

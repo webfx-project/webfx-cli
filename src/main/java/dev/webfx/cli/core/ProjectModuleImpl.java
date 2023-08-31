@@ -265,24 +265,6 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         return providedJavaServicesCache;
     }
 
-    ReusableStream<String> findRequiredServices() {
-        return ProjectModule.filterDestinationProjectModules(getMainJavaSourceRootAnalyzer().getTransitiveDependencies())
-                .flatMap(projectModule -> projectModule.getMainJavaSourceRootAnalyzer().getUsedJavaServices())
-                .distinct()
-                ;
-    }
-
-    ReusableStream<ProjectModule> findModulesProvidingRequiredService(TargetTag... serviceTags) {
-        return findModulesProvidingRequiredService(new Target(serviceTags));
-    }
-
-    ReusableStream<ProjectModule> findModulesProvidingRequiredService(Target serviceTarget) {
-        return findRequiredServices()
-                .map(js -> getRootModule().findBestMatchModuleProvidingJavaService(js, serviceTarget))
-                .distinct()
-                ;
-    }
-
     private ReusableStream<LibraryModule> requiredLibraryModulesCache;
     private ReusableStream<ProjectModule> transitiveWebFxLibraryProjectModulesCache;
 
