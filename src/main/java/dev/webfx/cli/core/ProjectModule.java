@@ -2,11 +2,11 @@ package dev.webfx.cli.core;
 
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
+import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.platform.conf.SourcesConfig;
 import dev.webfx.platform.meta.Meta;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 
@@ -116,11 +116,11 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getSourcesRootConfigResource() {
-        return isExecutable() && Files.exists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH) : ReusableStream.empty();
+        return isExecutable() && TextFileReaderWriter.fileExists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH) : ReusableStream.empty();
     }
 
     default ReusableStream<String> getSourcesRootConfigResourcePackage() {
-        return isExecutable() && Files.exists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE) : ReusableStream.empty();
+        return isExecutable() && TextFileReaderWriter.fileExists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE) : ReusableStream.empty();
     }
 
     default ReusableStream<String> getSystemProperties() {

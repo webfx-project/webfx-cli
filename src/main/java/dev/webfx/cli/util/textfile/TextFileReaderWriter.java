@@ -21,7 +21,7 @@ public final class TextFileReaderWriter {
     }
 
     public static void writeTextFileIfNewOrModified(String newContent, String oldContent, Path path) {
-        if (newContent == null && Files.exists(path) || !areTextFileContentsIdentical(newContent, oldContent))
+        if (newContent == null && fileExists(path) || !areTextFileContentsIdentical(newContent, oldContent))
             writeTextFile(newContent, path);
     }
 
@@ -42,6 +42,17 @@ public final class TextFileReaderWriter {
 
     public static void deleteTextFile(Path path) {
         writeTextFile(null, path);
+    }
+
+    public static boolean fileExists(Path path) {
+        TextFileThreadTransaction transaction = TextFileThreadTransaction.get();
+        if (transaction != null) {
+            if (transaction.isFileOnWrite(path))
+                return true;
+            if (transaction.isFileOnDelete(path))
+                return false;
+        }
+        return Files.exists(path);
     }
 
 }

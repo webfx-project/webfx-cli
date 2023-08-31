@@ -21,7 +21,9 @@ public final class TextFileThreadTransaction implements AutoCloseable {
 
     private final TextFileThreadTransaction previousTransaction;
     private final List<TextFileOperation> operations = new ArrayList<>();
+    private final Set<Path> toDeletePaths = new HashSet<>();
     private final Set<Path> deletedPaths = new HashSet<>();
+    private final Set<Path> toWritePaths = new HashSet<>();
     private int executedOperationsCounts;
 
     public static TextFileThreadTransaction open() {
@@ -39,6 +41,10 @@ public final class TextFileThreadTransaction implements AutoCloseable {
 
     void addOperation(TextFileOperation operation) {
         operations.add(operation);
+        if (operation.content == null)
+            toDeletePaths.add(operation.path);
+        else
+            toWritePaths.add(operation.path);
     }
 
     public int executedOperationsCount() {
@@ -50,9 +56,22 @@ public final class TextFileThreadTransaction implements AutoCloseable {
             operations.forEach(this::commitOperation);
         else {
             previousTransaction.operations.addAll(operations);
+            previousTransaction.toWritePaths.addAll(toWritePaths);
+            previousTransaction.toDeletePaths.addAll(toDeletePaths);
+            previousTransaction.deletedPaths.addAll(deletedPaths);
         }
         operations.clear();
+        toWritePaths.clear();
+        toDeletePaths.clear();
         deletedPaths.clear();
+    }
+
+    boolean isFileOnDelete(Path path) {
+        return toDeletePaths.contains(path) || deletedPaths.contains(path);
+    }
+
+    boolean isFileOnWrite(Path path) {
+        return toWritePaths.contains(path);
     }
 
     private void commitOperation(TextFileOperation op) {
@@ -70,6 +89,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                 writer.write(op.content);
                 writer.flush();
                 writer.close();
+                toWritePaths.remove(op.path);
                 Logger.log((exists ? "Updated " :  "Created " ) + op.path);
                 executedOperationsCounts++;
             } else { // Delete file
@@ -78,6 +98,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                     Logger.log("Deleted " + op.path);
                     executedOperationsCounts++;
                 }
+                toDeletePaths.remove(op.path);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

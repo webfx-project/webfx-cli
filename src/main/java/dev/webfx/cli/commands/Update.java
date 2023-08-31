@@ -70,19 +70,20 @@ public final class Update extends CommonSubcommand implements Runnable {
                             JavaFilesGenerator.generateMetaInfServicesFiles(m);
                     });
 
-        if (tasks.gwtXml || tasks.indexHtml || tasks.gwtSuperSources || tasks.gwtServiceLoader || tasks.gwtResourceBundles)
-            // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
-            getWorkingAndChildrenModulesInDepth(workingModule)
-                    .filter(m -> m.isExecutable(Platform.GWT))
-                    .forEach(GwtFilesGenerator::generateGwtFiles);
-
-        // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties)
+        // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties) <- always present
+        // and config file for executable modules (dev.webfx.platform.conf/src-root.properties) <- present only when using modules with config
         getWorkingAndChildrenModulesInDepth(workingModule)
                 .filter(ProjectModule::isExecutable)
                 .forEach(module -> {
                     MetaFileGenerator.generateExecutableModuleMetaResourceFile(module);
                     RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module);
                 });
+
+        if (tasks.gwtXml || tasks.indexHtml || tasks.gwtSuperSources || tasks.gwtServiceLoader || tasks.gwtResourceBundles)
+            // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
+            getWorkingAndChildrenModulesInDepth(workingModule)
+                    .filter(m -> m.isExecutable(Platform.GWT))
+                    .forEach(GwtFilesGenerator::generateGwtFiles);
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
         getWorkingAndChildrenModulesInDepth(workingModule)

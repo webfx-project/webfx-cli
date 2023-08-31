@@ -5,8 +5,6 @@ import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
-import java.nio.file.Files;
-
 /**
  * @author Bruno Salmon
  */
@@ -20,7 +18,7 @@ final class GwtServiceLoaderSuperSourceGenerator {
                     String spiClassName = providers.getSpiClassName();
                     ReusableStream<String> providerClassNames = providers.getProviderClassNames();
                     if (spiClassName.equals("dev.webfx.platform.resource.spi.impl.gwt.GwtResourceBundle")) {
-                        if (Files.exists(GwtEmbedResourcesBundleSourceGenerator.getJavaFilePath(module)))
+                        if (TextFileReaderWriter.fileExists(GwtEmbedResourcesBundleSourceGenerator.getJavaFilePath(module)))
                             providerClassNames = ReusableStream.concat(
                                     providerClassNames,
                                     ReusableStream.of(GwtEmbedResourcesBundleSourceGenerator.getProviderClassName(module))
