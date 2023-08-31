@@ -163,13 +163,13 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public boolean hasMainWebFxSourceDirectory() {
-        return hasSourceDirectory();
+        return hasSourceDirectory() && Files.exists(getMainWebFxSourceDirectory());
     }
 
     @Override
     public Path getMainWebFxSourceDirectory() {
-        // Same as source directory (there is no main/webfx subdirectory in the -sources.jar artifact)
-        return getSourceDirectory();
+        // The webfx source directory has been copied to META-INF/webfx in the -sources.jar artifact.
+        return getSourceDirectory().resolve("META-INF/webfx");
     }
 
     @Override
