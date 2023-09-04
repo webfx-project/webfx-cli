@@ -52,6 +52,15 @@ public final class Update extends CommonSubcommand implements Runnable {
     }
 
     static void executeUpdateTasks(DevProjectModule workingModule, UpdateTasks tasks) {
+        // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties) <- always present
+        // and config file for executable modules (dev.webfx.platform.conf/src-root.properties) <- present only when using modules with config
+        getWorkingAndChildrenModulesInDepth(workingModule)
+                .filter(ProjectModule::isExecutable)
+                .forEach(module -> {
+                    MetaFileGenerator.generateExecutableModuleMetaResourceFile(module);
+                    RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module);
+                });
+
         // Generating or updating Maven module files (pom.xml)
         if (tasks.mavenPom)
             getWorkingAndChildrenModulesInDepth(workingModule)
@@ -69,15 +78,6 @@ public final class Update extends CommonSubcommand implements Runnable {
                         if (jre /* for GraalVM */ || teavm)
                             JavaFilesGenerator.generateMetaInfServicesFiles(m);
                     });
-
-        // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties) <- always present
-        // and config file for executable modules (dev.webfx.platform.conf/src-root.properties) <- present only when using modules with config
-        getWorkingAndChildrenModulesInDepth(workingModule)
-                .filter(ProjectModule::isExecutable)
-                .forEach(module -> {
-                    MetaFileGenerator.generateExecutableModuleMetaResourceFile(module);
-                    RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module);
-                });
 
         if (tasks.gwtXml || tasks.indexHtml || tasks.gwtSuperSources || tasks.gwtServiceLoader || tasks.gwtResourceBundles)
             // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)

@@ -116,11 +116,11 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getSourcesRootConfigResource() {
-        return isExecutable() && TextFileReaderWriter.fileExists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH) : ReusableStream.empty();
+        return isExecutable() && TextFileReaderWriter.fileExists(getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH) : ReusableStream.empty();
     }
 
     default ReusableStream<String> getSourcesRootConfigResourcePackage() {
-        return isExecutable() && TextFileReaderWriter.fileExists(getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE) : ReusableStream.empty();
+        return isExecutable() && TextFileReaderWriter.fileExists(getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE) : ReusableStream.empty();
     }
 
     default ReusableStream<String> getSystemProperties() {

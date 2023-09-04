@@ -31,8 +31,5 @@ module webfx.cli {
 
     // Resources packages
     opens dev.webfx.cli.commands;
-    opens dev.webfx.cli.jdk;
-    opens dev.webfx.cli.templates;
-    opens dev.webfx.cli.version.dev;
 
 }

@@ -11,21 +11,27 @@ import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.platform.conf.Config;
 import dev.webfx.platform.conf.ConfigParser;
 import dev.webfx.platform.conf.SourcesConfig;
+import dev.webfx.platform.conf.impl.ConfigMerger;
 import dev.webfx.platform.util.keyobject.ReadOnlyIndexedArray;
 import dev.webfx.platform.util.keyobject.ReadOnlyKeyObject;
+import dev.webfx.platform.util.keyobject.formatter.AstFormatter;
+import dev.webfx.platform.util.tuples.Pair;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Bruno Salmon
  */
 public final class RootConfigFileGenerator {
 
-    private final static PathMatcher PROPERTIES_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.properties");
+    private final static PathMatcher PROPERTIES_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{properties,json}");
 
     private final static Map<Path, Config> configCache = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
@@ -46,18 +52,12 @@ public final class RootConfigFileGenerator {
             // configuration file.
             List<Module> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
 
-            StringBuilder sb = new StringBuilder();
+            List<Pair<ProjectModule, Config>> moduleConfigs = new ArrayList<>();
+            boolean[] moduleConfigsContainsArrays = { false };
+
             sortedModules.forEach(m -> {
                 if (m instanceof ProjectModule) {
                     ProjectModule pm = (ProjectModule) m;
-                    boolean[] appendedHeader = { false };
-                    pm.getWebFxModuleFile().getConfigurationVariables().forEach(mp -> {
-                        if (!appendedHeader[0]) {
-                            sb.append("\n# From ").append(pm.getName()).append('\n');
-                            appendedHeader[0] = true;
-                        }
-                        sb.append(mp.getPropertyName()).append(" = ").append(mp.getPropertyValue()).append('\n');
-                    });
                     if (pm.hasMainWebFxSourceDirectory()) {
                         Path webfxConfDirectory = pm.getMainWebFxSourceDirectory().resolve("conf/");
                         if (Files.isDirectory(webfxConfDirectory)) {
@@ -67,38 +67,68 @@ public final class RootConfigFileGenerator {
                                         Config config = configCache.get(path);
                                         if (config == null) {
                                             String fileContent = TextFileReaderWriter.readTextFile(path);
-                                            config = ConfigParser.parseFileConfig(fileContent, path.toAbsolutePath().toString());
+                                            config = ConfigParser.parseConfigFile(fileContent, path.toAbsolutePath().toString());
                                             configCache.put(path, config);
                                         }
-                                        appendKeyObject(null, config, sb, appendedHeader, pm.getName());
+                                        if (!config.isEmpty()) {
+                                            moduleConfigs.add(new Pair<>(pm, config));
+                                            moduleConfigsContainsArrays[0] |= hasArray(config);
+                                        }
                                     });
                         }
                     }
                 }
             });
 
-            Path sourcesRootConfigResourcePath = module.getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FILE_PATH);
-            if (sb.length() == 0)
-                TextFileReaderWriter.deleteTextFile(sourcesRootConfigResourcePath);
-            else
-                TextFileReaderWriter.writeTextFileIfNewOrModified(
-                        "# File managed by WebFX (DO NOT EDIT MANUALLY)\n" + sb
-                        , sourcesRootConfigResourcePath);
+            Path propertiesPath = module.getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
+            Path jsonPath = module.getMainResourcesDirectory().resolve(SourcesConfig.JSON_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
+            Path selectedPath = null;
+            if (!moduleConfigs.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                String[] lastModuleHeader = { null };
+                if (!moduleConfigsContainsArrays[0]) {
+                    selectedPath = propertiesPath;
+                    sb.append("# File managed by WebFX (DO NOT EDIT MANUALLY)\n");
+                    for (Pair<ProjectModule, Config> moduleConfig : moduleConfigs) {
+                        appendAstObjectToProperies(null, moduleConfig.get2(), sb, lastModuleHeader, moduleConfig.get1().getName());
+                    }
+                } else {
+                    selectedPath = jsonPath;
+                    Config config = ConfigMerger.mergeConfigs(moduleConfigs.stream().map(Pair::get2).toArray(Config[]::new));
+                    sb.append(AstFormatter.formatObject(config, "json"));
+                }
+                TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), selectedPath);
+            }
+            if (selectedPath != propertiesPath)
+                TextFileReaderWriter.deleteTextFile(propertiesPath);
+            if (selectedPath != jsonPath)
+                TextFileReaderWriter.deleteTextFile(jsonPath);
         }
     }
 
-    private static void appendKeyObject(String prefix, ReadOnlyKeyObject config, StringBuilder sb, boolean[] appendedHeader, String moduleName) {
+    private static boolean hasArray(ReadOnlyKeyObject config) {
+        for (Object key : config.keys()) {
+            Object value = config.get(key.toString());
+            if (value instanceof ReadOnlyIndexedArray)
+                return true;
+            if (value instanceof ReadOnlyKeyObject)
+                return hasArray((ReadOnlyKeyObject) value);
+        }
+        return false;
+    }
+
+    private static void appendAstObjectToProperies(String prefix, ReadOnlyKeyObject config, StringBuilder sb, String[] lastModuleHeader, String moduleName) {
         ReadOnlyIndexedArray keys = config.keys();
         for (int i = 0; i < keys.size(); i++) {
             String key = keys.getString(i);
             Object o = config.get(key);
             String newPrefix = prefix == null ? key : prefix + '.' + key;
             if (o instanceof ReadOnlyKeyObject)
-                appendKeyObject(newPrefix, (ReadOnlyKeyObject) o, sb, appendedHeader, moduleName);
+                appendAstObjectToProperies(newPrefix, (ReadOnlyKeyObject) o, sb, lastModuleHeader, moduleName);
             else {
-                if (!appendedHeader[0]) {
+                if (!moduleName.equals(lastModuleHeader[0])) {
                     sb.append("\n# From ").append(moduleName).append('\n');
-                    appendedHeader[0] = true;
+                    lastModuleHeader[0] = moduleName;
                 }
                 if (sb.toString().contains("\n" + newPrefix + " = "))
                     sb.append('#');
@@ -106,7 +136,4 @@ public final class RootConfigFileGenerator {
             }
         }
     }
-
 }
-
-

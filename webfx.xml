@@ -4,22 +4,20 @@
     <exported-packages>
         <source-packages/>
         <resource-package>dev.webfx.cli.commands</resource-package>
-        <resource-package>dev.webfx.cli.jdk</resource-package>
-        <resource-package>dev.webfx.cli.templates</resource-package>
-        <resource-package>dev.webfx.cli.version.dev</resource-package>
     </exported-packages>
 
     <dependencies>
         <used-by-source-modules/>
+        <plugin-module>webfx-platform-json</plugin-module>
     </dependencies>
 
     <required-libraries>
 
         <webfx-library artifact="dev.webfx:webfx-lib-reusablestream:0.1.0-SNAPSHOT"/>
         <webfx-library artifact="dev.webfx:webfx-platform:0.1.0-SNAPSHOT"/> <!-- for webfx-platform-meta -->
-        <library artifact="info.picocli:picocli:4.7.0" name="info.picocli"/>
-        <library artifact="org.apache.maven.shared:maven-invoker:3.2.0"/>
+        <library artifact="info.picocli:picocli:4.7.5" name="info.picocli"/>
         <library artifact="org.apache.commons:commons-compress:1.21" name="org.apache.commons.compress"/>
+        <!-- <library artifact="org.apache.maven.shared:maven-invoker:3.2.0"/> Not used -->
 
     </required-libraries>
 
