@@ -55,8 +55,7 @@ public final class Rename extends CommonSubcommand {
                 matchingModules.forEach(m -> {
                     String name = m.getName();
                     Matcher matcher = pattern.matcher(name);
-                    String group = matcher.group(1);
-                    String newName = !matcher.matches() ? moduleNewName : moduleNewName.replace("*", group).replace("%", group);
+                    String newName = !matcher.matches() ? moduleNewName : moduleNewName.replace("*", matcher.group(1)).replace("%", matcher.group(1));
                     log("Renaming " + name + " to " + newName);
                     executeNoWildcard(name, newName, new CommandWorkspace(workspace));
                 });
