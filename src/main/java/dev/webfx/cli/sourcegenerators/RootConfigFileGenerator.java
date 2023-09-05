@@ -88,7 +88,6 @@ public final class RootConfigFileGenerator {
                 String[] lastModuleHeader = { null };
                 if (!moduleConfigsContainsArrays[0]) {
                     selectedPath = propertiesPath;
-                    sb.append("# File managed by WebFX (DO NOT EDIT MANUALLY)\n");
                     for (Pair<ProjectModule, Config> moduleConfig : moduleConfigs) {
                         appendAstObjectToProperies(null, moduleConfig.get2(), sb, lastModuleHeader, moduleConfig.get1().getName());
                     }
@@ -97,7 +96,10 @@ public final class RootConfigFileGenerator {
                     Config config = ConfigMerger.mergeConfigs(moduleConfigs.stream().map(Pair::get2).toArray(Config[]::new));
                     sb.append(AstFormatter.formatObject(config, "json"));
                 }
-                TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), selectedPath);
+                if (sb.length() == 0)
+                    selectedPath = null; // In order to delete the conf files (see below)
+                else
+                    TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), selectedPath);
             }
             if (selectedPath != propertiesPath)
                 TextFileReaderWriter.deleteTextFile(propertiesPath);
@@ -126,6 +128,8 @@ public final class RootConfigFileGenerator {
             if (o instanceof ReadOnlyKeyObject)
                 appendAstObjectToProperies(newPrefix, (ReadOnlyKeyObject) o, sb, lastModuleHeader, moduleName);
             else {
+                if (sb.length() == 0)
+                    sb.append("# File managed by WebFX (DO NOT EDIT MANUALLY)\n");
                 if (!moduleName.equals(lastModuleHeader[0])) {
                     sb.append("\n# From ").append(moduleName).append('\n');
                     lastModuleHeader[0] = moduleName;
