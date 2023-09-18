@@ -174,9 +174,20 @@ public final class ArtifactResolver {
         if (scope != null && !"default".equals(scope)) // Returning the scope only if explicit in the first dependency
             return scope;
         Module module = moduleGroup.getKey();
-        // Setting scope to "provided" for interface modules and optional dependencies
-        if (module instanceof ProjectModule && ((ProjectModule) module).isInterface() || moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
-            return "provided";
+        // Setting scope to "provided" for optional dependencies and interface modules
+        if (module instanceof ProjectModule) {
+            // Optional dependencies
+            if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
+                return "provided";
+            // An interface module should have scope "provided" in general (as it will be replaced by another module
+            // implementing it in the end), but an exception is that when the implementing module is itself! (which
+            // can happen for interface modules providing a default implementation).
+            ProjectModule projectModule = ((ProjectModule) module);
+            if (projectModule.isInterface() // yes, it's an interface module
+                    // So we also check that it's not an implicit provider (which indicates that it was chosen as the implementing module)
+                    && moduleGroup.getValue().stream().map(ModuleDependency::getType).noneMatch(type -> type == ModuleDependency.Type.IMPLICIT_PROVIDER))
+                return "provided";
+        }
         if (!isForGwt && !isForOpenJfx && !isExecutable && !isRegistry)
             switch (module.getName()) {
                 case "javafx-base":

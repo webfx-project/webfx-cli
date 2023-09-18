@@ -247,6 +247,10 @@ public interface ProjectModule extends Module {
         return this != module && (getName().startsWith(module.getName()) || implementedInterfaces().anyMatch(m -> module.getName().equals(m)));
     }
 
+    default boolean implementsItself() {
+        return implementedInterfaces().anyMatch(m -> getName().equals(m));
+    }
+
     Target getTarget();
 
     default boolean isCompatibleWithTargetModule(ProjectModule targetModule) {

@@ -664,8 +664,15 @@ public final class JavaSourceRootAnalyzer {
                 ProjectModule concreteModule = searchScope
                         .filter(m -> m.implementsModule(module))
                         .filter(m -> m.isCompatibleWithTargetModule(projectModule))
+                        // Also if the module has auto-injection conditions, we check that these conditions are true
+                        // Ex: webfx-platform-conf-zero-impl is the ZeroConf implementation only when the Conf API is used
+                        .filter(m -> !m.hasAutoInjectionConditions() || projectModule.getMainJavaSourceRootAnalyzer().executableAutoInjectedModulesCaches.anyMatch(autoModule -> autoModule == m))
                         .max(Comparator.comparingInt(m -> m.gradeTargetMatch(projectModule.getTarget())))
                         .orElse(null);
+                // If the search was fruitless, the remaining possibility is that the module interface implements itself
+                // (i.e. it provides a default implementation itself).
+                if (concreteModule == null && module.implementsItself() && module.isCompatibleWithTargetModule(projectModule))
+                    return ReusableStream.of(ModuleDependency.createImplicitProviderDependency(projectModule, module));
                 if (concreteModule != null) {
                     // Creating the dependency to this concrete module and adding transitive dependencies
                     ReusableStream<ModuleDependency> concreteModuleDependencies = ModuleDependency.createImplicitProviderDependency(projectModule, concreteModule)
