@@ -82,7 +82,10 @@ public interface RootModule extends ProjectModule {
             // Now we do a topological sort of all modules in the dependency graph
             List<Module> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
             // Going back to our modules list, we sort it following the same order as the topological sort
-            modulesList.sort(Comparator.comparingInt((ProjectModule o) -> sortedModules.indexOf(o)));
+            modulesList.sort(Comparator.comparingInt((ProjectModule o) -> {
+                int indexOf = sortedModules.indexOf(o);
+                return indexOf != -1 ? indexOf : Integer.MAX_VALUE;
+            }));
             // The first module in the list should be now the closest from the target module from the topological point of view
             return ReusableStream.of(modulesList.get(0));
         }
