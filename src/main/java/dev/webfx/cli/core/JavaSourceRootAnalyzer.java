@@ -609,9 +609,8 @@ public final class JavaSourceRootAnalyzer {
                 if (providerModules.get(spi) != null) // already resolved
                     it.remove(); // We remove this service from requiredServices, so this list contains only unresolved services
                 else {
-                    ReusableStream<ProjectModule> requiredModules = RootModule.findModulesProvidingJavaService(ReusableStream.fromIterable(walkingModules), spi, executableModule, true);
-                    if (requiredModules.isEmpty())
-                        requiredModules = RootModule.findModulesProvidingJavaService(requiredSearchScope, spi, executableModule, true);
+                    ReusableStream<ProjectModule> searchScope = ReusableStream.concat(ReusableStream.fromIterable(walkingModules), requiredSearchScope).distinct();
+                    ReusableStream<ProjectModule> requiredModules = RootModule.findModulesProvidingJavaService(searchScope, spi, executableModule, true);
                     requiredModules.findFirst().ifPresent(requiredModule -> {
                         providerModules.put(spi, Collections.singletonList(requiredModule)); // singleton list because there only 1 instance for required services
                         if (collectingSourceRoot == executableSourceRoot) {
