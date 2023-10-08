@@ -360,6 +360,10 @@ public final class Install extends CommonSubcommand {
             while ((tarEntry = tis.getNextTarEntry()) != null) {
                 if (tarEntry.isFile()) {
                     Path outputPath = destinationFolder.resolve(tarEntry.getName());
+                    // Fixing security issue detected by CodeQL: Arbitrary file access during archive extraction ("Zip Slip")
+                    // => Checking the file will not be outside the destination folder
+                    if (!outputPath.normalize().startsWith(destinationFolder))
+                        throw new RuntimeException("Bad zip entry");
                     File outputFile = outputPath.toFile();
                     outputFile.getParentFile().mkdirs();
                     if (tarEntry.isSymbolicLink())
@@ -372,6 +376,8 @@ public final class Install extends CommonSubcommand {
                 }
             }
         } catch (Exception e) {
+            if (e instanceof RuntimeException)
+                throw (RuntimeException) e;
             throw new RuntimeException(e);
         }
     }
