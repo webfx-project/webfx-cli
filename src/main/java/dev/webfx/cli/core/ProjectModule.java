@@ -2,11 +2,13 @@ package dev.webfx.cli.core;
 
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
+import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.platform.conf.SourcesConfig;
 import dev.webfx.platform.meta.Meta;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 
@@ -98,7 +100,8 @@ public interface ProjectModule extends Module {
         return ReusableStream.concat(
                 getWebFxModuleFile().getEmbedResources(),
                 getMetaResource(),
-                getSourcesRootConfigResource()
+                getSourcesRootConfigResource(),
+                getI18nResources()
         );
     }
 
@@ -116,11 +119,30 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getSourcesRootConfigResource() {
-        return isExecutable() && TextFileReaderWriter.fileExists(getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH) : ReusableStream.empty();
+        Path mainResourcesDirectory = getMainResourcesDirectory();
+        Path srcRootConfFolderPath = mainResourcesDirectory.resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FOLDER);
+        if (!isExecutable() || !TextFileReaderWriter.fileExists(srcRootConfFolderPath))
+            return ReusableStream.empty();
+        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(srcRootConfFolderPath, 1))
+                .filter(Files::isRegularFile)
+                .map(path -> mainResourcesDirectory.relativize(path).toString());
     }
 
     default ReusableStream<String> getSourcesRootConfigResourcePackage() {
-        return isExecutable() && TextFileReaderWriter.fileExists(getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH)) ? ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE) : ReusableStream.empty();
+        Path srcRootConfFolderPath = getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FOLDER);
+        if (!isExecutable() || !TextFileReaderWriter.fileExists(srcRootConfFolderPath))
+            return ReusableStream.empty();
+        return ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE);
+    }
+
+    default ReusableStream<String> getI18nResources() {
+        Path mainResourcesDirectory = getMainResourcesDirectory();
+        Path i18nFolderPath = mainResourcesDirectory.resolve("dev/webfx/stack/i18n");
+        if (!isExecutable() || !TextFileReaderWriter.fileExists(i18nFolderPath))
+            return ReusableStream.empty();
+        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(i18nFolderPath, 1))
+                .filter(Files::isRegularFile)
+                .map(path -> mainResourcesDirectory.relativize(path).toString());
     }
 
     default ReusableStream<String> getSystemProperties() {

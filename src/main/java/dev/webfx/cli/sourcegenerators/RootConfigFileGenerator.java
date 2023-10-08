@@ -31,9 +31,10 @@ import java.util.Map;
  */
 public final class RootConfigFileGenerator {
 
-    private final static PathMatcher PROPERTIES_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{properties,json}");
+    private final static PathMatcher AST_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{properties,json}");
 
     private final static Map<Path, Config> configCache = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
+    private final static Map<Path, Config> i18nCache = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
     public static void generateExecutableModuleConfigurationResourceFile(DevProjectModule module) {
         if (module.isExecutable()) {
@@ -52,17 +53,20 @@ public final class RootConfigFileGenerator {
             // configuration file.
             List<Module> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
 
-            List<Pair<ProjectModule, Config>> moduleConfigs = new ArrayList<>();
-            boolean[] moduleConfigsContainsArrays = { false };
+            // Conf Initialisation
+            ConfigMerge confMerge = new ConfigMerge();
+            // I18n Initialisation
+            Map<String, ConfigMerge> i18nMerges = new HashMap<>();
 
             sortedModules.forEach(m -> {
                 if (m instanceof ProjectModule) {
                     ProjectModule pm = (ProjectModule) m;
                     if (pm.hasMainWebFxSourceDirectory()) {
+                        // Conf collection
                         Path webfxConfDirectory = pm.getMainWebFxSourceDirectory().resolve("conf/");
                         if (Files.isDirectory(webfxConfDirectory)) {
                             ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxConfDirectory))
-                                    .filter(PROPERTIES_FILE_MATCHER::matches)
+                                    .filter(AST_FILE_MATCHER::matches)
                                     .forEach(path -> {
                                         Config config = configCache.get(path);
                                         if (config == null) {
@@ -71,8 +75,32 @@ public final class RootConfigFileGenerator {
                                             configCache.put(path, config);
                                         }
                                         if (!config.isEmpty()) {
-                                            moduleConfigs.add(new Pair<>(pm, config));
-                                            moduleConfigsContainsArrays[0] |= hasArray(config);
+                                            confMerge.moduleConfigs.add(new Pair<>(pm, config));
+                                            confMerge.moduleConfigsContainsArrays |= hasArray(config);
+                                        }
+                                    });
+                        }
+                        // I8n collection
+                        Path webfxI18nDirectory = pm.getMainWebFxSourceDirectory().resolve("i18n/");
+                        if (Files.isDirectory(webfxI18nDirectory)) {
+                            ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxI18nDirectory))
+                                    .filter(AST_FILE_MATCHER::matches)
+                                    .forEach(path -> {
+                                        Config i18nObject = i18nCache.get(path);
+                                        if (i18nObject == null) {
+                                            String fileContent = TextFileReaderWriter.readTextFile(path);
+                                            i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
+                                            i18nCache.put(path, i18nObject);
+                                        }
+                                        ReadOnlyIndexedArray languages = i18nObject.keys();
+                                        for (int i = 0; i < languages.size(); i++) {
+                                            String language = languages.getString(i);
+                                            ConfigMerge languageMerge = i18nMerges.get(language);
+                                            if (languageMerge == null)
+                                                i18nMerges.put(language, languageMerge = new ConfigMerge());
+                                            Config dictionaryConfig = i18nObject.childConfigAt(language);
+                                            languageMerge.moduleConfigs.add(new Pair<>(pm, dictionaryConfig));
+                                            languageMerge.moduleConfigsContainsArrays |= hasArray(dictionaryConfig);
                                         }
                                     });
                         }
@@ -80,37 +108,49 @@ public final class RootConfigFileGenerator {
                 }
             });
 
+            // Conf merge
             Path propertiesPath = module.getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
             Path jsonPath = module.getMainResourcesDirectory().resolve(SourcesConfig.JSON_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
-            Path selectedPath = null;
-            if (!moduleConfigs.isEmpty()) {
-                StringBuilder sb = new StringBuilder();
-                String[] lastModuleHeader = { null };
-                if (!moduleConfigsContainsArrays[0]) {
-                    selectedPath = propertiesPath;
-                    for (Pair<ProjectModule, Config> moduleConfig : moduleConfigs) {
-                        appendAstObjectToProperies(null, moduleConfig.get2(), sb, lastModuleHeader, moduleConfig.get1().getName());
-                    }
-                } else {
-                    selectedPath = jsonPath;
-                    Config config = ConfigMerger.mergeConfigs(moduleConfigs.stream().map(Pair::get2).toArray(Config[]::new));
-                    sb.append(AstFormatter.formatObject(config, "json"));
-                }
-                if (sb.length() == 0)
-                    selectedPath = null; // In order to delete the conf files (see below)
-                else
-                    TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), selectedPath);
-            }
-            if (selectedPath != propertiesPath)
-                TextFileReaderWriter.deleteTextFile(propertiesPath);
-            if (selectedPath != jsonPath)
-                TextFileReaderWriter.deleteTextFile(jsonPath);
+            mergeConfigs(confMerge, propertiesPath, jsonPath);
+
+            // I18n merge
+            i18nMerges.forEach((language, languageMerge) -> {
+                Path i18nPropertiesPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".properties");
+                Path i18nJsonPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".json");
+                mergeConfigs(languageMerge, i18nPropertiesPath, i18nJsonPath);
+            });
         }
     }
 
-    private static boolean hasArray(ReadOnlyKeyObject config) {
-        for (Object key : config.keys()) {
-            Object value = config.get(key.toString());
+    private static void mergeConfigs(ConfigMerge configMerge, Path propertiesPath, Path jsonPath) {
+        Path selectedPath = null;
+        if (!configMerge.moduleConfigs.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            String[] lastModuleHeader = { null };
+            if (!configMerge.moduleConfigsContainsArrays) {
+                selectedPath = propertiesPath;
+                for (Pair<ProjectModule, Config> moduleConfig : configMerge.moduleConfigs) {
+                    appendAstObjectToProperties(null, moduleConfig.get2(), sb, lastModuleHeader, moduleConfig.get1().getName());
+                }
+            } else {
+                selectedPath = jsonPath;
+                Config config = ConfigMerger.mergeConfigs(configMerge.moduleConfigs.stream().map(Pair::get2).toArray(Config[]::new));
+                sb.append(AstFormatter.formatObject(config, "json"));
+            }
+            if (sb.length() == 0)
+                selectedPath = null; // In order to delete the conf files (see below)
+            else
+                TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), selectedPath);
+        }
+        if (selectedPath != propertiesPath)
+            TextFileReaderWriter.deleteTextFile(propertiesPath);
+        if (selectedPath != jsonPath)
+            TextFileReaderWriter.deleteTextFile(jsonPath);
+    }
+
+    private static boolean hasArray(ReadOnlyKeyObject astObject) {
+        for (Object key : astObject.keys()) {
+            Object value = astObject.get(key.toString());
             if (value instanceof ReadOnlyIndexedArray)
                 return true;
             if (value instanceof ReadOnlyKeyObject)
@@ -119,14 +159,14 @@ public final class RootConfigFileGenerator {
         return false;
     }
 
-    private static void appendAstObjectToProperies(String prefix, ReadOnlyKeyObject config, StringBuilder sb, String[] lastModuleHeader, String moduleName) {
+    private static void appendAstObjectToProperties(String prefix, ReadOnlyKeyObject config, StringBuilder sb, String[] lastModuleHeader, String moduleName) {
         ReadOnlyIndexedArray keys = config.keys();
         for (int i = 0; i < keys.size(); i++) {
             String key = keys.getString(i);
             Object o = config.get(key);
             String newPrefix = prefix == null ? key : prefix + '.' + key;
             if (o instanceof ReadOnlyKeyObject)
-                appendAstObjectToProperies(newPrefix, (ReadOnlyKeyObject) o, sb, lastModuleHeader, moduleName);
+                appendAstObjectToProperties(newPrefix, (ReadOnlyKeyObject) o, sb, lastModuleHeader, moduleName);
             else {
                 if (sb.length() == 0)
                     sb.append("# File managed by WebFX (DO NOT EDIT MANUALLY)\n");
@@ -134,10 +174,23 @@ public final class RootConfigFileGenerator {
                     sb.append("\n# From ").append(moduleName).append('\n');
                     lastModuleHeader[0] = moduleName;
                 }
-                if (sb.toString().contains("\n" + newPrefix + " = "))
+                String propertiesKey = newPrefix.replace(":", "\\:").replace("=", "\\=");
+                if (sb.toString().contains("\n" + propertiesKey + " = "))
                     sb.append('#');
-                sb.append(newPrefix).append(" = ").append(o).append(('\n'));
+                sb.append(propertiesKey).append(" = ");
+                String propertiesValue = o.toString().replace("\n", "\\n");
+                if (!propertiesValue.startsWith(" ") && !propertiesValue.endsWith(" ")) {
+                    sb.append(propertiesValue);
+                } else {
+                    sb.append(propertiesValue.replace(" ", "\\u0020"));
+                }
+                sb.append(('\n'));
             }
         }
+    }
+
+    private static class ConfigMerge {
+        private final List<Pair<ProjectModule, Config>> moduleConfigs = new ArrayList<>();
+        private boolean moduleConfigsContainsArrays;
     }
 }
