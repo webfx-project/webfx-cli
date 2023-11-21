@@ -1,6 +1,7 @@
 package dev.webfx.cli.util.sort;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Bruno Salmon
@@ -32,7 +33,11 @@ public final class TopologicalSort<T> {
     }
 
     private List<T> sort() {
-        for (T object : dependencyGraph.keySet()) {
+        // We will iterate the dependency graph key set, but we sort it first. The purpose is to remove any possible
+        // remaining random order in the list we finally return. This will ensure the result is stable between 2
+        // executions, and prevent unnecessary / irrelevant changes in files between 2 webfx updates.
+        List<T> sortedKeySet = dependencyGraph.keySet().stream().sorted().collect(Collectors.toList());
+        for (T object : sortedKeySet) {
             if (!visited.contains(object)) {
                 deepFirstSearch(object);
             }
@@ -45,7 +50,10 @@ public final class TopologicalSort<T> {
     private void deepFirstSearch(T object) {
         visited.add(object);
         if (dependencyGraph.containsKey(object)) {
-            for (T usedObject : dependencyGraph.get(object)) {
+            // We also sort the values, for the same reason as the keys explained above.
+            List<T> usedObjects = dependencyGraph.get(object);
+            usedObjects.sort(null);
+            for (T usedObject : usedObjects) {
                 if (!visited.contains(usedObject)) {
                     deepFirstSearch(usedObject);
                 }
