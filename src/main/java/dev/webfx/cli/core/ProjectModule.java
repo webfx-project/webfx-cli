@@ -92,6 +92,7 @@ public interface ProjectModule extends Module {
                 getExplicitResourcePackages(),
                 getMetaResourcePackage(),
                 getSourcesRootConfigResourcePackage(),
+                getI18nResourcePackage(),
                 getWebFxModuleFile().areResourcePackagesAutomaticallyExported() ? getFileResourcePackages() : ReusableStream.empty()
         ).distinct();
     }
@@ -135,9 +136,19 @@ public interface ProjectModule extends Module {
         return ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE);
     }
 
+    String I18N_RESOURCE_FOLDER = "dev/webfx/stack/i18n";
+    String I18N_PACKAGE = I18N_RESOURCE_FOLDER.replace('/', '.');
+
+    default ReusableStream<String> getI18nResourcePackage() {
+        Path i18nFolderPath = getMainResourcesDirectory().resolve(I18N_RESOURCE_FOLDER);
+        if (!isExecutable() || !TextFileReaderWriter.fileExists(i18nFolderPath))
+            return ReusableStream.empty();
+        return ReusableStream.of(I18N_PACKAGE);
+    }
+
     default ReusableStream<String> getI18nResources() {
         Path mainResourcesDirectory = getMainResourcesDirectory();
-        Path i18nFolderPath = mainResourcesDirectory.resolve("dev/webfx/stack/i18n");
+        Path i18nFolderPath = mainResourcesDirectory.resolve(I18N_RESOURCE_FOLDER);
         if (!isExecutable() || !TextFileReaderWriter.fileExists(i18nFolderPath))
             return ReusableStream.empty();
         return ReusableStream.create(() -> SplitFiles.uncheckedWalk(i18nFolderPath, 1))
