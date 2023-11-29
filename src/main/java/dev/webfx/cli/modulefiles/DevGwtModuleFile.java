@@ -108,14 +108,14 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                                 .sorted()
                                 .forEach(p -> {
                                     // In general, we add <source path="..."/> for each package. Exception is made with
-                                    // emul.java.* packages (coming from webfx-platform-javabase-emul-gwt module) that
-                                    // are actually relocated to java.* packages in GWT super sources. So for such
-                                    // packages, we add <super-source path="" includes="java/..."/> instead.
-                                    boolean javaEmul = p.startsWith("emul.java");
-                                    Element sourceElement = document.createElement(javaEmul ? "super-source" : "source");
-                                    if (javaEmul)
+                                    // emul.xxx.* packages (coming from webfx-platform-javabase-emul-gwt module) that
+                                    // are actually relocated to xxx.* packages in GWT super sources. So for such
+                                    // packages, we add <super-source path="" includes="xxx/..."/> instead.
+                                    boolean isEmulPackage = p.startsWith("emul.");
+                                    Element sourceElement = document.createElement(isEmulPackage ? "super-source" : "source");
+                                    if (isEmulPackage)
                                         sourceElement.setAttribute("includes", p.substring(5).replaceAll("\\.", "/") + "/");
-                                    sourceElement.setAttribute("path", javaEmul ? "" : p.replaceAll("\\.", "/"));
+                                    sourceElement.setAttribute("path", isEmulPackage ? "" : p.replaceAll("\\.", "/"));
                                     nodeAppenderIfNotOnlyComment.accept(sourceElement);
                                 });
                         resourcePackages
