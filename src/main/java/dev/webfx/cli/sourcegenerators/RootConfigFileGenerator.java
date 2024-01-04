@@ -153,8 +153,8 @@ public final class RootConfigFileGenerator {
             Object value = astObject.get(key.toString());
             if (value instanceof ReadOnlyIndexedArray)
                 return true;
-            if (value instanceof ReadOnlyKeyObject)
-                return hasArray((ReadOnlyKeyObject) value);
+            if (value instanceof ReadOnlyKeyObject && hasArray((ReadOnlyKeyObject) value))
+                return true;
         }
         return false;
     }
