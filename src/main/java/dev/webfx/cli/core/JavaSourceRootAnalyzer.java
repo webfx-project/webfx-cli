@@ -666,6 +666,7 @@ public final class JavaSourceRootAnalyzer {
                         .filter(m -> m.isCompatibleWithTargetModule(projectModule))
                         // Also if the module has auto-injection conditions, we check that these conditions are true
                         // Ex: webfx-platform-conf-zero-impl is the ZeroConf implementation only when the Conf API is used
+                        // TODO: fix issue because executableAutoInjectedModulesCaches may not be completed at this stage => second pass resolution?
                         .filter(m -> !m.hasAutoInjectionConditions() || projectModule.getMainJavaSourceRootAnalyzer().executableAutoInjectedModulesCaches.anyMatch(autoModule -> autoModule == m))
                         .max(Comparator.comparingInt(m -> m.gradeTargetMatch(projectModule.getTarget())))
                         .orElse(null);
@@ -714,13 +715,19 @@ public final class JavaSourceRootAnalyzer {
             if (!isForOpenJFX && !isForGluon)
                 return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                         .filter(RootModule::isJavaFxEmulModule);
-            boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().startsWith("webfx-kit-javafxmedia"));
-            boolean usesFxml = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().equals("javafx-fxml") || m.getName().equals("webfx-kit-javafxfxml-emul"));
+            String mediaEmulModuleName = "webfx-kit-javafxmedia";
+            String webEmulModuleName = "webfx-kit-javafxweb-emul";
+            String fxmlEmulModuleName = "webfx-kit-javafxfxml-emul";
+            boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().startsWith(mediaEmulModuleName));
+            boolean usesWeb = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().equals("javafx-web") || m.getName().equals(webEmulModuleName));
+            boolean usesFxml = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> m.getName().equals("javafx-fxml") || m.getName().equals(fxmlEmulModuleName));
             return ReusableStream.of(
                     rootModule.searchRegisteredModule("webfx-platform-boot-java"),
                     rootModule.searchRegisteredModule("webfx-kit-openjfx"),
                     !usesMedia ? null : rootModule.searchRegisteredModule(isForGluon ? "webfx-kit-javafxmedia-gluon" : "webfx-kit-javafxmedia-emul"),
-                    !usesFxml ? null : rootModule.searchRegisteredModule("webfx-kit-javafxfxml-emul")
+                    !usesWeb ? null : rootModule.searchRegisteredModule(webEmulModuleName),
+                    !usesWeb ? null : rootModule.searchRegisteredModule(webEmulModuleName),
+                    !usesFxml ? null : rootModule.searchRegisteredModule(fxmlEmulModuleName)
             ).filter(Objects::nonNull);
         }
         return ReusableStream.empty();

@@ -72,6 +72,7 @@ public final class Update extends CommonSubcommand implements Runnable {
                     .filter(DevProjectModule::hasMainJavaSourceDirectory)
                     // Hardcoded rule to not generate module-info.java for webfx-kit-javafxweb-registry module as this generates JavaDoc errors (due to 'requires webfx.kit.javafxweb.enginepeer.emul' <- and no module-info.java for emul modules)
                     .filter(m -> !m.getName().equals("webfx-kit-javafxweb-registry"))
+                    .filter(m -> !m.getName().equals("webfx-kit-javafxweb-enginepeer"))
                     .forEach(m -> {
                         boolean jre = m.getTarget().isAnyPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
                         boolean teavm = m.getTarget().isAnyPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM

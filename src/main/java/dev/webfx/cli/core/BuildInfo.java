@@ -22,6 +22,7 @@ public class BuildInfo {
         isForOpenJfx = projectModule.getTarget().isMonoPlatform(Platform.JRE) && (projectModule.getTarget().hasTag(TargetTag.OPENJFX));
         isForGluon = projectModule.getTarget().isMonoPlatform(Platform.JRE) && projectModule.getTarget().hasTag(TargetTag.GLUON);
         isExecutable = projectModule.isExecutable();
-        isRegistry = projectModule.getName().contains("-registry-") || projectModule.getName().endsWith("-registry");
+        isRegistry = projectModule.getName().contains("-registry-") || projectModule.getName().endsWith("-registry")
+         || projectModule.getName().equals("webfx-kit-javafxweb-enginepeer");
     }
 }
