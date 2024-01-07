@@ -12,7 +12,7 @@ public class BuildInfo {
     public final boolean isForGluon;
     public final boolean isForVertx;
     public final boolean isExecutable;
-    public final boolean isRegistry;
+    public final boolean requiresEmul;
 
     public BuildInfo(ProjectModuleImpl projectModule) {
         this.projectModule = projectModule;
@@ -22,7 +22,7 @@ public class BuildInfo {
         isForOpenJfx = projectModule.getTarget().isMonoPlatform(Platform.JRE) && (projectModule.getTarget().hasTag(TargetTag.OPENJFX));
         isForGluon = projectModule.getTarget().isMonoPlatform(Platform.JRE) && projectModule.getTarget().hasTag(TargetTag.GLUON);
         isExecutable = projectModule.isExecutable();
-        isRegistry = projectModule.getName().contains("-registry-") || projectModule.getName().endsWith("-registry")
-         || projectModule.getName().equals("webfx-kit-javafxweb-enginepeer");
+        requiresEmul = SpecificModules.isRegistryModule(projectModule.getName())
+                    || projectModule.getName().equals(SpecificModules.WEBFX_KIT_JAVAFXWEB_ENGINEPEER);
     }
 }
