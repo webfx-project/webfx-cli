@@ -95,7 +95,7 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                             resourcePackages = projectModule.getResourcePackages();
                             sourcePackages = projectModule.getMainJavaSourceRootAnalyzer().getSourcePackages();
                             systemProperties = projectModule.getSystemProperties();
-                        } else if (module instanceof LibraryModule && !ModuleRegistry.isJdkModule(module)) {
+                        } else if (module instanceof LibraryModule && !SpecificModules.isJdkModule(moduleName)) {
                             boolean isGwtLibrary = gwtModuleName != null && (
                                     gwtModuleName.startsWith("com.google.gwt") ||
                                             gwtModuleName.startsWith("org.gwtproject") ||

@@ -44,7 +44,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
                                 module.getMainJavaSourceRootAnalyzer().getDirectDependencies()
                                         // Modules with "runtime", "test" or "verify" scope must not have a "requires" clause (since they are invisible for the source module).
                                         // Exception is made however for JDK modules (since they are always visible) and may be needed (ex: java.sql for Vert.x)
-                                        .filter(d -> (!"runtime".equals(d.getScope()) && !"test".equals(d.getScope()) && !"verify".equals(d.getScope())) || ModuleRegistry.isJdkModule(d.getDestinationModule()))
+                                        .filter(d -> (!"runtime".equals(d.getScope()) && !"test".equals(d.getScope()) && !"verify".equals(d.getScope())) || SpecificModules.isJdkModule(d.getDestinationModule().getName()))
                                         // Grouping by destination module
                                         .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
                         )

@@ -100,7 +100,7 @@ public final class M2RootModule extends M2ProjectModule implements RootModule {
                         if (writer != null)
                             try {
                                 writer.write(line);
-                                writer.write(System.getProperty("line.separator"));
+                                writer.write(System.lineSeparator());
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }

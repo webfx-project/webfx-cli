@@ -423,10 +423,6 @@ final public class ModuleRegistry {
         jdkModule.getExportedPackages().forEach(p -> declarePackageBelongsToModule(p, jdkModule));
     }
 
-    public static boolean isJdkModule(Module module) {
-        return isJdkModule(module.getName());
-    }
-
     public static boolean isJdkModule(String name) {
         return JDK_MODULES.containsKey(name);
     }

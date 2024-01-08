@@ -714,7 +714,7 @@ public final class JavaSourceRootAnalyzer {
             boolean isForGluon = projectModule.getTarget().hasTag(TargetTag.GLUON);
             if (!isForOpenJFX && !isForGluon)
                 return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
-                        .filter(RootModule::isJavaFxEmulModule);
+                        .filter(m -> SpecificModules.isJavafxEmulModule(m.getName()));
             boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isMediaModule(m.getName()));
             boolean usesWeb = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isWebModule(m.getName()));
             boolean usesFxml = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isFxmlModule(m.getName()));

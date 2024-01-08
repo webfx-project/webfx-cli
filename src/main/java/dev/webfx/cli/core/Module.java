@@ -26,13 +26,12 @@ public interface Module extends GavApi, Comparable<Module> {
             mArtifactId = m.getName();
 
         // Moving JavaFX emulation modules on top (before JavaFX itself even if scope is just provided) so specific emulation API can be eventually be used in peer java code
-        boolean thisEmul = RootModule.isJavaFxEmulModule(thisArtifactId);
-        boolean mEmul = RootModule.isJavaFxEmulModule(mArtifactId);
+        boolean thisEmul = SpecificModules.isJavafxEmulModule(thisArtifactId);
+        boolean mEmul = SpecificModules.isJavafxEmulModule(mArtifactId);
         if (thisEmul != mEmul)
             return thisEmul ? -1 : 1;
         // This (temporary) rule is just for GridCollator (which has a different implementation in gwt so must be listed first)
-        String GridCollatorPeerPrefix = "webfx-extras-visual-grid-peers";
-        if (thisArtifactId.startsWith(GridCollatorPeerPrefix) && mArtifactId.startsWith(GridCollatorPeerPrefix)) {
+        if (thisArtifactId.startsWith(SpecificModules.WEBFX_EXTRAS_VISUAL_GRID_PEERS) && mArtifactId.startsWith(SpecificModules.WEBFX_EXTRAS_VISUAL_GRID_PEERS)) {
             if (getName().endsWith("-gwt"))
                 return -1;
             if (m.getName().endsWith("-gwt"))

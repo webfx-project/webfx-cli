@@ -30,53 +30,26 @@ public final class ArtifactResolver {
     }
 
     static String getArtifactId(Module module, BuildInfo buildInfo) {
-        return getArtifactId(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.requiresEmul);
+        return getArtifactId(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.requiresJavafxEmul);
     }
 
-    static String getArtifactId(Module module, boolean isForGwt, boolean isExecutable, boolean requiresEmul) {
+    static String getArtifactId(Module module, boolean isForGwt, boolean isExecutable, boolean requiresJavafxEmul) {
         String moduleName = module.getName();
-        if (ModuleRegistry.isJdkModule(module) || SpecificModules.isJdkEmulationModule(moduleName) && !(isForGwt && isExecutable))
+        if (SpecificModules.isJdkModule(moduleName) || SpecificModules.isJdkEmulationModule(moduleName) && !(isForGwt && isExecutable))
             return null; // No external dependency is required
         if (isForGwt && isExecutable) {
-            switch (moduleName) {
-                case SpecificModules.ELEMENTAL_2_CORE:
-                case SpecificModules.ELEMENTAL_2_DOM:
-                    return null; // Already included by default
-                case SpecificModules.GWT_USER:
-                    return SpecificModules.GWT_DEV;
+            if (SpecificModules.isElemental2Module(moduleName))
+                return null; // Already included by default
+            if (moduleName.equals(SpecificModules.GWT_USER)) {
+                return SpecificModules.GWT_DEV;
             }
         }
-        boolean mustBeJavaFxEmul = isForGwt || requiresEmul;
-        switch (moduleName) {
-            //case "gwt-charts":
-            case SpecificModules.JSINTEROP_BASE:
-            case SpecificModules.JSINTEROP_ANNOTATIONS:
-                return null;
-            case SpecificModules.WEBFX_KIT_JAVAFXBASE_EMUL:
-                return mustBeJavaFxEmul ? moduleName : SpecificModules.JAVAFX_BASE;
-            case SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_EMUL:
-                return mustBeJavaFxEmul ? moduleName : SpecificModules.JAVAFX_GRAPHICS;
-            case SpecificModules.WEBFX_KIT_JAVAFXCONTROLS_EMUL:
-                return mustBeJavaFxEmul ? moduleName : SpecificModules.JAVAFX_CONTROLS;
-            case SpecificModules.WEBFX_KIT_JAVAFXMEDIA_EMUL:
-                return mustBeJavaFxEmul ? moduleName : SpecificModules.JAVAFX_MEDIA;
-            case SpecificModules.WEBFX_KIT_JAVAFXWEB_EMUL:
-                return mustBeJavaFxEmul ? moduleName : SpecificModules.JAVAFX_WEB;
-            case SpecificModules.WEBFX_KIT_JAVAFXFXML_EMUL:
-                return mustBeJavaFxEmul ? moduleName : SpecificModules.JAVAFX_FXML;
-            case SpecificModules.JAVAFX_BASE:
-                return mustBeJavaFxEmul ? SpecificModules.WEBFX_KIT_JAVAFXBASE_EMUL : moduleName;
-            case SpecificModules.JAVAFX_GRAPHICS:
-                return mustBeJavaFxEmul ? SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_EMUL : moduleName;
-            case SpecificModules.JAVAFX_CONTROLS:
-                return mustBeJavaFxEmul ? SpecificModules.WEBFX_KIT_JAVAFXCONTROLS_EMUL : moduleName;
-            case SpecificModules.JAVAFX_MEDIA:
-                return mustBeJavaFxEmul ? SpecificModules.WEBFX_KIT_JAVAFXMEDIA_EMUL : moduleName;
-            case SpecificModules.JAVAFX_WEB:
-                return mustBeJavaFxEmul ? SpecificModules.WEBFX_KIT_JAVAFXWEB_EMUL : moduleName;
-            case SpecificModules.JAVAFX_FXML:
-                return mustBeJavaFxEmul ? SpecificModules.WEBFX_KIT_JAVAFXFXML_EMUL : moduleName;
-        }
+        if (SpecificModules.isJsIntertopModule(moduleName))
+            return null;
+        if (SpecificModules.isJavafxModule(moduleName))
+            return requiresJavafxEmul ? SpecificModules.javafxModuleToEmulModule(moduleName) : moduleName;
+        if (SpecificModules.isJavafxEmulModule(moduleName))
+            return requiresJavafxEmul ? moduleName : SpecificModules.emulModuleToJavafxModule(moduleName);
         String artifactId = module.getArtifactId();
         if (artifactId != null)
             return artifactId;
@@ -93,14 +66,13 @@ public final class ArtifactResolver {
     }
 
     static String getGroupId(Module module, BuildInfo buildInfo) {
-        return getGroupId(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.requiresEmul);
+        return getGroupId(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.requiresJavafxEmul);
     }
 
-    static String getGroupId(Module module, boolean isForGwt, boolean isExecutable, boolean requiresEmul) {
+    static String getGroupId(Module module, boolean isForGwt, boolean isExecutable, boolean requiresJavafxEmul) {
         String moduleName = module.getName();
-        boolean isJavaFxModule = moduleName.startsWith("javafx-");
-        boolean isJavaFxEmulModule = RootModule.isJavaFxEmulModule(moduleName);
-        boolean mustBeJavaFxEmulModule = isForGwt || requiresEmul;
+        boolean isJavaFxModule = SpecificModules.isJavafxModule(moduleName);
+        boolean isJavaFxEmulModule = SpecificModules.isJavafxEmulModule(moduleName);
         if (isJavaFxModule || isJavaFxEmulModule) {
             RootModule rootModule = null;
             if (module instanceof ProjectModule)
@@ -111,8 +83,8 @@ public final class ArtifactResolver {
                     rootModule = buildInfo.projectModule.getRootModule();
             }
             if (rootModule != null)
-                module = rootModule.searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, requiresEmul), false);
-            else if (isJavaFxEmulModule || mustBeJavaFxEmulModule)
+                module = rootModule.searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, requiresJavafxEmul), false);
+            else if (isJavaFxEmulModule || requiresJavafxEmul)
                 return "dev.webfx"; // hardcoded because we don't have access to the root module in this case
         }
         return module.getGroupId();
@@ -128,14 +100,13 @@ public final class ArtifactResolver {
     }
 
     static String getVersion(Module module, BuildInfo buildInfo) {
-        return getVersion(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.requiresEmul);
+        return getVersion(module, buildInfo.isForGwt, buildInfo.isExecutable, buildInfo.requiresJavafxEmul);
     }
 
-    static String getVersion(Module module, boolean isForGwt, boolean isExecutable, boolean isRegistry) {
+    static String getVersion(Module module, boolean isForGwt, boolean isExecutable, boolean requiresJavafxEmul) {
         String moduleName = module.getName();
         boolean isJavaFxModule = moduleName.startsWith("javafx-");
-        boolean isJavaFxEmulModule = RootModule.isJavaFxEmulModule(moduleName);
-        boolean mustBeJavaFxEmulModule = isForGwt || isRegistry;
+        boolean isJavaFxEmulModule = SpecificModules.isJavafxEmulModule(moduleName);
         if (isJavaFxModule || isJavaFxEmulModule) {
             RootModule rootModule = null;
             if (module instanceof ProjectModule)
@@ -146,8 +117,8 @@ public final class ArtifactResolver {
                     rootModule = buildInfo.projectModule.getRootModule();
             }
             if (rootModule != null)
-                module = rootModule.searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, isRegistry), false);
-            else if (isJavaFxEmulModule || mustBeJavaFxEmulModule)
+                module = rootModule.searchRegisteredModule(getArtifactId(module, isForGwt, isExecutable, requiresJavafxEmul), false);
+            else if (isJavaFxEmulModule || requiresJavafxEmul)
                 return "${webfx.version}"; // hardcoded because we don't have access to the root module in this case
         }
         return module.getVersion();
@@ -161,10 +132,10 @@ public final class ArtifactResolver {
     }
 
     static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, BuildInfo buildInfo) {
-        return getScope(moduleGroup, buildInfo.isForGwt, buildInfo.isForOpenJfx, buildInfo.isExecutable, buildInfo.requiresEmul);
+        return getScope(moduleGroup, buildInfo.isForGwt, buildInfo.isForOpenJfx, buildInfo.isExecutable, buildInfo.requiresJavafxEmul);
     }
 
-    static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, boolean isForGwt, boolean isForOpenJfx, boolean isExecutable, boolean isRegistry) {
+    static String getScope(Map.Entry<Module, List<ModuleDependency>> moduleGroup, boolean isForGwt, boolean isForOpenJfx, boolean isExecutable, boolean requiresJavafxEmul) {
         // We take the scope of the first dependency ("default" as temporary value if not present).
         // Note: if a module has both a source and plugin dependency, it's important that the source dependency goes
         // first otherwise the compiler won't be able to compile the code if the scope is just set to "runtime".
@@ -188,22 +159,8 @@ public final class ArtifactResolver {
                     && moduleGroup.getValue().stream().map(ModuleDependency::getType).noneMatch(type -> type == ModuleDependency.Type.IMPLICIT_PROVIDER))
                 return "provided";
         }
-        if (!isForGwt && !isForOpenJfx && !isExecutable && !isRegistry)
-            switch (module.getName()) {
-                case SpecificModules.JAVAFX_BASE:
-                case SpecificModules.JAVAFX_GRAPHICS:
-                case SpecificModules.JAVAFX_CONTROLS:
-                case SpecificModules.JAVAFX_MEDIA:
-                case SpecificModules.JAVAFX_WEB:
-                case SpecificModules.JAVAFX_FXML:
-                case SpecificModules.WEBFX_KIT_JAVAFXBASE_EMUL:
-                case SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_EMUL:
-                case SpecificModules.WEBFX_KIT_JAVAFXCONTROLS_EMUL:
-                case SpecificModules.WEBFX_KIT_JAVAFXMEDIA_EMUL:
-                case SpecificModules.WEBFX_KIT_JAVAFXWEB_EMUL:
-                case SpecificModules.WEBFX_KIT_JAVAFXFXML_EMUL:
-                    return "provided";
-            }
+        if (!isForGwt && !isForOpenJfx && !isExecutable && !requiresJavafxEmul && (SpecificModules.isJavafxModule(module.getName()) || SpecificModules.isJavafxEmulModule(module.getName())))
+            return "provided";
         return null;
     }
 
@@ -217,7 +174,7 @@ public final class ArtifactResolver {
             return classifier;
         if (isForGwt && isExecutable) {
             String moduleName = moduleGroup.getKey().getName();
-            if (!moduleName.startsWith("gwt-") && !moduleName.startsWith("elemental2-") && !moduleName.equals("java-nio-emul") && !moduleName.equals("org.jresearch.gwt.time.tzdb"))
+            if (!moduleName.startsWith("gwt-") && !SpecificModules.isElemental2Module(moduleName) && !moduleName.equals(SpecificModules.JAVA_NIO_EMUL) && !moduleName.equals(SpecificModules.ORG_JRESEARCH_GWT_TIME_TZDB))
                 return moduleName.endsWith("-emul-gwt") ? "shaded-sources" : "sources";
         }
         return null;

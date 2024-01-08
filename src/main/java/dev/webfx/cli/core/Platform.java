@@ -14,17 +14,13 @@ public enum Platform {
 
     /****************************************
      * Partially supported target platforms *
-     ****************************************
-     , TEAVM     // Java to JavaScript or WebAssembly transpiler -> for browser applications
      /**************************************/
-    , TEAVM
+    , TEAVM      // Java to JavaScript or WebAssembly transpiler -> for browser applications
 
     /*****************************************************
      * Possible supported target platforms in the future *
      *****************************************************
-    , ANDROID   // -> for android applications
     , J2CL      // Java to Closure transpiler (will replace GWT) -> for browser applications
-    , J2OBJC    // Java to Objective-C transpiler -> for iOS applications
-    , BYTECODER // Java to WebAssembly transpiler -> for browser applications
+    , JXBROWSER // Chromium browser for Java -> can be used to test/debug browser app with WebFX code (no transpiler)
     /****************************************************/
 }

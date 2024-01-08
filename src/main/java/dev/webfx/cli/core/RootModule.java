@@ -92,17 +92,4 @@ public interface RootModule extends ProjectModule {
         return modules;
     }
 
-    /**********************************
-     ***** Static utility methods *****
-     **********************************/
-
-
-    static boolean isJavaFxEmulModule(Module module) {
-        return isJavaFxEmulModule(module.getName());
-    }
-
-    static boolean isJavaFxEmulModule(String moduleName) {
-        return moduleName.startsWith("webfx-kit-javafx") && moduleName.endsWith("-emul");
-    }
-
 }
