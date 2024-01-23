@@ -165,6 +165,10 @@ public interface ProjectModule extends Module {
         return getWebFxModuleFile().isExecutable();
     }
 
+    default boolean requiresTimeZoneData() {
+        return getWebFxModuleFile().requiresTimeZoneData();
+    }
+
     default String getApplicationId() {
         return getWebFxModuleFile().getApplicationId();
     }

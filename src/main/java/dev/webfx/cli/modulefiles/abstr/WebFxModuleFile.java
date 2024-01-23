@@ -18,6 +18,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return getBooleanProjectAttributeValue("executable");
     }
 
+    default boolean requiresTimeZoneData() {
+        return getBooleanProjectAttributeValue("requiresTimezoneData");
+    }
+
     default String getName() {
         return getProjectAttributeValue("name");
     }

@@ -703,12 +703,17 @@ public final class JavaSourceRootAnalyzer {
 
     private ReusableStream<Module> collectExecutableEmulationModules() {
         RootModule rootModule = projectModule.getRootModule();
-        if (projectModule.isExecutable(Platform.GWT))
+        if (projectModule.isExecutable(Platform.GWT)) {
+            boolean requiresTimezoneData =
+                    ProjectModule.filterDestinationProjectModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
+                            .anyMatch(ProjectModule::requiresTimeZoneData);
             return ReusableStream.of(
                     rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_GWT),
                     rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_GWT),
-                    rootModule.searchRegisteredModule(SpecificModules.GWT_TIME)
-            );
+                    rootModule.searchRegisteredModule(SpecificModules.GWT_TIME),
+                    !requiresTimezoneData ? null : rootModule.searchRegisteredModule(SpecificModules.ORG_JRESEARCH_GWT_TIME_TZDB)
+                    ).filter(Objects::nonNull);
+        }
         if (projectModule.isExecutable(Platform.JRE)) {
             boolean isForOpenJFX = projectModule.getTarget().hasTag(TargetTag.OPENJFX);
             boolean isForGluon = projectModule.getTarget().hasTag(TargetTag.GLUON);
