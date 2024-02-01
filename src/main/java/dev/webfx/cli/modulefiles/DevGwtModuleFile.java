@@ -161,7 +161,12 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
             case "java-logging": return "com.google.gwt.logging.Logging";
             case "elemental2-core": return "elemental2.core.Core";
             case "elemental2-dom": return "elemental2.dom.Dom";
+            case "elemental2-indexeddb": return "elemental2.indexeddb.IndexedDb";
+            case "elemental2-media": return "elemental2.media.Media";
+            case "elemental2-promise": return "elemental2.promise.Promise";
             case "elemental2-svg": return "elemental2.svg.Svg";
+            case "elemental2-webgl": return "elemental2.webgl.WebGl";
+            case "elemental2-webstorage": return "elemental2.webstorage.WebStorage";
             case "gwt-charts": return "com.googlecode.gwt.charts.Charts";
             case "charba": return "org.pepstock.charba.Charba";
             case "java-nio-emul": return "org.gwtproject.nio.GwtNioSupport"; // gwt-nio
