@@ -38,14 +38,12 @@ public final class ArtifactResolver {
         if (SpecificModules.isJdkModule(moduleName) || SpecificModules.isJdkEmulationModule(moduleName) && !(isForGwt && isExecutable))
             return null; // No external dependency is required
         if (isForGwt && isExecutable) {
-            if (SpecificModules.isElemental2Module(moduleName))
+            if (SpecificModules.isElemental2Module(moduleName) || SpecificModules.isJsIntertopModule(moduleName))
                 return null; // Already included by default
             if (moduleName.equals(SpecificModules.GWT_USER)) {
                 return SpecificModules.GWT_DEV;
             }
         }
-        if (SpecificModules.isJsIntertopModule(moduleName))
-            return null;
         if (SpecificModules.isJavafxModule(moduleName))
             return requiresJavafxEmul ? SpecificModules.javafxModuleToEmulModule(moduleName) : moduleName;
         if (SpecificModules.isJavafxEmulModule(moduleName))
