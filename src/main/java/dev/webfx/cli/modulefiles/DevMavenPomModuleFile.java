@@ -54,6 +54,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                         : isAggregate() ? "pom_aggregate.xml"
                         : !buildInfo.isExecutable ? "pom_not_executable.xml"
                         : buildInfo.isForGwt ? "pom_gwt_executable.xml"
+                        : buildInfo.isForJ2cl ? "pom_j2cl_executable.xml"
                         : buildInfo.isForTeaVm ? "pom_teavm_executable.xml"
                         : buildInfo.isForGluon ? "pom_gluon_executable.xml"
                         : buildInfo.isForVertx ? "pom_vertx_executable.xml"

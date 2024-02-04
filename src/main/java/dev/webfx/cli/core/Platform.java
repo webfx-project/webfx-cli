@@ -10,6 +10,7 @@ public enum Platform {
      **************************************/
       JRE       // Java Runtime Environment -> for desktop applications or servers
     , GWT       // Google Web Toolkit (Java to Javascript transpiler) -> for browser applications
+    , J2CL      // Java to Closure transpiler (will replace GWT) -> for browser applications
 
 
     /****************************************
@@ -20,7 +21,6 @@ public enum Platform {
     /*****************************************************
      * Possible supported target platforms in the future *
      *****************************************************
-    , J2CL      // Java to Closure transpiler (will replace GWT) -> for browser applications
     , JXBROWSER // Chromium browser for Java -> can be used to test/debug browser app with WebFX code (no transpiler)
     /****************************************************/
 }
