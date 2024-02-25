@@ -18,18 +18,24 @@ public class SpecificModules {
     public static final String WEBFX_KIT_JAVAFXWEB_EMUL = "webfx-kit-javafxweb-emul";
     public static final String WEBFX_KIT_JAVAFXFXML_EMUL = "webfx-kit-javafxfxml-emul";
     public static final String WEBFX_KIT_GWT = "webfx-kit-gwt";
+    public static final String WEBFX_KIT_J2CL = "webfx-kit-j2cl";
     public static final String WEBFX_KIT_OPENJFX = "webfx-kit-openjfx";
     public static final String WEBFX_KIT_JAVAFXWEB_REGISTRY = "webfx-kit-javafxweb-registry";
     public static final String WEBFX_KIT_JAVAFXWEB_ENGINEPEER = "webfx-kit-javafxweb-enginepeer";
     public static final String WEBFX_KIT_JAVAFXMEDIA_GLUON = "webfx-kit-javafxmedia-gluon";
     public static final String WEBFX_PLATFORM_BOOT_JAVA = "webfx-platform-boot-java";
     public static final String WEBFX_PLATFORM_JAVABASE_EMUL_GWT = "webfx-platform-javabase-emul-gwt";
+    public static final String WEBFX_PLATFORM_JAVABASE_EMUL_J2CL = "webfx-platform-javabase-emul-j2cl";
     public static final String WEBFX_EXTRAS_VISUAL_GRID_PEERS = "webfx-extras-visual-grid-peers";
     public static final String JAVA_NIO_EMUL = "java-nio-emul";
     public static final String GWT_USER = "gwt-user";
     public static final String GWT_DEV = "gwt-dev";
     public static final String GWT_TIME = "gwt-time";
     public static final String ORG_JRESEARCH_GWT_TIME_TZDB = "org.jresearch.gwt.time.tzdb";
+    public static final String J2CL_TIME = "j2cl-time";
+    public static final String J2CL_ANNOTATIONS = "j2cl-annotations";
+    public static final String J2CL_PROCESSORS = "j2cl-processors";
+    public static final String SLFJ_API = "slf4j.api";
 
     public static boolean isJavafxModule(String moduleName) {
         return javafxModuleToEmulModule(moduleName) != moduleName;
@@ -78,16 +84,32 @@ public class SpecificModules {
         }
     }
 
-    public static boolean isMediaModule(String moduleName) {
+    public static boolean isJavaFxMediaModule(String moduleName) {
         return moduleName.equals(JAVAFX_MEDIA) || moduleName.startsWith("webfx-kit-javafxmedia");
     }
 
-    public static boolean isWebModule(String moduleName) {
+    public static boolean isJavaFxWebModule(String moduleName) {
         return moduleName.equals(JAVAFX_WEB) || moduleName.startsWith("webfx-kit-javafxweb");
     }
 
-    public static boolean isFxmlModule(String moduleName) {
+    public static boolean isJavaFxFxmlModule(String moduleName) {
         return moduleName.equals(JAVAFX_FXML) || moduleName.startsWith("webfx-kit-javafxfxml");
+    }
+
+    public static boolean isModuleIntegratedToWebfxKitJ2cl(String moduleName) {
+        switch (moduleName) {
+            case WEBFX_KIT_GWT:
+            case "webfx-kit-launcher":
+            case WEBFX_KIT_JAVAFXGRAPHICS_EMUL:
+            case "webfx-kit-javafxgraphics-peers":
+            case "webfx-kit-javafxgraphics-peers-base":
+            case "webfx-kit-javafxgraphics-peers-gwt":
+            case "webfx-kit-javafxgraphics-registry-gwt":
+            case "webfx-kit-util":
+                return true;
+            default:
+                return false;
+        }
     }
 
     public static boolean isRegistryModule(String moduleName) {
@@ -104,14 +126,6 @@ public class SpecificModules {
 
     public static boolean isJdkModule(String moduleName) {
         return ModuleRegistry.isJdkModule(moduleName);
-    }
-
-    public static boolean isJdkEmulationModule(String moduleName) {
-        switch (moduleName) {
-            case JAVA_NIO_EMUL:
-                return true;
-        }
-        return false;
     }
 
     public static boolean skipJavaModuleInfo(String moduleName) {

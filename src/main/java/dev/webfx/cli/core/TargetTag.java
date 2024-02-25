@@ -14,7 +14,7 @@ public enum TargetTag {
     GLUON           ("gluon", OPENJFX), // => native
     WEB             ("web", PLAT_API_PARTITION, Platform.GWT, Platform.J2CL, Platform.TEAVM), // => BROWSER
     GWT             ("gwt", WEB, Platform.GWT),
-    J2CL            ("j2cl", WEB, Platform.J2CL),
+    J2CL            ("j2cl", GWT, Platform.J2CL, Platform.GWT),
     TEAVM           ("teavm", WEB, Platform.TEAVM),
 
     ARCH_PARTITION  (),

@@ -14,6 +14,7 @@ import org.w3c.dom.Node;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -100,6 +101,28 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                         + "<appLabel>" + applicationLabel + "</appLabel>\n"
                         + "</releaseConfiguration>\n";
             template = template.replace("${plugin.gluonfx.configuration}", gluonConfig);
+        }
+        // J2CL resources
+        if (template.contains("${resourceArtifactItems}")) {
+            String artifactItems = ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
+                    .map(pm -> {
+                        ReusableStream<String> resourcePackages = pm.getNonEmbedResourcePackages();
+                        if (resourcePackages.isEmpty())
+                            return null;
+                        return "<artifactItem>\n" +
+                               "<groupId>" + ArtifactResolver.getGroupId(pm) + "</groupId>\n" +
+                               "<artifactId>" + ArtifactResolver.getArtifactId(pm) + "</artifactId>\n" +
+                               "<version>" + ArtifactResolver.getVersion(pm) + "</version>\n" +
+                               "<includes>" + resourcePackages.map(p -> p.replace('.', '/') + "/").collect(Collectors.joining(" , ")) + "</includes>\n" +
+                               "</artifactItem>";
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining("\n"));
+            if (artifactItems.isEmpty())
+                artifactItems = "<skip>true</skip>"; // We skip the resource plugin, otherwise it will fail if no artifact items are provided
+            else
+                artifactItems = "<artifactItems>\n" + artifactItems + "</artifactItems>";
+            template = template.replace("${resourceArtifactItems}", artifactItems);
         }
         Document document = XmlUtil.parseXmlString(template);
         Element documentElement = document.getDocumentElement();

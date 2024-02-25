@@ -89,10 +89,16 @@ public interface ProjectModule extends Module {
 
     default ReusableStream<String> getResourcePackages() { // Direct calls: 1) DevGwtModuleFile (to list resources packages in GWT module) & 2) DevMavenPomModuleFile to generate the resourcesList for Gluon modules
         return ReusableStream.concat(
-                getExplicitResourcePackages(),
+                getNonEmbedResourcePackages(),
                 getMetaResourcePackage(),
                 getSourcesRootConfigResourcePackage(),
-                getI18nResourcePackage(),
+                getI18nResourcePackage()
+        ).distinct();
+    }
+
+    default ReusableStream<String> getNonEmbedResourcePackages() { // Direct calls: 1) DevGwtModuleFile (to list resources packages in GWT module) & 2) DevMavenPomModuleFile to generate the resourcesList for Gluon modules
+        return ReusableStream.concat(
+                getExplicitResourcePackages(),
                 getWebFxModuleFile().areResourcePackagesAutomaticallyExported() ? getFileResourcePackages() : ReusableStream.empty()
         ).distinct();
     }

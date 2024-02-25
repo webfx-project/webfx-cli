@@ -74,8 +74,9 @@ public final class Update extends CommonSubcommand implements Runnable {
                     .filter(m -> !SpecificModules.skipJavaModuleInfo(m.getName()))
                     .forEach(m -> {
                         boolean jre = m.getTarget().isAnyPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
+                        boolean gwt = m.getTarget().hasTag(TargetTag.GWT);
                         boolean teavm = m.getTarget().isAnyPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM
-                        if (jre) // Not for TeaVM because the TeaVM modules in module-info.java are not recognised by JPMS
+                        if (jre && !gwt) // Not for TeaVM because the TeaVM modules in module-info.java are not recognised by JPMS
                             JavaFilesGenerator.generateModuleInfoJavaFile(m);
                         if (jre /* for GraalVM */ || teavm)
                             JavaFilesGenerator.generateMetaInfServicesFiles(m);
@@ -85,7 +86,7 @@ public final class Update extends CommonSubcommand implements Runnable {
             // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
             getWorkingAndChildrenModulesInDepth(workingModule)
                     .filter(m -> m.isExecutable(Platform.GWT))
-                    .forEach(GwtFilesGenerator::generateGwtFiles);
+                    .forEach(GwtJ2clFilesGenerator::generateGwtJ2clFiles);
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
         getWorkingAndChildrenModulesInDepth(workingModule)

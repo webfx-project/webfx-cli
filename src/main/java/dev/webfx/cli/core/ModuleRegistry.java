@@ -375,6 +375,9 @@ final public class ModuleRegistry {
     }
 
     private String getUnsuitableModuleReason(Module m, ProjectModule sourceModule) {
+        if (m.isJavaBaseEmulationModule() && m.getName().contains("j2cl") && !m.getName().contains("gwt") && sourceModule.isExecutable(Platform.GWT)) {
+            return "J2CL module (not suitable for GWT)";
+        }
         if (!(m instanceof ProjectModule))
             return null;
         ProjectModule pm = (ProjectModule) m;

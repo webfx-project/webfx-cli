@@ -51,6 +51,10 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                         // 2) these modules have been shaded so the original source packages would start with emul (which would be incorrect) if they were listed here
                         if (moduleName.startsWith("webfx-platform-emul-") && moduleName.endsWith("-gwt"))
                             return;
+                        String gwtModuleName = getGwtModuleName(module); // => must include a <inherits> section
+                        // Excluding modules such as gwt-time, j2cl-time but not gwt-nio (inherits) and javabase-emul (raw super source)
+                        if (gwtModuleName == null && module.isJavaBaseEmulationModule() && !module.getName().contains("javabase-emul"))
+                            return;
                         Node parentNode = moduleSourceEndNode.getParentNode();
                         // Creating a node appender that inserts a node with the after a new line and indentation
                         String newIndentedLine = "\n    ";
@@ -83,7 +87,6 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                             .stream().sorted(Comparator.comparing(ModuleDependency::getSourceModule)) // Sorting by source module name instead of default (destination module name)
                             .forEach(dep -> nodeAppenderIfNotOnlyComment.accept(document.createComment(" used by " + dep.getSourceModule() + " (" + dep.getType() + ") ")));
                     */
-                        String gwtModuleName = getGwtModuleName(module);
                         if (gwtModuleName != null) {
                             Element inherits = document.createElement("inherits");
                             inherits.setAttribute("name", gwtModuleName);

@@ -296,8 +296,12 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                 ;
     }
 
+    private BuildInfo buildInfo;
+
     public BuildInfo getBuildInfo() {
-        return new BuildInfo(this);
+        if (buildInfo == null)
+            buildInfo = new BuildInfo(this);
+        return buildInfo;
     }
 
     private ReusableStream<ProjectModule> exportSnapshotUsageCoverage;

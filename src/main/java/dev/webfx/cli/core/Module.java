@@ -12,6 +12,8 @@ public interface Module extends GavApi, Comparable<Module> {
 
     String getType();
 
+    boolean isJavaBaseEmulationModule();
+
     // Comparison function used to sort modules dependencies in the Maven pom files
     @Override
     default int compareTo(Module m) {

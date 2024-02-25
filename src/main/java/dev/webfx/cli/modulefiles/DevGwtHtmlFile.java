@@ -28,7 +28,7 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
                 ProjectModule.filterProjectModules(getProjectModule().getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()).distinct();
         ReusableStream.concat(
                 transitiveProjectModules.map(m -> m.getWebFxModuleFile().getHtmlNode()),
-                ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order=\"0\"><script type=\"text/javascript\" src=\"" + getModule().getName().replaceAll("-", "_") + ".nocache.js\" charset=\"utf-8\"/></body></html>"), "/html"))
+                ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order=\"0\"><script type=\"text/javascript\" src=\"" + getGeneratedJsFileName() + "\" charset=\"utf-8\"/></body></html>"), "/html"))
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
                 .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.getChildNodes(), n -> n))
@@ -80,6 +80,13 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
                 .replace("${generatedHeadContent}", headSb)
                 .replace("${generatedBodyContent}", bodySb);
         TextFileReaderWriter.writeTextFileIfNewOrModified(text, getModuleFilePath());
+    }
+
+    private String getGeneratedJsFileName() {
+        if (getModule().getBuildInfo().isForJ2cl)
+            return getModule().getName() + ".js";
+        // GWT
+        return getModule().getName().replaceAll("-", "_") + ".nocache.js";
     }
 
     private static boolean checkNodeConditions(Node headOrBodyNode, ReusableStream<ProjectModule> transitiveProjectModules) {
