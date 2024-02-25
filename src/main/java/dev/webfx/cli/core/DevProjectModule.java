@@ -208,7 +208,7 @@ public class DevProjectModule extends ProjectModuleImpl {
                 .filter(path -> !path.equals(getHomeDirectory()))
                 .filter(path -> Files.exists(path.resolve("webfx.xml")) || Files.exists(path.resolve("pom.xml")))
                 .map(path -> path.toFile().getName())
-                .sorted()
+                .sorted(Module::compareModuleNames)
                 .cache();
     }
 

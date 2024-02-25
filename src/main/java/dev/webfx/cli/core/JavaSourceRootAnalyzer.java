@@ -150,11 +150,17 @@ public final class JavaSourceRootAnalyzer {
                     return webFxModuleFile.detectedUsedBySourceModulesDependenciesFromExportSnapshot();
                 if (webFxModuleFile.isAggregate())
                     return ReusableStream.empty();
-                return usedJavaPackagesCache
+                ReusableStream<Module> distinct = usedJavaPackagesCache
                         .map(p -> projectModule.getRootModule().searchJavaPackageModule(p, projectModule))
                         //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
-                        .filter(module -> module != getProjectModule() && !module.getName().equals(projectModule.getName()))
-                        .distinct()
+                        .filter(module -> module != getProjectModule() && !module.getName().equals(projectModule.getName()));
+                if (requiresJavaBaseJ2clEmulation()) {
+                    distinct = ReusableStream.concat(
+                            distinct,
+                            ReusableStream.of(projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL))
+                    );
+                }
+                return distinct
                         .map(m -> ModuleDependency.createSourceDependency(projectModule, m))
                         .distinct()
                         .cache();
@@ -249,7 +255,7 @@ public final class JavaSourceRootAnalyzer {
     private final ReusableStream<ModuleDependency> transitiveDependenciesWithoutImplicitProvidersCache =
             directDependenciesWithoutImplicitProvidersCache
                     .flatMap(ModuleDependency::collectThisAndTransitiveDependencies)
-                    .filter(dep -> dep.getExecutableTarget() == null || getProjectModule().isExecutable() && dep.getExecutableTarget().gradeTargetMatch(getProjectModule().getTarget()) >= 0)
+                    .filter(dep -> dep.getExecutableTargets().isEmpty() || getProjectModule().isExecutable() && dep.getExecutableTargets().stream().anyMatch(depTarget -> depTarget.gradeTargetMatch(getProjectModule().getTarget()) >= 0))
                     .distinct()
                     .cache()
                     .name("transitiveDependenciesWithoutImplicitProvidersCache");
@@ -355,7 +361,7 @@ public final class JavaSourceRootAnalyzer {
                             directDependenciesWithoutFinalExecutableResolutionsCache,
                             // Moving transitive dependencies declared with an executable target to here (ie direct dependencies)
                             transitiveDependenciesWithoutFinalExecutableResolutionsCache
-                                    .filter(dep -> dep.getExecutableTarget() != null)
+                                    .filter(dep -> !dep.getExecutableTargets().isEmpty())
                     )
                     .flatMap(this::resolveInterfaceDependencyIfExecutable) // Resolving interface modules
                     .distinct()
@@ -365,7 +371,7 @@ public final class JavaSourceRootAnalyzer {
     private final ReusableStream<ModuleDependency> directDependenciesCache =
             unfilteredDirectDependenciesCache
                     // Removing dependencies declared with an executable target if this module is not executable or with incompatible target
-                    .filter(dep -> dep.getExecutableTarget() == null || getProjectModule().isExecutable() && dep.getExecutableTarget().gradeTargetMatch(getProjectModule().getTarget()) >= 0)
+                    .filter(dep -> dep.getExecutableTargets().isEmpty() || getProjectModule().isExecutable() && dep.getExecutableTargets().stream().anyMatch(depTarget -> depTarget.gradeTargetMatch(getProjectModule().getTarget()) >= 0))
                     .cache()
                     .name("directDependenciesCache");
 
@@ -377,7 +383,7 @@ public final class JavaSourceRootAnalyzer {
     private final ReusableStream<ModuleDependency> transitiveDependenciesCache =
             transitiveDependenciesWithoutFinalExecutableResolutionsCache
                     // Removing dependencies declared with an executable target if this module is not executable or with incompatible target
-                    .filter(dep -> dep.getExecutableTarget() == null || getProjectModule().isExecutable() && dep.getExecutableTarget().gradeTargetMatch(getProjectModule().getTarget()) >= 0)
+                    .filter(dep -> dep.getExecutableTargets().isEmpty() || getProjectModule().isExecutable() && dep.getExecutableTargets().stream().anyMatch(depTarget -> depTarget.gradeTargetMatch(getProjectModule().getTarget()) >= 0))
                     .flatMap(this::resolveInterfaceDependencyIfExecutable) // Resolving interface modules
                     .distinct()
                     .cache()
@@ -443,6 +449,21 @@ public final class JavaSourceRootAnalyzer {
         if (excludeWebFxKit && projectModule.getName().startsWith("webfx-kit-"))
             return false;
         return usesJavaPackage(packageName) && getSourceFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
+    }
+
+    private boolean requiresJavaBaseJ2clEmulation() {
+        if (!projectModule.getBuildInfo().isJ2clCompilable)
+            return false;
+        if (SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(projectModule.getName()))
+            return false;
+        /*if (SpecificModules.isModulePartOfWebfxExtrasVisualGridFatJ2cl(projectModule.getName()))
+            return false;*/
+        return usesJavaPackage("java.text") ||
+               usesJavaPackage("java.lang.ref") ||
+               usesJavaPackage("java.util.regex") ||
+               usesJavaClass("java.io.EOFException") ||
+               usesJavaClass("java.util.ServiceLoader") ||
+               usesJavaClass("java.util.Properties");
     }
 
     ///// Services
@@ -703,16 +724,32 @@ public final class JavaSourceRootAnalyzer {
 
     private ReusableStream<Module> collectExecutableEmulationModules() {
         RootModule rootModule = projectModule.getRootModule();
+        if (projectModule.isExecutable(Platform.J2CL)) {
+            boolean isUsingJavaTime = ProjectModule.filterDestinationProjectModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
+                    .anyMatch(pm -> pm.getMainJavaSourceRootAnalyzer().usesJavaPackage("java.time"));
+            boolean isUsingJavaNio = ProjectModule.mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
+                    .anyMatch(pm -> pm.getName().equals(SpecificModules.JAVA_NIO_EMUL));
+            return ReusableStream.of(
+                    rootModule.searchRegisteredModule(SpecificModules.J2CL_ANNOTATIONS),
+                    rootModule.searchRegisteredModule(SpecificModules.J2CL_PROCESSORS),
+                    rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL),
+                    rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL),
+                    isUsingJavaTime ? rootModule.searchRegisteredModule(SpecificModules.J2CL_TIME) : null,
+                    isUsingJavaNio ? rootModule.searchRegisteredModule(SpecificModules.JAVA_NIO_EMUL) : null
+            ).filter(Objects::nonNull);
+        }
         if (projectModule.isExecutable(Platform.GWT)) {
+            boolean isUsingJavaTime = ProjectModule.filterDestinationProjectModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
+                    .anyMatch(pm -> pm.getMainJavaSourceRootAnalyzer().usesJavaPackage("java.time"));
             boolean requiresTimezoneData =
                     ProjectModule.filterDestinationProjectModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                             .anyMatch(ProjectModule::requiresTimeZoneData);
             return ReusableStream.of(
-                    rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_GWT),
+                    rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_GWT_J2CL),
                     rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_GWT),
-                    rootModule.searchRegisteredModule(SpecificModules.GWT_TIME),
+                    isUsingJavaTime ? rootModule.searchRegisteredModule(SpecificModules.GWT_TIME) : null,
                     !requiresTimezoneData ? null : rootModule.searchRegisteredModule(SpecificModules.ORG_JRESEARCH_GWT_TIME_TZDB)
-                    ).filter(Objects::nonNull);
+            ).filter(Objects::nonNull);
         }
         if (projectModule.isExecutable(Platform.JRE)) {
             boolean isForOpenJFX = projectModule.getTarget().hasTag(TargetTag.OPENJFX);
@@ -720,12 +757,12 @@ public final class JavaSourceRootAnalyzer {
             if (!isForOpenJFX && !isForGluon)
                 return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                         .filter(m -> SpecificModules.isJavafxEmulModule(m.getName()));
-            boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isMediaModule(m.getName()));
-            boolean usesWeb = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isWebModule(m.getName()));
-            boolean usesFxml = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isFxmlModule(m.getName()));
+            boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isJavaFxMediaModule(m.getName()));
+            boolean usesWeb = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isJavaFxWebModule(m.getName()));
+            boolean usesFxml = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isJavaFxFxmlModule(m.getName()));
             return ReusableStream.of(
                     rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_BOOT_JAVA),
-                    rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_OPENJFX),
+                    rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_OPENJFX),
                     !usesMedia ? null : rootModule.searchRegisteredModule(isForGluon ? SpecificModules.WEBFX_KIT_JAVAFXMEDIA_GLUON : SpecificModules.WEBFX_KIT_JAVAFXMEDIA_EMUL),
                     !usesWeb ? null : rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXWEB_EMUL),
                     !usesFxml ? null : rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXFXML_EMUL)

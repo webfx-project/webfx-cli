@@ -10,6 +10,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * @author Bruno Salmon
  */
@@ -48,9 +53,13 @@ public interface XmlModuleFile extends ModuleFile, XmlDocumentApi {
         return s1 != null ? s1 : s2;
     }
 
-    private Target getTargetAttributeValue(Node node, String attribute) {
+    private List<Target> getTargetAttributeValue(Node node, String attribute) {
         String stringValue = XmlUtil.getAttributeValue(node, attribute);
-        return stringValue == null ? null : new Target(TargetTag.parseTags(stringValue, false));
+        if (stringValue == null)
+            return Collections.emptyList();
+        return Arrays.stream(stringValue.split(","))
+                .map(token -> new Target(TargetTag.parseTags(stringValue, false)))
+                .collect(Collectors.toUnmodifiableList());
     }
 
 }

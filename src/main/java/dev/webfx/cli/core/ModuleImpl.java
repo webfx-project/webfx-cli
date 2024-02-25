@@ -10,9 +10,11 @@ class ModuleImpl implements Module {
     protected String artifactId;
     protected String version;
     protected String type;
+    protected boolean javaBaseEmulationModule;
 
     ModuleImpl(String name) {
         this.name = name;
+        javaBaseEmulationModule = getName().contains("javabase-emul");
     }
 
     @Override
@@ -53,6 +55,14 @@ class ModuleImpl implements Module {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public boolean isJavaBaseEmulationModule() {
+        return javaBaseEmulationModule;
+    }
+
+    public void setJavaBaseEmulationModule(boolean javaBaseEmulationModule) {
+        this.javaBaseEmulationModule = javaBaseEmulationModule;
     }
 
     @Override

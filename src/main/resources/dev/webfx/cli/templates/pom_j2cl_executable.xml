@@ -6,13 +6,38 @@
 
     <dependencies/>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>com.vertispan.j2cl</groupId>
-                <artifactId>j2cl-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+    <profiles>
+        <profile>
+            <id>j2cl</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.vertispan.j2cl</groupId>
+                        <artifactId>j2cl-maven-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-resources-to-web</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    ${resourceArtifactItems}
+                                    <excludes>**/*.java,**/*.class</excludes>
+                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/${project.artifactId}</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

@@ -36,6 +36,11 @@ public class ArtifactModule implements Module {
         return split.length < 4 ? null : getArtifactToken(split.length - 2);
     }
 
+    @Override
+    public boolean isJavaBaseEmulationModule() {
+        return false; // Can't tell at this point, but should be embedded in a LibraryModule if it is the case
+    }
+
     private String getArtifactToken(int tokenIndex) {
         if (tokenIndex < split.length)
             return split[tokenIndex];

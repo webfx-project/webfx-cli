@@ -1,5 +1,7 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.platform.util.Arrays;
+
 /**
  * @author Bruno Salmon
  */
@@ -17,19 +19,26 @@ public class SpecificModules {
     public static final String WEBFX_KIT_JAVAFXMEDIA_EMUL = "webfx-kit-javafxmedia-emul";
     public static final String WEBFX_KIT_JAVAFXWEB_EMUL = "webfx-kit-javafxweb-emul";
     public static final String WEBFX_KIT_JAVAFXFXML_EMUL = "webfx-kit-javafxfxml-emul";
-    public static final String WEBFX_KIT_GWT = "webfx-kit-gwt";
-    public static final String WEBFX_KIT_OPENJFX = "webfx-kit-openjfx";
+    public static final String WEBFX_KIT_JAVAFXGRAPHICS_GWT_J2CL = "webfx-kit-javafxgraphics-gwt-j2cl";
+    public static final String WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL = "webfx-kit-javafxgraphics-fat-j2cl";
+    public static final String WEBFX_KIT_JAVAFXGRAPHICS_OPENJFX = "webfx-kit-javafxgraphics-openjfx";
     public static final String WEBFX_KIT_JAVAFXWEB_REGISTRY = "webfx-kit-javafxweb-registry";
     public static final String WEBFX_KIT_JAVAFXWEB_ENGINEPEER = "webfx-kit-javafxweb-enginepeer";
     public static final String WEBFX_KIT_JAVAFXMEDIA_GLUON = "webfx-kit-javafxmedia-gluon";
+    public static final String WEBFX_KIT_LAUNCHER = "webfx-kit-launcher";
     public static final String WEBFX_PLATFORM_BOOT_JAVA = "webfx-platform-boot-java";
     public static final String WEBFX_PLATFORM_JAVABASE_EMUL_GWT = "webfx-platform-javabase-emul-gwt";
+    public static final String WEBFX_PLATFORM_JAVABASE_EMUL_J2CL = "webfx-platform-javabase-emul-j2cl";
     public static final String WEBFX_EXTRAS_VISUAL_GRID_PEERS = "webfx-extras-visual-grid-peers";
     public static final String JAVA_NIO_EMUL = "java-nio-emul";
     public static final String GWT_USER = "gwt-user";
     public static final String GWT_DEV = "gwt-dev";
     public static final String GWT_TIME = "gwt-time";
     public static final String ORG_JRESEARCH_GWT_TIME_TZDB = "org.jresearch.gwt.time.tzdb";
+    public static final String J2CL_TIME = "j2cl-time";
+    public static final String J2CL_ANNOTATIONS = "j2cl-annotations";
+    public static final String J2CL_PROCESSORS = "j2cl-processors";
+    public static final String SLFJ_API = "slf4j.api";
 
     public static boolean isJavafxModule(String moduleName) {
         return javafxModuleToEmulModule(moduleName) != moduleName;
@@ -78,16 +87,31 @@ public class SpecificModules {
         }
     }
 
-    public static boolean isMediaModule(String moduleName) {
+    public static boolean isJavaFxMediaModule(String moduleName) {
         return moduleName.equals(JAVAFX_MEDIA) || moduleName.startsWith("webfx-kit-javafxmedia");
     }
 
-    public static boolean isWebModule(String moduleName) {
+    public static boolean isJavaFxWebModule(String moduleName) {
         return moduleName.equals(JAVAFX_WEB) || moduleName.startsWith("webfx-kit-javafxweb");
     }
 
-    public static boolean isFxmlModule(String moduleName) {
+    public static boolean isJavaFxFxmlModule(String moduleName) {
         return moduleName.equals(JAVAFX_FXML) || moduleName.startsWith("webfx-kit-javafxfxml");
+    }
+
+    private static final String[] WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL_MODULES = {
+            WEBFX_KIT_JAVAFXGRAPHICS_GWT_J2CL,
+            WEBFX_KIT_LAUNCHER,
+            WEBFX_KIT_JAVAFXGRAPHICS_EMUL,
+            "webfx-kit-javafxgraphics-peers",
+            "webfx-kit-javafxgraphics-peers-base",
+            "webfx-kit-javafxgraphics-peers-gwt-j2cl",
+            "webfx-kit-javafxgraphics-registry-gwt-j2cl",
+            "webfx-kit-util"
+    };
+
+    public static boolean isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(String moduleName) {
+        return Arrays.contains(WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL_MODULES, moduleName);
     }
 
     public static boolean isRegistryModule(String moduleName) {
@@ -104,14 +128,6 @@ public class SpecificModules {
 
     public static boolean isJdkModule(String moduleName) {
         return ModuleRegistry.isJdkModule(moduleName);
-    }
-
-    public static boolean isJdkEmulationModule(String moduleName) {
-        switch (moduleName) {
-            case JAVA_NIO_EMUL:
-                return true;
-        }
-        return false;
     }
 
     public static boolean skipJavaModuleInfo(String moduleName) {

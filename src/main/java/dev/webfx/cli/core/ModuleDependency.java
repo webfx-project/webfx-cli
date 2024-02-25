@@ -27,13 +27,13 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
     private final boolean transitive;
     private final String scope;
     private final String classifier;
-    private final Target executableTarget;
+    private final List<Target> executableTargets;
 
     public ModuleDependency(Module sourceModule, Module destinationModule, Type type) {
-        this(sourceModule, destinationModule, type, false, false, null, null, null);
+        this(sourceModule, destinationModule, type, false, false, null, null, Collections.emptyList());
     }
 
-    public ModuleDependency(Module sourceModule, Module destinationModule, Type type, boolean optional, boolean transitive, String scope, String classifier, Target executableTarget) {
+    public ModuleDependency(Module sourceModule, Module destinationModule, Type type, boolean optional, boolean transitive, String scope, String classifier, List<Target> executableTargets) {
         this.sourceModule = sourceModule;
         this.destinationModule = destinationModule;
         this.type = type;
@@ -41,7 +41,7 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
         this.transitive = transitive;
         this.scope = scope;
         this.classifier = classifier;
-        this.executableTarget = executableTarget;
+        this.executableTargets = executableTargets;
     }
 
     public Module getSourceModule() {
@@ -72,8 +72,8 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
         return classifier;
     }
 
-    public Target getExecutableTarget() {
-        return executableTarget;
+    public List<Target> getExecutableTargets() {
+        return executableTargets;
     }
 
     @Override
@@ -96,6 +96,8 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
             if (SpecificModules.isJavafxEmulModule(destinationModuleName)
                     // Except for GWT executables (which use only WebFX modules and need them all)
                     && !targetModule.isExecutable(Platform.GWT)
+                    // Same with J2CL (except for fat modules
+                    && !(targetModule.isExecutable(Platform.J2CL) && !SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(destinationModuleName) /*&& !SpecificModules.isModulePartOfWebfxExtrasVisualGridFatJ2cl(destinationModuleName)*/)
                     // Also except for Gluon modules using media => they need webfx-kit-javafxmedia-gluon + transitive dependencies such as webfx-platform-audio-gluon, Gluon Attach audio, etc...
                     && !destinationModuleName.equals(SpecificModules.WEBFX_KIT_JAVAFXMEDIA_GLUON))
                 return;
@@ -136,7 +138,7 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
 
     @Override
     public String toString() {
-        return sourceModule + " -> " + destinationModule + " (type = " + type + (optional ? ", optional" : "") + (scope == null ? "" : ", scope = " + scope) + (classifier == null ? "" : ", classifier = " + classifier) + (executableTarget == null ? "" : ", executableTarget = " + executableTarget) + ")";
+        return sourceModule + " -> " + destinationModule + " (type = " + type + (optional ? ", optional" : "") + (scope == null ? "" : ", scope = " + scope) + (classifier == null ? "" : ", classifier = " + classifier) + (executableTargets == null ? "" : ", executableTarget = " + executableTargets) + ")";
     }
 
     public static ModuleDependency createDependency(Module srcModule, Module dstModule, Type type) {

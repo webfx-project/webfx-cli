@@ -19,6 +19,9 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-g", "--gwt"}, description = "Includes the GWT compilation")
     private boolean gwt;
 
+    @CommandLine.Option(names = {"-j", "--j2cl"}, description = "Includes the J2CL compilation")
+    private boolean j2cl;
+
     @CommandLine.Option(names = {"-f", "--openjfx-fatjar"}, description = "Creates a fat jar for the OpenJFX version")
     private boolean fatjar;
 
@@ -66,7 +69,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(true, run, gwt, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
+        execute(new BuildRunCommon(true, run, gwt, j2cl, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
