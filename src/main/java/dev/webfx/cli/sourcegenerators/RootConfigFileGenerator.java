@@ -8,13 +8,13 @@ import dev.webfx.cli.util.sort.TopologicalSort;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
+import dev.webfx.platform.ast.AST;
+import dev.webfx.platform.ast.ReadOnlyAstArray;
+import dev.webfx.platform.ast.ReadOnlyAstObject;
 import dev.webfx.platform.conf.Config;
 import dev.webfx.platform.conf.ConfigParser;
 import dev.webfx.platform.conf.SourcesConfig;
 import dev.webfx.platform.conf.impl.ConfigMerger;
-import dev.webfx.platform.util.keyobject.ReadOnlyIndexedArray;
-import dev.webfx.platform.util.keyobject.ReadOnlyKeyObject;
-import dev.webfx.platform.util.keyobject.formatter.AstFormatter;
 import dev.webfx.platform.util.tuples.Pair;
 
 import java.nio.file.FileSystems;
@@ -92,7 +92,7 @@ public final class RootConfigFileGenerator {
                                             i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
                                             i18nCache.put(path, i18nObject);
                                         }
-                                        ReadOnlyIndexedArray languages = i18nObject.keys();
+                                        ReadOnlyAstArray languages = i18nObject.keys();
                                         for (int i = 0; i < languages.size(); i++) {
                                             String language = languages.getString(i);
                                             ConfigMerge languageMerge = i18nMerges.get(language);
@@ -135,7 +135,7 @@ public final class RootConfigFileGenerator {
             } else {
                 selectedPath = jsonPath;
                 Config config = ConfigMerger.mergeConfigs(configMerge.moduleConfigs.stream().map(Pair::get2).toArray(Config[]::new));
-                sb.append(AstFormatter.formatObject(config, "json"));
+                sb.append(AST.formatObject(config, "json"));
             }
             if (sb.length() == 0)
                 selectedPath = null; // In order to delete the conf files (see below)
@@ -148,25 +148,25 @@ public final class RootConfigFileGenerator {
             TextFileReaderWriter.deleteTextFile(jsonPath);
     }
 
-    private static boolean hasArray(ReadOnlyKeyObject astObject) {
+    private static boolean hasArray(ReadOnlyAstObject astObject) {
         for (Object key : astObject.keys()) {
             Object value = astObject.get(key.toString());
-            if (value instanceof ReadOnlyIndexedArray)
+            if (AST.isArray(value))
                 return true;
-            if (value instanceof ReadOnlyKeyObject && hasArray((ReadOnlyKeyObject) value))
+            if (AST.isObject(value) && hasArray((ReadOnlyAstObject) value))
                 return true;
         }
         return false;
     }
 
-    private static void appendAstObjectToProperties(String prefix, ReadOnlyKeyObject config, StringBuilder sb, String[] lastModuleHeader, String moduleName) {
-        ReadOnlyIndexedArray keys = config.keys();
+    private static void appendAstObjectToProperties(String prefix, ReadOnlyAstObject config, StringBuilder sb, String[] lastModuleHeader, String moduleName) {
+        ReadOnlyAstArray keys = config.keys();
         for (int i = 0; i < keys.size(); i++) {
             String key = keys.getString(i);
             Object o = config.get(key);
             String newPrefix = prefix == null ? key : prefix + '.' + key;
-            if (o instanceof ReadOnlyKeyObject)
-                appendAstObjectToProperties(newPrefix, (ReadOnlyKeyObject) o, sb, lastModuleHeader, moduleName);
+            if (AST.isObject(o))
+                appendAstObjectToProperties(newPrefix, (ReadOnlyAstObject) o, sb, lastModuleHeader, moduleName);
             else {
                 if (sb.length() == 0)
                     sb.append("# File managed by WebFX (DO NOT EDIT MANUALLY)\n");
