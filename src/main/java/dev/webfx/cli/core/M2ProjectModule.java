@@ -89,7 +89,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
         if (isAggregate())
             return false;
         // If the package is declared in this module, then yes, it uses it
-        Module moduleDeclaringThisPackage = getRootModule().searchJavaPackageModule(javaPackage, this);
+        Module moduleDeclaringThisPackage = getRootModule().searchJavaPackageModule(javaPackage, this, true);
         if (moduleDeclaringThisPackage == this)
             return true;
         // If the package is declared in another module that is not listed in the direct dependencies (according to export snapshot), then it means this module doesn't use it

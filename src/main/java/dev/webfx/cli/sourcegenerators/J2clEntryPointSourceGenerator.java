@@ -1,6 +1,7 @@
 package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
+import dev.webfx.cli.core.ProjectModule;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
@@ -11,6 +12,7 @@ import dev.webfx.lib.reusablestream.ReusableStream;
 final class J2clEntryPointSourceGenerator {
 
     static void generateEntryPointSource(DevProjectModule module) {
+        String template = ResourceTextFileReader.readTemplate("J2clEntryPoint.javat");
         StringBuilder sb = new StringBuilder();
         module.getMainJavaSourceRootAnalyzer().getExecutableProviders()
                 .forEach(providers -> {
@@ -32,9 +34,23 @@ final class J2clEntryPointSourceGenerator {
                     });
                     sb.append(");");
                 });
+        template = template.replace("${registerServiceProvidersBody}", sb);
+        sb.setLength(0);
+        ProjectModule.filterProjectModules(module.getMainJavaSourceRootAnalyzer().getTransitiveModules())
+                .flatMap(m -> m.getWebFxModuleFile().getArrayNewInstanceClasses())
+                .distinct()
+                .sorted()
+                .forEach(className -> {
+                    if (sb.length() > 0)
+                        sb.append("\n");
+                    sb.append("        RArray.register(").append(className).append(".class, ").append(className).append("[]::new);");
+                });
+        template = template.replace("${registerArrayConstructorsBody}", sb);
+        if (sb.length() == 0)
+            template = template.replace("import dev.webfx.platform.reflect.RArray;\n", "");
+
         TextFileReaderWriter.writeTextFileIfNewOrModified(
-                ResourceTextFileReader.readTemplate("J2clEntryPoint.javat")
-                        .replace("${generatedRegisterCode}", sb),
+                template,
                 module.getMainResourcesDirectory().resolve("dev/webfx/platform/boot/j2cl/entrypoint/J2clEntryPoint.java"));
     }
 

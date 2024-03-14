@@ -21,6 +21,11 @@ public interface RootModule extends ProjectModule {
      ********************************/
 
     default Module searchJavaPackageModule(String packageToSearch, ProjectModule sourceModule) {
+        return searchJavaPackageModule(packageToSearch, sourceModule, false);
+    }
+
+
+    default Module searchJavaPackageModule(String packageToSearch, ProjectModule sourceModule, boolean canReturnNull) {
         ModuleRegistry moduleRegistry = getModuleRegistry();
         // Trying a quick search
         Module module = moduleRegistry.getDeclaredJavaPackageModule(packageToSearch, sourceModule, true);
@@ -29,7 +34,7 @@ public interface RootModule extends ProjectModule {
                 //System.out.println(m);
                 return moduleRegistry.getDeclaredJavaPackageModule(packageToSearch, sourceModule, true) != null;
             }, true);
-        if (module == null) // Fruitless search but silent so far, now raising an exception by doing a non-silent search
+        if (module == null && !canReturnNull) // Fruitless search but silent so far, now raising an exception by doing a non-silent search
             module = moduleRegistry.getDeclaredJavaPackageModule(packageToSearch, sourceModule, false);
         return module;
     }

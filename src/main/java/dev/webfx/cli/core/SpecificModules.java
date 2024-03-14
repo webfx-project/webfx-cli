@@ -1,5 +1,7 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.platform.util.Arrays;
+
 /**
  * @author Bruno Salmon
  */
@@ -17,12 +19,13 @@ public class SpecificModules {
     public static final String WEBFX_KIT_JAVAFXMEDIA_EMUL = "webfx-kit-javafxmedia-emul";
     public static final String WEBFX_KIT_JAVAFXWEB_EMUL = "webfx-kit-javafxweb-emul";
     public static final String WEBFX_KIT_JAVAFXFXML_EMUL = "webfx-kit-javafxfxml-emul";
-    public static final String WEBFX_KIT_GWT = "webfx-kit-gwt";
-    public static final String WEBFX_KIT_J2CL = "webfx-kit-j2cl";
-    public static final String WEBFX_KIT_OPENJFX = "webfx-kit-openjfx";
+    public static final String WEBFX_KIT_JAVAFXGRAPHICS_GWT_J2CL = "webfx-kit-javafxgraphics-gwt-j2cl";
+    public static final String WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL = "webfx-kit-javafxgraphics-fat-j2cl";
+    public static final String WEBFX_KIT_JAVAFXGRAPHICS_OPENJFX = "webfx-kit-javafxgraphics-openjfx";
     public static final String WEBFX_KIT_JAVAFXWEB_REGISTRY = "webfx-kit-javafxweb-registry";
     public static final String WEBFX_KIT_JAVAFXWEB_ENGINEPEER = "webfx-kit-javafxweb-enginepeer";
     public static final String WEBFX_KIT_JAVAFXMEDIA_GLUON = "webfx-kit-javafxmedia-gluon";
+    public static final String WEBFX_KIT_LAUNCHER = "webfx-kit-launcher";
     public static final String WEBFX_PLATFORM_BOOT_JAVA = "webfx-platform-boot-java";
     public static final String WEBFX_PLATFORM_JAVABASE_EMUL_GWT = "webfx-platform-javabase-emul-gwt";
     public static final String WEBFX_PLATFORM_JAVABASE_EMUL_J2CL = "webfx-platform-javabase-emul-j2cl";
@@ -96,20 +99,19 @@ public class SpecificModules {
         return moduleName.equals(JAVAFX_FXML) || moduleName.startsWith("webfx-kit-javafxfxml");
     }
 
-    public static boolean isModuleIntegratedToWebfxKitJ2cl(String moduleName) {
-        switch (moduleName) {
-            case WEBFX_KIT_GWT:
-            case "webfx-kit-launcher":
-            case WEBFX_KIT_JAVAFXGRAPHICS_EMUL:
-            case "webfx-kit-javafxgraphics-peers":
-            case "webfx-kit-javafxgraphics-peers-base":
-            case "webfx-kit-javafxgraphics-peers-gwt":
-            case "webfx-kit-javafxgraphics-registry-gwt":
-            case "webfx-kit-util":
-                return true;
-            default:
-                return false;
-        }
+    private static final String[] WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL_MODULES = {
+            WEBFX_KIT_JAVAFXGRAPHICS_GWT_J2CL,
+            WEBFX_KIT_LAUNCHER,
+            WEBFX_KIT_JAVAFXGRAPHICS_EMUL,
+            "webfx-kit-javafxgraphics-peers",
+            "webfx-kit-javafxgraphics-peers-base",
+            "webfx-kit-javafxgraphics-peers-gwt-j2cl",
+            "webfx-kit-javafxgraphics-registry-gwt-j2cl",
+            "webfx-kit-util"
+    };
+
+    public static boolean isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(String moduleName) {
+        return Arrays.contains(WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL_MODULES, moduleName);
     }
 
     public static boolean isRegistryModule(String moduleName) {

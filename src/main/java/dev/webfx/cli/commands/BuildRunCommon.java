@@ -19,6 +19,7 @@ final class BuildRunCommon {
     final boolean build;
     final boolean run;
     final boolean gwt;
+    final boolean j2cl;
     final boolean fatjar;
     final boolean openJfxDesktop;
     final boolean gluonDesktop;
@@ -31,10 +32,11 @@ final class BuildRunCommon {
     final boolean rpm;
     final boolean open;
 
-    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open) {
+    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean j2cl, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open) {
         this.build = build;
         this.run = run;
         this.gwt = gwt;
+        this.j2cl = j2cl;
         this.fatjar = fatjar;
         this.openJfxDesktop = openJfxDesktop;
         this.gluonDesktop = gluonDesktop;
@@ -99,6 +101,7 @@ final class BuildRunCommon {
                 .filter(ProjectModule::isExecutable)
                 .filter(m ->
                         m.isExecutable(Platform.GWT) ? gwt :
+                        m.isExecutable(Platform.J2CL) ? j2cl :
                         m.getTarget().hasTag(TargetTag.OPENJFX) ? openJfx :
                         m.getTarget().hasTag(TargetTag.GLUON) && gluon)
                 .map(DevProjectModule.class::cast)

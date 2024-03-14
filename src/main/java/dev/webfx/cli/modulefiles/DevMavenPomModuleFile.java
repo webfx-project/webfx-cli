@@ -62,8 +62,8 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                         : "pom_openjfx_executable.xml";
         String template = ResourceTextFileReader.readTemplate(templateFileName)
                 .replace("${groupId}", ArtifactResolver.getGroupId(projectModule))
-                .replace("${artifactId}", ArtifactResolver.getArtifactId(projectModule))
-                .replace("${version}", ArtifactResolver.getVersion(projectModule))
+                .replace("${artifactId}", getArtifactId(projectModule))
+                .replace("${version}", getVersion(projectModule))
                 .replace("${application.name}", getApplicationName(projectModule))
                 .replace("${application.displayName}", getApplicationDisplayName(projectModule));
         // For the executable Gluon pom, we need to add some extra configuration required by the GluonFX plugin:
@@ -134,6 +134,24 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         return document;
     }
 
+    public static String getArtifactId(Module module) {
+        String artifactId = ArtifactResolver.getArtifactId(module);
+        if (artifactId == null)
+            artifactId = module.getArtifactId();
+        if (artifactId == null)
+            artifactId = module.getName();
+        return artifactId;
+    }
+
+    public static String getVersion(Module module) {
+        String version = ArtifactResolver.getVersion(module);
+        if (version == null)
+            version = module.getVersion();
+        if (version == null)
+            version = "0.1.0-SNAPSHOT";
+        return version;
+    }
+
     public static String getApplicationName(Module module) {
         return getApplicationDisplayName(module).replace(" ", "");
     }
@@ -202,7 +220,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         }
         // Getting the GAV for this module
         String groupId = ArtifactResolver.getGroupId(module);
-        String artifactId = ArtifactResolver.getArtifactId(module);
+        String artifactId = getArtifactId(module);
         String version = ArtifactResolver.getVersion(module);
         // Getting the GAV for the parent module
         Module parentModule = module instanceof DevRootModule && !module.getMavenModuleFile().fileExists() ? null // This happens on first pom.xml creation with "webfx init" => no parent yet
@@ -240,7 +258,8 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                     // For other modules, we just need the direct dependencies, but also the implicit providers
                     ReusableStream.concat(
                             javaSourceRootAnalyzer.getDirectDependencies(),
-                            javaSourceRootAnalyzer.getTransitiveDependencies().filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER)
+                            javaSourceRootAnalyzer.getTransitiveDependencies()
+                                    .filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER)
                     ).distinct();
             // Once we have these dependencies, we proceed them to populate the <dependencies> node
             dependencies
@@ -267,6 +286,9 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                             String ga = groupId + ":" + artifactId;
                             if (!gas.contains(ga)) { // Checking uniqueness to avoid malformed pom
                                 gas.add(ga);
+                                String scope = test ? "test" : ArtifactResolver.getScope(moduleGroup, buildInfo);
+                                if ("aggregate".equals(scope))
+                                    return;
                                 Node groupNode = XmlUtil.appendElementWithTextContent(dependenciesNode, "/dependency/groupId", groupId, true, false);
                                 Node dependencyNode = groupNode.getParentNode();
                                 XmlUtil.appendElementWithTextContent(dependencyNode, "/artifactId", artifactId);
@@ -276,7 +298,6 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                                 String type = ArtifactResolver.getType(destinationModule);
                                 if (type != null)
                                     XmlUtil.appendElementWithTextContent(dependencyNode, "/type", type);
-                                String scope = test ? "test" : ArtifactResolver.getScope(moduleGroup, buildInfo);
                                 String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
                                 // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
                                 if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))

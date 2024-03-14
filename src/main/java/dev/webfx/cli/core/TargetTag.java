@@ -7,15 +7,17 @@ import java.util.*;
  */
 public enum TargetTag {
 
-    PLAT_API_PARTITION(),
-    JAVA            ("java", PLAT_API_PARTITION, Platform.JRE /*, Platform.ANDROID*/),
+    PLATFORM_PARTITION(),
+    JAVA            ("java", PLATFORM_PARTITION, Platform.JRE /*, Platform.ANDROID*/),
     JRE             ("jre", JAVA, Platform.JRE),
     OPENJFX         ("openjfx", JRE), // => DESKTOP
     GLUON           ("gluon", OPENJFX), // => native
-    WEB             ("web", PLAT_API_PARTITION, Platform.GWT, Platform.J2CL, Platform.TEAVM), // => BROWSER
+    VERTX           ("vertx", JRE),
+    WEB             ("web", PLATFORM_PARTITION, Platform.GWT, Platform.J2CL, Platform.TEAVM), // => BROWSER
     GWT             ("gwt", WEB, Platform.GWT),
     J2CL            ("j2cl", GWT, Platform.J2CL, Platform.GWT),
     TEAVM           ("teavm", WEB, Platform.TEAVM),
+    EMUL            ("emul", WEB),
 
     ARCH_PARTITION  (),
     SHARED          ("shared", ARCH_PARTITION),
@@ -33,10 +35,6 @@ public enum TargetTag {
     HTML            ("html", WEB_TECHNO_PARTITION),
     SVG             ("svg", WEB_TECHNO_PARTITION),
 
-    SERVER_TECHNO_PARTITION(), // => SERVER
-    VERTX           ("vertx", SERVER_TECHNO_PARTITION),
-
-    EMUL            ("emul", null), // => GWT
     ;
 
     private static TargetTag directImpliedTag(TargetTag tag) {
@@ -48,15 +46,14 @@ public enum TargetTag {
             case DESKTOP: return JRE;
             //case WEB: return GWT;
             case WEB_TECHNO_PARTITION: return WEB;
-            case SERVER_TECHNO_PARTITION: return SERVER;
-            case EMUL: return GWT;
+            case VERTX: return SERVER;
         }
         return null;
     }
 
     private final String tagName;
     private final TargetTag parentTag;
-    private Platform[] supportedPlatforms;
+    private List<Platform> supportedPlatforms;
     private final TargetTag partitionTag;
     private final int partitionDepth;
     private TargetTag[] transitiveImpliedTags;
@@ -73,7 +70,8 @@ public enum TargetTag {
     TargetTag(String tagName, TargetTag parentTag, Platform... supportedPlatforms) {
         this.parentTag = parentTag;
         this.tagName = tagName;
-        this.supportedPlatforms = supportedPlatforms;
+        if (supportedPlatforms != null)
+            this.supportedPlatforms = Arrays.asList(supportedPlatforms);
         TargetTag partitionTag = this;
         int partitionDepth = 0;
         while (partitionTag.getParentTag() != null) {
@@ -92,11 +90,16 @@ public enum TargetTag {
         return tagName;
     }
 
-    Platform[] getSupportedPlatforms() {
+    public boolean isPlatformTag() {
+        if (parentTag != null)
+            return parentTag.isPlatformTag();
+        return this == PLATFORM_PARTITION;
+    }
+
+    List<Platform> getSupportedPlatforms() {
         if (supportedPlatforms == null) {
-            List<Platform> platforms = new ArrayList<>(Arrays.asList(Platform.values())); // Wrapped in ArrayList to make it modifiable
-            restrictPlatforms(platforms, this, true);
-            supportedPlatforms = platforms.toArray(Platform[]::new);
+            supportedPlatforms = new ArrayList<>(Arrays.asList(Platform.values()));
+            restrictPlatforms(supportedPlatforms, this, true);
         }
         return supportedPlatforms;
     }
@@ -140,11 +143,11 @@ public enum TargetTag {
     }
 
     boolean isPlatformSupported(Platform platform) {
-        return Arrays.asList(getSupportedPlatforms()).contains(platform);
+        return getSupportedPlatforms().contains(platform);
     }
 
     boolean isPlatformCompatible(TargetTag requestedTag) {
-        return Arrays.stream(requestedTag.getSupportedPlatforms()).anyMatch(this::isPlatformSupported);
+        return requestedTag.getSupportedPlatforms().stream().anyMatch(this::isPlatformSupported);
     }
 
     int gradeCompatibility(TargetTag requestedTag) {

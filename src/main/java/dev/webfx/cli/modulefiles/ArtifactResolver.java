@@ -52,8 +52,8 @@ public final class ArtifactResolver {
             if (moduleName.equals(SpecificModules.GWT_USER)) {
                 return isForJ2cl ? null : SpecificModules.GWT_DEV;
             }
-            if (isForJ2cl && requiresJavafxEmul && SpecificModules.isModuleIntegratedToWebfxKitJ2cl(moduleName))
-                return SpecificModules.WEBFX_KIT_J2CL;
+            if (isForJ2cl && requiresJavafxEmul && SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(moduleName))
+                return SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL;
             if (isForGwt && moduleName.equals(SpecificModules.J2CL_TIME))
                 return null;
         }
@@ -176,6 +176,8 @@ public final class ArtifactResolver {
         String moduleName = module.getName();
         if (SpecificModules.J2CL_PROCESSORS.equals(moduleName))
             return PROVIDED; // because J2CL processors don't need to be compiled by J2CL
+        if (!isExecutable && isJ2clCompilable && SpecificModules.JAVA_NIO_EMUL.equals(moduleName))
+            return PROVIDED; // because other environments than J2CL actually don't need it
         if (!isExecutable && isJ2clCompilable && module.isJavaBaseEmulationModule())
             return RUNTIME; // because other environments than J2CL actually don't need it
         if (!isExecutable && SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL.equals(moduleName))

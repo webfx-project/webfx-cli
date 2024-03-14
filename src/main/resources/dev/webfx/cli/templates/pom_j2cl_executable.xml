@@ -12,8 +12,8 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.vertispan.j2cl</groupId>
-                        <artifactId>j2cl-maven-plugin</artifactId>
+                        <groupId>dev.webfx</groupId>
+                        <artifactId>j2cl-maven-plugin-webfx</artifactId>
                     </plugin>
 
                     <plugin>

@@ -1,7 +1,7 @@
 package dev.webfx.platform.boot.j2cl.entrypoint;
 
+import dev.webfx.platform.reflect.RArray;
 import dev.webfx.platform.boot.spi.impl.j2cl.J2clApplicationBooterProvider;
-
 import org.treblereel.j2cl.processors.annotations.GWT3EntryPoint;
 
 import static dev.webfx.platform.javabase.emul.j2cl.ServiceRegistry.*;
@@ -10,11 +10,16 @@ public final class J2clEntryPoint {
 
     @GWT3EntryPoint
     public void entryPoint() {
+        registerArrayConstructors();
         registerServiceProviders();
         new J2clApplicationBooterProvider().onModuleLoad();
     }
 
+    public static void registerArrayConstructors() {
+${registerArrayConstructorsBody}
+    }
+
     public static void registerServiceProviders() {
-${generatedRegisterCode}
+${registerServiceProvidersBody}
     }
 }

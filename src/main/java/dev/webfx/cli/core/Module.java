@@ -27,16 +27,25 @@ public interface Module extends GavApi, Comparable<Module> {
         if (mArtifactId == null)
             mArtifactId = m.getName();
 
+        return compareModuleNames(thisArtifactId, mArtifactId);
+    }
+
+    static int compareModuleNames(String thisArtifactId, String mArtifactId) {
+        if (thisArtifactId.equals(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL))
+            thisArtifactId = "webfx-kit-util-after";
+        if (mArtifactId.equals(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL))
+            mArtifactId = "webfx-kit-util-after";
+
         // Moving JavaFX emulation modules on top (before JavaFX itself even if scope is just provided) so specific emulation API can be eventually be used in peer java code
         boolean thisEmul = SpecificModules.isJavafxEmulModule(thisArtifactId);
         boolean mEmul = SpecificModules.isJavafxEmulModule(mArtifactId);
         if (thisEmul != mEmul)
             return thisEmul ? -1 : 1;
-        // This (temporary) rule is just for GridCollator (which has a different implementation in gwt so must be listed first)
+        // This (temporary) rule is just for GridCollator (which has a different implementation in gwt/j2cl so must be listed first)
         if (thisArtifactId.startsWith(SpecificModules.WEBFX_EXTRAS_VISUAL_GRID_PEERS) && mArtifactId.startsWith(SpecificModules.WEBFX_EXTRAS_VISUAL_GRID_PEERS)) {
-            if (getName().endsWith("-gwt"))
+            if (thisArtifactId.endsWith("-gwt-j2cl"))
                 return -1;
-            if (m.getName().endsWith("-gwt"))
+            if (mArtifactId.endsWith("-gwt-j2cl"))
                 return 1;
         }
         // Everything else is sorted in alphabetic order
