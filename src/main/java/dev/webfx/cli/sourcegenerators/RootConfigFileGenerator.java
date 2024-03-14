@@ -11,6 +11,7 @@ import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.platform.ast.AST;
 import dev.webfx.platform.ast.ReadOnlyAstArray;
 import dev.webfx.platform.ast.ReadOnlyAstObject;
+import dev.webfx.platform.ast.json.Json;
 import dev.webfx.platform.conf.Config;
 import dev.webfx.platform.conf.ConfigParser;
 import dev.webfx.platform.conf.SourcesConfig;
@@ -135,7 +136,7 @@ public final class RootConfigFileGenerator {
             } else {
                 selectedPath = jsonPath;
                 Config config = ConfigMerger.mergeConfigs(configMerge.moduleConfigs.stream().map(Pair::get2).toArray(Config[]::new));
-                sb.append(AST.formatObject(config, "json"));
+                sb.append(Json.formatNode(config));
             }
             if (sb.length() == 0)
                 selectedPath = null; // In order to delete the conf files (see below)
