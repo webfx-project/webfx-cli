@@ -15,7 +15,7 @@ public enum TargetTag {
     VERTX           ("vertx", JRE),
     WEB             ("web", PLATFORM_PARTITION, Platform.GWT, Platform.J2CL, Platform.TEAVM), // => BROWSER
     GWT             ("gwt", WEB, Platform.GWT),
-    J2CL            ("j2cl", GWT, Platform.J2CL, Platform.GWT),
+    J2CL            ("j2cl", WEB, Platform.J2CL),
     TEAVM           ("teavm", WEB, Platform.TEAVM),
     EMUL            ("emul", WEB),
 
