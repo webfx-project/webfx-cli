@@ -61,6 +61,7 @@ public final class JavaSourceRootAnalyzer {
                                 .map(JavaFile::getPackageName)
                                 .distinct();
                     })
+                    .cache()
                     .name("javaSourcePackagesCache");
 
     /**
@@ -128,6 +129,7 @@ public final class JavaSourceRootAnalyzer {
     private final ReusableStream<String> usedJavaPackagesCache =
             ReusableStream.create(() -> ReusableStream.concat(
                                     javaSourceFilesCache.flatMap(JavaFile::getUsedJavaPackages),
+                                    getProjectModule().getWebFxModuleFile().getUndetectedUsedBySourcePackages(),
                                     getProjectModule().getProvidedJavaServices().map(spi -> spi.substring(0, spi.lastIndexOf('.'))) // package of the SPI (ex: javafx.application if SPI = javafx.application.Application)
                             )
                     )
@@ -142,7 +144,7 @@ public final class JavaSourceRootAnalyzer {
      */
     private final ReusableStream<ModuleDependency> detectedByCodeAnalyzerSourceDependenciesCache =
             ReusableStream.create(() -> {
-                ProjectModule projectModule = getProjectModule();
+                ProjectModuleImpl projectModule = getProjectModule();
                 WebFxModuleFile webFxModuleFile = projectModule.getWebFxModuleFile();
                 if (!webFxModuleFile.areUsedBySourceModulesDependenciesAutomaticallyAdded())
                     return ReusableStream.empty();
@@ -150,18 +152,24 @@ public final class JavaSourceRootAnalyzer {
                     return webFxModuleFile.detectedUsedBySourceModulesDependenciesFromExportSnapshot();
                 if (webFxModuleFile.isAggregate())
                     return ReusableStream.empty();
-                ReusableStream<Module> distinct = usedJavaPackagesCache
+                ReusableStream<ModuleDependency> usedModules = usedJavaPackagesCache
                         .map(p -> projectModule.getRootModule().searchJavaPackageModule(p, projectModule))
                         //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
-                        .filter(module -> module != getProjectModule() && !module.getName().equals(projectModule.getName()));
+                        .filter(module -> module != getProjectModule() && !module.getName().equals(projectModule.getName()))
+                        .map(m -> ModuleDependency.createSourceDependency(projectModule, m));
                 if (requiresJavaBaseJ2clEmulation()) {
-                    distinct = ReusableStream.concat(
-                            distinct,
-                            ReusableStream.of(projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL))
+                    usedModules = ReusableStream.concat(
+                            usedModules,
+                            ReusableStream.of(ModuleDependency.createVertispanJ2clEmulationDependency(projectModule, projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL), projectModule.getTarget().hasTag(TargetTag.J2CL)))
                     );
                 }
-                return distinct
-                        .map(m -> ModuleDependency.createSourceDependency(projectModule, m))
+                if (requiresJavaTimeJ2clEmulation()) {
+                    usedModules = ReusableStream.concat(
+                            usedModules,
+                            ReusableStream.of(ModuleDependency.createVertispanJ2clEmulationDependency(projectModule, projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVATIME_EMUL_J2CL), projectModule.getTarget().hasTag(TargetTag.J2CL)))
+                    );
+                }
+                return usedModules
                         .distinct()
                         .cache();
             }).name("detectedByCodeAnalyzerSourceDependenciesCache");
@@ -456,14 +464,21 @@ public final class JavaSourceRootAnalyzer {
             return false;
         if (SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(projectModule.getName()))
             return false;
-        /*if (SpecificModules.isModulePartOfWebfxExtrasVisualGridFatJ2cl(projectModule.getName()))
-            return false;*/
         return usesJavaPackage("java.text") ||
                usesJavaPackage("java.lang.ref") ||
                usesJavaPackage("java.util.regex") ||
+               usesJavaPackage("netscape.javascript") ||
                usesJavaClass("java.io.EOFException") ||
                usesJavaClass("java.util.ServiceLoader") ||
                usesJavaClass("java.util.Properties");
+    }
+
+    private boolean requiresJavaTimeJ2clEmulation() {
+        if (!projectModule.getBuildInfo().isJ2clCompilable)
+            return false;
+        if (SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(projectModule.getName()))
+            return false;
+        return usesJavaPackage("java.time");
     }
 
     ///// Services
@@ -734,7 +749,7 @@ public final class JavaSourceRootAnalyzer {
                     rootModule.searchRegisteredModule(SpecificModules.J2CL_PROCESSORS),
                     rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL),
                     rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL),
-                    isUsingJavaTime ? rootModule.searchRegisteredModule(SpecificModules.J2CL_TIME) : null,
+                    isUsingJavaTime ? rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVATIME_EMUL_J2CL) : null,
                     isUsingJavaNio ? rootModule.searchRegisteredModule(SpecificModules.JAVA_NIO_EMUL) : null
             ).filter(Objects::nonNull);
         }

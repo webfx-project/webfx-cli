@@ -54,7 +54,7 @@ public final class ArtifactResolver {
             }
             if (isForJ2cl && requiresJavafxEmul && SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(moduleName))
                 return SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL;
-            if (isForGwt && moduleName.equals(SpecificModules.J2CL_TIME))
+            if (isForGwt && moduleName.equals(SpecificModules.WEBFX_PLATFORM_JAVATIME_EMUL_J2CL))
                 return null;
         }
         // No external dependency required for other JDK modules
@@ -180,10 +180,6 @@ public final class ArtifactResolver {
             return PROVIDED; // because other environments than J2CL actually don't need it
         if (!isExecutable && isJ2clCompilable && module.isJavaBaseEmulationModule())
             return RUNTIME; // because other environments than J2CL actually don't need it
-        if (!isExecutable && SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL.equals(moduleName))
-            return RUNTIME;
-        if (!isExecutable && SpecificModules.J2CL_TIME.equals(moduleName))
-            return RUNTIME;
         if (!isForGwt && !isForOpenJfx && !isExecutable && !requiresJavafxEmul && (SpecificModules.isJavafxModule(moduleName) || SpecificModules.isJavafxEmulModule(moduleName)))
             return PROVIDED;
         return null;

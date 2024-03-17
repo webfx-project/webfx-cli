@@ -32,13 +32,11 @@
                 <package>java.security.spec</package>
                 <package>java.text</package>
                 <package>java.text.spi</package>
-                <!-- Commented to force search for gwt-time & j2cl-time
                 <package>java.time</package>
                 <package>java.time.chrono</package>
                 <package>java.time.format</package>
                 <package>java.time.temporal</package>
                 <package>java.time.zone</package>
-                -->
                 <package>java.util</package>
                 <package>java.util.concurrent</package>
                 <package>java.util.concurrent.atomic</package>

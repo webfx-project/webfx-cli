@@ -29,7 +29,7 @@ public class BuildInfo {
         isForGluon = target.isMonoPlatform(Platform.JRE) && target.hasTag(TargetTag.GLUON);
         isExecutable = projectModule.isExecutable();
         String moduleName = projectModule.getName();
-        isJ2clCompilable = (isForJ2cl || target.isPlatformSupported(Platform.J2CL) || target.hasTag(TargetTag.EMUL)) && !SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(moduleName);
+        isJ2clCompilable = (isForJ2cl || target.isPlatformSupported(Platform.J2CL) || target.hasTag(TargetTag.J2CL) || target.hasTag(TargetTag.EMUL)) && !SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(moduleName);
         requiresJavafxEmul = isForWeb || target.hasTag(TargetTag.GWT) || target.hasTag(TargetTag.J2CL)
                              || SpecificModules.isRegistryModule(moduleName)
                              || moduleName.equals(SpecificModules.WEBFX_KIT_JAVAFXBASE_EMUL) // required for correct artifactId in pom.xml

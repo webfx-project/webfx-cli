@@ -16,8 +16,6 @@ final class J2clEntryPointSourceGenerator {
         StringBuilder sb = new StringBuilder();
         module.getMainJavaSourceRootAnalyzer().getExecutableProviders()
                 .forEach(providers -> {
-                    if (sb.length() > 0)
-                        sb.append("\n");
                     String spiClassName = providers.getSpiClassName();
                     ReusableStream<String> providerClassNames = providers.getProviderClassNames();
                     if (spiClassName.equals("dev.webfx.platform.resource.spi.impl.j2cl.J2clResourceBundle")) {
@@ -27,12 +25,16 @@ final class J2clEntryPointSourceGenerator {
                                     ReusableStream.of(J2clEmbedResourcesBundleSourceGenerator.getProviderClassName(module))
                             );
                     }
-                    sb.append("        register(").append(spiClassName).append(".class");
-                    providerClassNames.forEach(providerClassName -> {
-                        sb.append(", ");
-                        sb.append(getProviderConstructorReference(providerClassName));
-                    });
-                    sb.append(");");
+                    if (!providerClassNames.isEmpty()) {
+                        if (sb.length() > 0)
+                            sb.append("\n");
+                        sb.append("        register(").append(spiClassName).append(".class");
+                        providerClassNames.forEach(providerClassName -> {
+                            sb.append(", ");
+                            sb.append(getProviderConstructorReference(providerClassName));
+                        });
+                        sb.append(");");
+                    }
                 });
         template = template.replace("${registerServiceProvidersBody}", sb);
         sb.setLength(0);
@@ -55,8 +57,7 @@ final class J2clEntryPointSourceGenerator {
     }
 
     private static String getProviderConstructorReference(String providerClassName) {
-        return providerClassName.replace('$', '.')
-                + (providerClassName.endsWith(".GwtJsonObject") ? "::create" : "::new");
+        return providerClassName.replace('$', '.') + "::new";
     }
 
 }

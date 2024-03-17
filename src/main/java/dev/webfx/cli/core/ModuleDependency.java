@@ -161,6 +161,10 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
         return createDependency(srcModule, dstModule, Type.EMULATION);
     }
 
+    public static ModuleDependency createVertispanJ2clEmulationDependency(Module srcModule, Module dstModule, boolean isForJ2cl) {
+        return new ModuleDependency(srcModule, dstModule, Type.EMULATION, true, false,  isForJ2cl ? null : "runtime", null, Collections.emptyList());
+    }
+
     public static ModuleDependency createApplicationDependency(Module srcModule, Module dstModule) {
         return createDependency(srcModule, dstModule, Type.APPLICATION);
     }

@@ -254,7 +254,9 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             // We need to get all dependencies of the module, to populate <dependencies> in the pom.xml
             ReusableStream<ModuleDependency> dependencies =
                     // For a GWT executable module, we need to list all transitive dependencies (to pull all the source code to compile by GWT)
-                    buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies() :
+                    buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies()
+                            .filter(dep -> !SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL.equals(dep.getDestinationModule().getName()))
+                            :
                     // For other modules, we just need the direct dependencies, but also the implicit providers
                     ReusableStream.concat(
                             javaSourceRootAnalyzer.getDirectDependencies(),

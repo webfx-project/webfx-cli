@@ -29,13 +29,13 @@ public class SpecificModules {
     public static final String WEBFX_PLATFORM_BOOT_JAVA = "webfx-platform-boot-java";
     public static final String WEBFX_PLATFORM_JAVABASE_EMUL_GWT = "webfx-platform-javabase-emul-gwt";
     public static final String WEBFX_PLATFORM_JAVABASE_EMUL_J2CL = "webfx-platform-javabase-emul-j2cl";
+    public static final String WEBFX_PLATFORM_JAVATIME_EMUL_J2CL = "webfx-platform-javatime-emul-j2cl";
     public static final String WEBFX_EXTRAS_VISUAL_GRID_PEERS = "webfx-extras-visual-grid-peers";
     public static final String JAVA_NIO_EMUL = "java-nio-emul";
     public static final String GWT_USER = "gwt-user";
     public static final String GWT_DEV = "gwt-dev";
     public static final String GWT_TIME = "gwt-time";
     public static final String ORG_JRESEARCH_GWT_TIME_TZDB = "org.jresearch.gwt.time.tzdb";
-    public static final String J2CL_TIME = "j2cl-time";
     public static final String J2CL_ANNOTATIONS = "j2cl-annotations";
     public static final String J2CL_PROCESSORS = "j2cl-processors";
     public static final String SLFJ_API = "slf4j.api";
