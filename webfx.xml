@@ -8,7 +8,7 @@
 
     <dependencies>
         <used-by-source-modules/>
-        <plugin-module>webfx-platform-json</plugin-module>
+        <plugin-module>webfx-platform-ast-json-plugin</plugin-module>
     </dependencies>
 
     <required-libraries>
