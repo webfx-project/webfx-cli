@@ -64,7 +64,7 @@ public final class Bump extends CommonSubcommand {
                 Logger.log("A new version is available!");
                 Logger.log("Old version: " + WebFxCLI.getVersion());
             }
-            newCliProcessCall("mvn", "-U", "package") // -U is to ensure we get the latest SNAPSHOT versions (in particular webfx-platform) to prevent build errors
+            newCliProcessCall("mvn", "-U", "clean", "package") // -U is to ensure we get the latest SNAPSHOT versions (in particular webfx-platform) to prevent build errors
                     .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))
                     .setLogLineFilter(line -> line.startsWith("[ERROR]"))
                     .executeAndWait()
