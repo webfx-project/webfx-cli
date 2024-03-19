@@ -54,12 +54,15 @@ public final class Update extends CommonSubcommand implements Runnable {
     static void executeUpdateTasks(DevProjectModule workingModule, UpdateTasks tasks) {
         // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties) <- always present
         // and config file for executable modules (dev.webfx.platform.conf/src-root.properties) <- present only when using modules with config
-        getWorkingAndChildrenModulesInDepth(workingModule)
-                .filter(ProjectModule::isExecutable)
-                .forEach(module -> {
-                    MetaFileGenerator.generateExecutableModuleMetaResourceFile(module);
-                    RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module);
-                });
+        if (tasks.meta || tasks.conf || tasks.i18n)
+            getWorkingAndChildrenModulesInDepth(workingModule)
+                    .filter(ProjectModule::isExecutable)
+                    .forEach(module -> {
+                        if (tasks.meta)
+                            MetaFileGenerator.generateExecutableModuleMetaResourceFile(module);
+                        if (tasks.conf || tasks.i18n)
+                            RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module);
+                    });
 
         // Generating or updating Maven module files (pom.xml)
         if (tasks.mavenPom)
@@ -114,7 +117,6 @@ public final class Update extends CommonSubcommand implements Runnable {
     final static class UpdateTasks {
 
         private Boolean
-                webfxXml,
                 mavenPom,
                 moduleInfoJava,
                 metaInfServices,
@@ -122,35 +124,42 @@ public final class Update extends CommonSubcommand implements Runnable {
                 gwtXml,
                 gwtSuperSources,
                 gwtServiceLoader,
-                gwtResourceBundles;
+                gwtResourceBundles,
+                meta,
+                conf,
+                i18n;
 
         private static final String[] TASK_WORDS = {
-                "pom.xml",
-                "module-info.java",
-                "meta-inf/services",
-                "index.html",
-                "gwt.xml",
-                "gwt-super-sources",
-                "gwt-service-loader",
-                "gwt-resource-bundles",
+                "pom.xml", // 0
+                "module-info.java", // 1
+                "meta-inf/services", // 2
+                "index.html", // 3
+                "gwt.xml", // 4
+                "gwt-super-sources", // 5
+                "gwt-service-loader", // 6
+                "gwt-resource-bundles", // 7
+                "meta", // 8
+                "conf", // 9
+                "i18n" // 10
         };
 
         private static final char[] TASK_LETTERS = {
                 'p', // mavenPom
                 'j', // moduleInfoJava
-                'm', // metaInfServices
+                'v', // metaInfServices
                 'h', // indexHtml
                 'g', // gwtXml
                 's', // gwtSuperSources
                 'l', // gwtServiceLoader
                 'b', // gwtResourceBundles
-                'w', // webfx.xml
+                'm', // meta
+                'c', // conf
+                'i', // i18n
         };
 
         public UpdateTasks(boolean enableAllTasks) {
-            if (enableAllTasks)
-                for (int i = 0; i < TASK_LETTERS.length; i++)
-                    enableTask(i, true);
+            for (int i = 0; i < TASK_LETTERS.length; i++)
+                enableTask(i, enableAllTasks);
         }
 
         private void processTaskFlags(String[] flags, boolean value) {
@@ -190,7 +199,9 @@ public final class Update extends CommonSubcommand implements Runnable {
                 case 5: return gwtSuperSources = value;
                 case 6: return gwtServiceLoader = value;
                 case 7: return gwtResourceBundles = value;
-                case 8: return webfxXml = value;
+                case 8: return meta = value;
+                case 9: return conf = value;
+                case 10: return i18n = value;
             }
             return false;
         }
