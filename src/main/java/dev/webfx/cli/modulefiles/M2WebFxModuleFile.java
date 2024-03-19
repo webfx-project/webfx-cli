@@ -30,6 +30,10 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
 
     @Override
     public void readFile() {
+        // We download the exported webfx.xml artifact if it's not present, unless it is not expected (ex: third-party library)
+        if (getProjectModule().isWebFxModuleFileExpected() && !Files.exists(getModuleFilePath()))
+            getProjectModule().downloadArtifactClassifier("xml:webfx");
+        // We read the downloaded webfx.xml file (if present)
         super.readFile();
         // If the webfx.xml file contains an <export-snapshot/>, we use the project snapshot instead
         moduleElement = lookupExportedSnapshotProjectElement(getProjectModule());
@@ -89,9 +93,7 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
             return exportSnapshotModuleFile.getModuleFilePath();
         // If not found, we return the standard path that points to the "-webfx.xml" file in the maven project repository
         Path path = module.getM2ArtifactSubPath("-webfx.xml");
-        // And we download it at this point if it's not present, unless it is not expected (ex: third-party library)
-        if (module.isWebFxModuleFileExpected() && !Files.exists(path))
-            module.downloadArtifactClassifier("xml:webfx");
+        // If needed, the actual download of the webfx.xml will be done later in readFile()
         return path;
     }
 }

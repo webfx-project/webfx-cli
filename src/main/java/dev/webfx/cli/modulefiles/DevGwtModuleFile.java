@@ -46,11 +46,6 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                     .forEach(moduleGroup -> {
                         Module module = moduleGroup.getKey();
                         String moduleName = module.getName();
-                        // Ignoring emulated modules for 2 reasons:
-                        // 1) they are destined to the super source, not the source (so they don't need to be listed here)
-                        // 2) these modules have been shaded so the original source packages would start with emul (which would be incorrect) if they were listed here
-                        if (moduleName.startsWith("webfx-platform-emul-") && moduleName.endsWith("-gwt"))
-                            return;
                         String gwtModuleName = getGwtModuleName(module); // => must include a <inherits> section
                         // Excluding modules such as gwt-time, j2cl-time but not gwt-nio (inherits) and javabase-emul (raw super source)
                         if (gwtModuleName == null && module.isJavaBaseEmulationModule() && !module.getName().contains("javabase-emul"))

@@ -147,6 +147,8 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public boolean hasMainJavaSourceDirectory() {
+        if (getWebFxModuleFile().isExported())
+            return getWebFxModuleFile().hasMainJavaSourceDirectory();
         return hasSourceDirectory();
     }
 
@@ -163,6 +165,8 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public boolean hasMainWebFxSourceDirectory() {
+        if (getWebFxModuleFile().isExported())
+            return getWebFxModuleFile().hasMainWebFxSourceDirectory();
         return hasSourceDirectory() && Files.exists(getMainWebFxSourceDirectory());
     }
 

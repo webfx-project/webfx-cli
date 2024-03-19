@@ -126,9 +126,12 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getSourcesRootConfigResource() {
+        if (!isExecutable()) // Also important optimisation to avoid downloading the sources artifact
+            return ReusableStream.empty();
+        // May cause the download of the sources artifact
         Path mainResourcesDirectory = getMainResourcesDirectory();
         Path srcRootConfFolderPath = mainResourcesDirectory.resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FOLDER);
-        if (!isExecutable() || !TextFileReaderWriter.fileExists(srcRootConfFolderPath))
+        if (!TextFileReaderWriter.fileExists(srcRootConfFolderPath))
             return ReusableStream.empty();
         return ReusableStream.create(() -> SplitFiles.uncheckedWalk(srcRootConfFolderPath, 1))
                 .filter(Files::isRegularFile)
@@ -136,8 +139,11 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getSourcesRootConfigResourcePackage() {
+        if (!isExecutable())  // Also important optimisation to avoid downloading the sources artifact
+            return ReusableStream.empty();
+        // May cause the download of the sources artifact
         Path srcRootConfFolderPath = getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FOLDER);
-        if (!isExecutable() || !TextFileReaderWriter.fileExists(srcRootConfFolderPath))
+        if (!TextFileReaderWriter.fileExists(srcRootConfFolderPath))
             return ReusableStream.empty();
         return ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE);
     }
@@ -146,16 +152,22 @@ public interface ProjectModule extends Module {
     String I18N_PACKAGE = I18N_RESOURCE_FOLDER.replace('/', '.');
 
     default ReusableStream<String> getI18nResourcePackage() {
+        if (!isExecutable()) // Also important optimisation to avoid downloading the sources artifact
+            return ReusableStream.empty();
+        // May cause the download of the sources artifact
         Path i18nFolderPath = getMainResourcesDirectory().resolve(I18N_RESOURCE_FOLDER);
-        if (!isExecutable() || !TextFileReaderWriter.fileExists(i18nFolderPath))
+        if (!TextFileReaderWriter.fileExists(i18nFolderPath))
             return ReusableStream.empty();
         return ReusableStream.of(I18N_PACKAGE);
     }
 
     default ReusableStream<String> getI18nResources() {
+        if (!isExecutable()) // Also important optimisation to avoid downloading the sources artifact
+            return ReusableStream.empty();
+        // May cause the download of the sources artifact
         Path mainResourcesDirectory = getMainResourcesDirectory();
         Path i18nFolderPath = mainResourcesDirectory.resolve(I18N_RESOURCE_FOLDER);
-        if (!isExecutable() || !TextFileReaderWriter.fileExists(i18nFolderPath))
+        if (!TextFileReaderWriter.fileExists(i18nFolderPath))
             return ReusableStream.empty();
         return ReusableStream.create(() -> SplitFiles.uncheckedWalk(i18nFolderPath, 1))
                 .filter(Files::isRegularFile)

@@ -26,6 +26,14 @@ public interface WebFxModuleFile extends XmlGavModuleFile {
         return getProjectAttributeValue("name");
     }
 
+    default boolean hasMainJavaSourceDirectory() {
+        return getBooleanProjectAttributeValue("hasMainJavaSourceDirectory");
+    }
+
+    default boolean hasMainWebFxSourceDirectory() {
+        return getBooleanProjectAttributeValue("hasMainWebFxSourceDirectory");
+    }
+
     default String getApplicationId() {
         return getProjectAttributeValue("applicationId");
     }
