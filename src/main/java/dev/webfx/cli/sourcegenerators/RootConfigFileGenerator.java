@@ -37,8 +37,8 @@ public final class RootConfigFileGenerator {
     private final static Map<Path, Config> configCache = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
     private final static Map<Path, Config> i18nCache = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
-    public static void generateExecutableModuleConfigurationResourceFile(DevProjectModule module) {
-        if (module.isExecutable()) {
+    public static void generateExecutableModuleConfigurationResourceFile(DevProjectModule module, boolean conf, boolean i18n) {
+        if (module.isExecutable() && (conf || i18n)) {
             // We will collect here all configurations from all transitive modules and merge them into a single
             // configuration file. The order is important when doing that merge, because configuration values can be
             // overridden. In that case, the actual final value to consider among the different modules defining that
@@ -64,62 +64,70 @@ public final class RootConfigFileGenerator {
                     ProjectModule pm = (ProjectModule) m;
                     if (pm.hasMainWebFxSourceDirectory()) {
                         // Conf collection
-                        Path webfxConfDirectory = pm.getMainWebFxSourceDirectory().resolve("conf/");
-                        if (Files.isDirectory(webfxConfDirectory)) {
-                            ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxConfDirectory))
-                                    .filter(AST_FILE_MATCHER::matches)
-                                    .forEach(path -> {
-                                        Config config = configCache.get(path);
-                                        if (config == null) {
-                                            String fileContent = TextFileReaderWriter.readTextFile(path);
-                                            config = ConfigParser.parseConfigFile(fileContent, path.toAbsolutePath().toString());
-                                            configCache.put(path, config);
-                                        }
-                                        if (!config.isEmpty()) {
-                                            confMerge.moduleConfigs.add(new Pair<>(pm, config));
-                                            confMerge.moduleConfigsContainsArrays |= hasArray(config);
-                                        }
-                                    });
+                        if (conf) {
+                            Path webfxConfDirectory = pm.getMainWebFxSourceDirectory().resolve("conf/");
+                            if (Files.isDirectory(webfxConfDirectory)) {
+                                ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxConfDirectory))
+                                        .filter(AST_FILE_MATCHER::matches)
+                                        .forEach(path -> {
+                                            Config config = configCache.get(path);
+                                            if (config == null) {
+                                                String fileContent = TextFileReaderWriter.readTextFile(path);
+                                                config = ConfigParser.parseConfigFile(fileContent, path.toAbsolutePath().toString());
+                                                configCache.put(path, config);
+                                            }
+                                            if (!config.isEmpty()) {
+                                                confMerge.moduleConfigs.add(new Pair<>(pm, config));
+                                                confMerge.moduleConfigsContainsArrays |= hasArray(config);
+                                            }
+                                        });
+                            }
                         }
                         // I8n collection
-                        Path webfxI18nDirectory = pm.getMainWebFxSourceDirectory().resolve("i18n/");
-                        if (Files.isDirectory(webfxI18nDirectory)) {
-                            ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxI18nDirectory))
-                                    .filter(AST_FILE_MATCHER::matches)
-                                    .forEach(path -> {
-                                        Config i18nObject = i18nCache.get(path);
-                                        if (i18nObject == null) {
-                                            String fileContent = TextFileReaderWriter.readTextFile(path);
-                                            i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
-                                            i18nCache.put(path, i18nObject);
-                                        }
-                                        ReadOnlyAstArray languages = i18nObject.keys();
-                                        for (int i = 0; i < languages.size(); i++) {
-                                            String language = languages.getString(i);
-                                            ConfigMerge languageMerge = i18nMerges.get(language);
-                                            if (languageMerge == null)
-                                                i18nMerges.put(language, languageMerge = new ConfigMerge());
-                                            Config dictionaryConfig = i18nObject.childConfigAt(language);
-                                            languageMerge.moduleConfigs.add(new Pair<>(pm, dictionaryConfig));
-                                            languageMerge.moduleConfigsContainsArrays |= hasArray(dictionaryConfig);
-                                        }
-                                    });
+                        if (i18n) {
+                            Path webfxI18nDirectory = pm.getMainWebFxSourceDirectory().resolve("i18n/");
+                            if (Files.isDirectory(webfxI18nDirectory)) {
+                                ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxI18nDirectory))
+                                        .filter(AST_FILE_MATCHER::matches)
+                                        .forEach(path -> {
+                                            Config i18nObject = i18nCache.get(path);
+                                            if (i18nObject == null) {
+                                                String fileContent = TextFileReaderWriter.readTextFile(path);
+                                                i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
+                                                i18nCache.put(path, i18nObject);
+                                            }
+                                            ReadOnlyAstArray languages = i18nObject.keys();
+                                            for (int i = 0; i < languages.size(); i++) {
+                                                String language = languages.getString(i);
+                                                ConfigMerge languageMerge = i18nMerges.get(language);
+                                                if (languageMerge == null)
+                                                    i18nMerges.put(language, languageMerge = new ConfigMerge());
+                                                Config dictionaryConfig = i18nObject.childConfigAt(language);
+                                                languageMerge.moduleConfigs.add(new Pair<>(pm, dictionaryConfig));
+                                                languageMerge.moduleConfigsContainsArrays |= hasArray(dictionaryConfig);
+                                            }
+                                        });
+                            }
                         }
                     }
                 }
             });
 
             // Conf merge
-            Path propertiesPath = module.getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
-            Path jsonPath = module.getMainResourcesDirectory().resolve(SourcesConfig.JSON_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
-            mergeConfigs(confMerge, propertiesPath, jsonPath);
+            if (conf) {
+                Path propertiesPath = module.getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
+                Path jsonPath = module.getMainResourcesDirectory().resolve(SourcesConfig.JSON_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
+                mergeConfigs(confMerge, propertiesPath, jsonPath);
+            }
 
             // I18n merge
-            i18nMerges.forEach((language, languageMerge) -> {
-                Path i18nPropertiesPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".properties");
-                Path i18nJsonPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".json");
-                mergeConfigs(languageMerge, i18nPropertiesPath, i18nJsonPath);
-            });
+            if (i18n) {
+                i18nMerges.forEach((language, languageMerge) -> {
+                    Path i18nPropertiesPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".properties");
+                    Path i18nJsonPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".json");
+                    mergeConfigs(languageMerge, i18nPropertiesPath, i18nJsonPath);
+                });
+            }
         }
     }
 
