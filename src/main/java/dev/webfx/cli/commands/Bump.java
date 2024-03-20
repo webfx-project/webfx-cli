@@ -72,7 +72,7 @@ public final class Bump extends CommonSubcommand {
                 Logger.log("Old version: " + WebFxCLI.getVersion());
             }
             if (buildInProcessLockPath != null && Files.exists(buildInProcessLockPath))
-                Logger.warning("Last build failed. Trying again...");
+                Logger.warning("Last build failed. Trying to build it again...");
             // Cleaning the target folder except the cli jar (using `mvn clean` is failing on Windows because the cli jar
             // is locked as it is the CLI executable)
             ReusableStream.create(() -> SplitFiles.uncheckedWalk(targetPath))
@@ -112,6 +112,11 @@ public final class Bump extends CommonSubcommand {
                             // We exit now because otherwise it's very likely we will get a runtime
                             // exception due to the fat jar update.
                             System.exit(0);
+                        } else { // Build failed
+                            Logger.warning("The build failed! You can try again with `webfx bump cli` or execute the following commands in your terminal:");
+                            Logger.log("cd " + cliRepositoryPath);
+                            Logger.log("git pull");
+                            Logger.log("mvn -U package");
                         }
                     });
         }
