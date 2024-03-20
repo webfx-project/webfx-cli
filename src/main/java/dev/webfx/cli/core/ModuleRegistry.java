@@ -475,26 +475,37 @@ final public class ModuleRegistry {
     }
 
     public Boolean doExportSnapshotsTellIfModuleIsUsingPackageOrClass(ProjectModule module, String packageOrClass) {
+        // Getting the usages registered so far for this package or class from the export snapshots
         List<SnapshotUsages> packageOrClassSnapshotUsages = registeredSnapshotUsages.get(packageOrClass);
+        // If no usage has been registered so far, we pull the stream until we eventually get at least one
         if (packageOrClassSnapshotUsages == null) {
-            m2ProjectModulesWithExportSnapshotsResume.takeWhile(m2 -> registeredSnapshotUsages.get(packageOrClass) == null).findAny();
+            m2ProjectModulesWithExportSnapshotsResume.takeWhile(m2 -> registeredSnapshotUsages.get(packageOrClass) == null).count();
+            // If after pulling the whole stream we still haven't any, this means that no export snapshots mention that
+            // usage, therefore we return null to say that we don't know if the modules uses this package or class from
+            // the export snapshots.
             packageOrClassSnapshotUsages = registeredSnapshotUsages.get(packageOrClass);
             if (packageOrClassSnapshotUsages == null)
                 return null;
         }
+        // If we have some usages reported from the export snapshots, we investigate them
         for (int i = 0, n = packageOrClassSnapshotUsages.size(); i < n; i++) {
             SnapshotUsages snapshotUsage = packageOrClassSnapshotUsages.get(i);
-            Boolean moduleUsing = snapshotUsage.isModuleUsing(module);
+            // If the snapshot usage can tell if the module uses or not the package or class, we return that result
+            Boolean moduleUsing = snapshotUsage.isModuleUsing(module); // TODO: check why it's taking lots of time
             if (moduleUsing != null)
                 return moduleUsing;
-            if (i == n - 1) {
+            // Otherwise, once we have requested all usages registered so far, we continue pulling the stream
+            if (i == n - 1) { // we reached the last one
                 final List<SnapshotUsages> finalUsages = packageOrClassSnapshotUsages;
                 int finalSize = n;
-                m2ProjectModulesWithExportSnapshotsResume.takeWhile(m2 -> finalUsages.size() == finalSize).findAny();
+                // we pull the stream until we get new usages
+                m2ProjectModulesWithExportSnapshotsResume.takeWhile(m2 -> finalUsages.size() == finalSize).count();
+                // we integrate these new usages in the loop
                 n = packageOrClassSnapshotUsages.size();
             }
         }
-        return null;
+        // If no usage could tell if the module is using this package or class after pulling the whole stream,
+        return null; // we return null to say we don't know from the export snapshots
     }
 
     private static class SnapshotUsages {
