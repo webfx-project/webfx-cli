@@ -30,15 +30,17 @@ public final class Bump extends CommonSubcommand {
         private boolean switchedBranch;
         private final Path cliJarPath = getCliJarPath();
         private final Path cliRepositoryPath = walkUpToCliRepositoryPath(cliJarPath);
-        private final Path buildInProcessLockPath = cliRepositoryPath == null ? null : cliRepositoryPath.resolve("build.lock");
+        private final Path targetPath = cliRepositoryPath == null ? null : cliRepositoryPath.resolve("target");
+        private final Path buildInProcessLockPath = targetPath == null ? null : targetPath.resolve("build.lock");
 
         @Override
         public void run() {
-            if (cliRepositoryPath != null)
+            if (cliRepositoryPath != null) {
                 if (branch == null)
                     gitPullAndBuild(true);
                 else
                     gitCheckoutBranchAndBuild();
+            }
         }
 
         private void gitCheckoutBranchAndBuild() {
@@ -55,7 +57,7 @@ public final class Bump extends CommonSubcommand {
                     .setLogLineFilter(line -> line.toLowerCase().contains("error"))
                     .executeAndWait()
                     .onLastResultLine(gitUpToDateLine -> {
-                        if (!skipBuildIfUpToDate || gitUpToDateLine == null || Files.exists(buildInProcessLockPath))
+                        if (!skipBuildIfUpToDate || gitUpToDateLine == null || buildInProcessLockPath != null && Files.exists(buildInProcessLockPath))
                             buildAndExit();
                         else
                             Logger.log("You have the latest version of the CLI");
@@ -69,11 +71,10 @@ public final class Bump extends CommonSubcommand {
                 Logger.log("A new version is available!");
                 Logger.log("Old version: " + WebFxCLI.getVersion());
             }
-            if (Files.exists(buildInProcessLockPath))
+            if (buildInProcessLockPath != null && Files.exists(buildInProcessLockPath))
                 Logger.warning("Last build failed. Trying again...");
             // Cleaning the target folder except the cli jar (using `mvn clean` is failing on Windows because the cli jar
             // is locked as it is the CLI executable)
-            Path targetPath = cliRepositoryPath.resolve("target");
             ReusableStream.create(() -> SplitFiles.uncheckedWalk(targetPath))
                     .filter(p -> !p.equals(cliJarPath))
                     .forEach(p -> {
@@ -83,9 +84,10 @@ public final class Bump extends CommonSubcommand {
                     });
             // We create a build lock file that we will delete after a successful build. So if next time we detect its
             // presence, this is a sign that the last build has not completed.
-            try {
-                Files.createFile(targetPath.resolve(buildInProcessLockPath));
-            } catch (IOException ignored) { }
+            if (buildInProcessLockPath != null)
+                try {
+                    Files.createFile(buildInProcessLockPath);
+                } catch (IOException ignored) { }
             // We invoke the build through `mvn -U package`
             newCliProcessCall("mvn", "-U", "package") // -U is to ensure we get the latest SNAPSHOT versions (in particular webfx-platform) to prevent build errors
                     .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))
@@ -94,9 +96,10 @@ public final class Bump extends CommonSubcommand {
                     .onLastResultLine(mvnResultLine -> {
                         if (mvnResultLine != null) {
                             // If we arrive here, this means the build was successful, so we can delete the build lock file.
-                            try {
-                                Files.delete(buildInProcessLockPath);
-                            } catch (IOException ignored) { }
+                            if (buildInProcessLockPath != null)
+                                try {
+                                    Files.delete(buildInProcessLockPath);
+                                } catch (IOException ignored) { }
                             // We log the new version of the cli
                             Logger.log((switchedBranch ? "CLI version of " + branch + " branch: " : "New version: ") +
                                     new ProcessCall("java", "-jar", cliJarPath.toAbsolutePath().toString(), "--version")
