@@ -3,9 +3,13 @@ package dev.webfx.cli.commands;
 import dev.webfx.cli.WebFxCLI;
 import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.util.process.ProcessCall;
+import dev.webfx.cli.util.splitfiles.SplitFiles;
+import dev.webfx.lib.reusablestream.ReusableStream;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -26,6 +30,7 @@ public final class Bump extends CommonSubcommand {
         private boolean switchedBranch;
         private final Path cliJarPath = getCliJarPath();
         private final Path cliRepositoryPath = walkUpToCliRepositoryPath(cliJarPath);
+        private final Path buildInProcessLockPath = cliRepositoryPath == null ? null : cliRepositoryPath.resolve("build.lock");
 
         @Override
         public void run() {
@@ -50,7 +55,7 @@ public final class Bump extends CommonSubcommand {
                     .setLogLineFilter(line -> line.toLowerCase().contains("error"))
                     .executeAndWait()
                     .onLastResultLine(gitUpToDateLine -> {
-                        if (!skipBuildIfUpToDate || gitUpToDateLine == null)
+                        if (!skipBuildIfUpToDate || gitUpToDateLine == null || Files.exists(buildInProcessLockPath))
                             buildAndExit();
                         else
                             Logger.log("You have the latest version of the CLI");
@@ -64,13 +69,35 @@ public final class Bump extends CommonSubcommand {
                 Logger.log("A new version is available!");
                 Logger.log("Old version: " + WebFxCLI.getVersion());
             }
-            newCliProcessCall("mvn", "-U", "clean", "package") // -U is to ensure we get the latest SNAPSHOT versions (in particular webfx-platform) to prevent build errors
+            if (Files.exists(buildInProcessLockPath))
+                Logger.warning("Last build failed. Trying again...");
+            // Cleaning the target folder except the cli jar (using `mvn clean` is failing on Windows because the cli jar
+            // is locked as it is the CLI executable)
+            Path targetPath = cliRepositoryPath.resolve("target");
+            ReusableStream.create(() -> SplitFiles.uncheckedWalk(targetPath))
+                    .filter(p -> !p.equals(cliJarPath))
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException ignored) { }
+                    });
+            // We create a build lock file that we will delete after a successful build. So if next time we detect its
+            // presence, this is a sign that the last build has not completed.
+            try {
+                Files.createFile(targetPath.resolve(buildInProcessLockPath));
+            } catch (IOException ignored) { }
+            // We invoke the build through `mvn -U package`
+            newCliProcessCall("mvn", "-U", "package") // -U is to ensure we get the latest SNAPSHOT versions (in particular webfx-platform) to prevent build errors
                     .setResultLineFilter(line -> line.contains("BUILD SUCCESS"))
                     .setLogLineFilter(line -> line.startsWith("[ERROR]"))
                     .executeAndWait()
                     .onLastResultLine(mvnResultLine -> {
-                        //Logger.log("Maven result line: " + mvnResultLine);
                         if (mvnResultLine != null) {
+                            // If we arrive here, this means the build was successful, so we can delete the build lock file.
+                            try {
+                                Files.delete(buildInProcessLockPath);
+                            } catch (IOException ignored) { }
+                            // We log the new version of the cli
                             Logger.log((switchedBranch ? "CLI version of " + branch + " branch: " : "New version: ") +
                                     new ProcessCall("java", "-jar", cliJarPath.toAbsolutePath().toString(), "--version")
                                             .setLogLineFilter(line -> false)
