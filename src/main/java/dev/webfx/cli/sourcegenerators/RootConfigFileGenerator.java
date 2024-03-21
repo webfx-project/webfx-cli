@@ -52,9 +52,9 @@ public final class RootConfigFileGenerator {
                 try (Scanner scanner = new Scanner(moduleCacheFile)) {
                     while (scanner.hasNextLine()) {
                         String line = scanner.nextLine();
-                        String[] split = line.split(":");
-                        String moduleName = split[0];
-                        String webfxPathUri = split[1];
+                        int p = line.indexOf(':');
+                        String moduleName = line.substring(0, p);
+                        String webfxPathUri = line.substring(p + 1);
                         // URI stored in cache so that we can retrieve the path even if inside jar or zip files
                         moduleWebFxPaths.put(moduleName, Paths.get(new URI(webfxPathUri)));
                     }
