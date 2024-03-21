@@ -16,6 +16,7 @@ import dev.webfx.platform.conf.SourcesConfig;
 import dev.webfx.platform.conf.impl.ConfigMerger;
 import dev.webfx.platform.util.tuples.Pair;
 
+import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
 
@@ -46,18 +47,21 @@ public final class RootConfigFileGenerator {
 
             String moduleCacheName = module.getHomeDirectory().toAbsolutePath().toString().replace('/', '~') + "-transitive-webfx.txt";
             Path moduleCacheFile = WebFXHiddenFolder.getCacheFolder().resolve(moduleCacheName);
+            boolean cacheRead = false;
             if (canUseCache && Files.exists(moduleCacheFile)) {
                 try (Scanner scanner = new Scanner(moduleCacheFile)) {
                     while (scanner.hasNextLine()) {
                         String line = scanner.nextLine();
                         String[] split = line.split(":");
                         String moduleName = split[0];
-                        String webfxPath = split[1];
-                        moduleWebFxPaths.put(moduleName, Paths.get(webfxPath));
+                        String webfxPathUri = split[1];
+                        // URI stored in cache so that we can retrieve the path even if inside jar or zip files
+                        moduleWebFxPaths.put(moduleName, Paths.get(new URI(webfxPathUri)));
                     }
-                } catch (Exception e) {
-                }
-            } else {
+                    cacheRead = true;
+                } catch (Exception ignored) { }
+            }
+            if (!cacheRead) {
                 // Creating the dependency graph of the transitive modules (i.e. list of dependencies for each module)
                 Map<Module, List<Module>> dependencyGraph =
                         ModuleDependency.createDependencyGraph(module.getMainJavaSourceRootAnalyzer().getTransitiveDependencies());
@@ -80,7 +84,8 @@ public final class RootConfigFileGenerator {
                 moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
                     if (sb.length() > 0)
                         sb.append("\n");
-                    sb.append(moduleName).append(':').append(webfxPath.toAbsolutePath());
+                    // URI stored in cache so that we can retrieve the path even if inside jar or zip files
+                    sb.append(moduleName).append(':').append(webfxPath.toUri());
                 });
                 TextFileReaderWriter.writeTextFile(sb.toString(), moduleCacheFile, true);
 
