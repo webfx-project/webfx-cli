@@ -1,9 +1,7 @@
 package dev.webfx.cli.sourcegenerators;
 
-import dev.webfx.cli.core.DevProjectModule;
+import dev.webfx.cli.core.*;
 import dev.webfx.cli.core.Module;
-import dev.webfx.cli.core.ModuleDependency;
-import dev.webfx.cli.core.ProjectModule;
 import dev.webfx.cli.util.sort.TopologicalSort;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
@@ -18,14 +16,8 @@ import dev.webfx.platform.conf.SourcesConfig;
 import dev.webfx.platform.conf.impl.ConfigMerger;
 import dev.webfx.platform.util.tuples.Pair;
 
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.*;
+import java.util.*;
 
 /**
  * @author Bruno Salmon
@@ -34,10 +26,10 @@ public final class RootConfigFileGenerator {
 
     private final static PathMatcher AST_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{properties,json}");
 
-    private final static Map<Path, Config> configCache = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
-    private final static Map<Path, Config> i18nCache = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
+    private final static Map<Path, Config> CONFIG_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
+    private final static Map<Path, Config> I18N_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
-    public static void generateExecutableModuleConfigurationResourceFile(DevProjectModule module, boolean conf, boolean i18n) {
+    public static void generateExecutableModuleConfigurationResourceFile(DevProjectModule module, boolean conf, boolean i18n, boolean canUseCache) {
         if (module.isExecutable() && (conf || i18n)) {
             // We will collect here all configurations from all transitive modules and merge them into a single
             // configuration file. The order is important when doing that merge, because configuration values can be
@@ -45,70 +37,100 @@ public final class RootConfigFileGenerator {
             // same configuration value is the one defined in the top-most module in the dependency graph (the executable
             // module being at the very top of that graph).
 
-            // Creating the dependency graph of the transitive modules (i.e. list of dependencies for each module)
-            Map<Module, List<Module>> dependencyGraph =
-                    ModuleDependency.createDependencyGraph(module.getMainJavaSourceRootAnalyzer().getTransitiveDependencies());
-            // We sort these transitive modules in the order explained above (most dependent modules first, starting
-            // with the executable module). Configuration values will be considered only once in the merge, i.e. the
-            // first time they will appear in that order, and the consequent occurrences will be commented in the merged
-            // configuration file.
-            List<Module> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
-
             // Conf Initialisation
             ConfigMerge confMerge = new ConfigMerge();
             // I18n Initialisation
             Map<String, ConfigMerge> i18nMerges = new HashMap<>();
 
-            sortedModules.forEach(m -> {
-                if (m instanceof ProjectModule) {
-                    ProjectModule pm = (ProjectModule) m;
-                    if (pm.hasMainWebFxSourceDirectory()) {
-                        // Conf collection
-                        if (conf) {
-                            Path webfxConfDirectory = pm.getMainWebFxSourceDirectory().resolve("conf/");
-                            if (Files.isDirectory(webfxConfDirectory)) {
-                                ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxConfDirectory))
-                                        .filter(AST_FILE_MATCHER::matches)
-                                        .forEach(path -> {
-                                            Config config = configCache.get(path);
-                                            if (config == null) {
-                                                String fileContent = TextFileReaderWriter.readTextFile(path);
-                                                config = ConfigParser.parseConfigFile(fileContent, path.toAbsolutePath().toString());
-                                                configCache.put(path, config);
-                                            }
-                                            if (!config.isEmpty()) {
-                                                confMerge.moduleConfigs.add(new Pair<>(pm, config));
-                                                confMerge.moduleConfigsContainsArrays |= hasArray(config);
-                                            }
-                                        });
-                            }
+            Map<String, Path> moduleWebFxPaths = new LinkedHashMap<>();
+
+            String moduleCacheName = module.getHomeDirectory().toAbsolutePath().toString().replace('/', '~') + "-transitive-webfx.txt";
+            Path moduleCacheFile = WebFXHiddenFolder.getCacheFolder().resolve(moduleCacheName);
+            if (canUseCache && Files.exists(moduleCacheFile)) {
+                try (Scanner scanner = new Scanner(moduleCacheFile)) {
+                    while (scanner.hasNextLine()) {
+                        String line = scanner.nextLine();
+                        String[] split = line.split(":");
+                        String moduleName = split[0];
+                        String webfxPath = split[1];
+                        moduleWebFxPaths.put(moduleName, Paths.get(webfxPath));
+                    }
+                } catch (Exception e) {
+                }
+            } else {
+                // Creating the dependency graph of the transitive modules (i.e. list of dependencies for each module)
+                Map<Module, List<Module>> dependencyGraph =
+                        ModuleDependency.createDependencyGraph(module.getMainJavaSourceRootAnalyzer().getTransitiveDependencies());
+                // We sort these transitive modules in the order explained above (most dependent modules first, starting
+                // with the executable module). Configuration values will be considered only once in the merge, i.e. the
+                // first time they will appear in that order, and the consequent occurrences will be commented in the merged
+                // configuration file.
+                List<Module> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
+
+                sortedModules.forEach(m -> {
+                    if (m instanceof ProjectModule) {
+                        ProjectModule pm = (ProjectModule) m;
+                        if (pm.hasMainWebFxSourceDirectory()) {
+                            moduleWebFxPaths.put(pm.getName(), pm.getMainWebFxSourceDirectory());
                         }
-                        // I8n collection
-                        if (i18n) {
-                            Path webfxI18nDirectory = pm.getMainWebFxSourceDirectory().resolve("i18n/");
-                            if (Files.isDirectory(webfxI18nDirectory)) {
-                                ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxI18nDirectory))
-                                        .filter(AST_FILE_MATCHER::matches)
-                                        .forEach(path -> {
-                                            Config i18nObject = i18nCache.get(path);
-                                            if (i18nObject == null) {
-                                                String fileContent = TextFileReaderWriter.readTextFile(path);
-                                                i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
-                                                i18nCache.put(path, i18nObject);
-                                            }
-                                            ReadOnlyAstArray languages = i18nObject.keys();
-                                            for (int i = 0; i < languages.size(); i++) {
-                                                String language = languages.getString(i);
-                                                ConfigMerge languageMerge = i18nMerges.get(language);
-                                                if (languageMerge == null)
-                                                    i18nMerges.put(language, languageMerge = new ConfigMerge());
-                                                Config dictionaryConfig = i18nObject.childConfigAt(language);
-                                                languageMerge.moduleConfigs.add(new Pair<>(pm, dictionaryConfig));
-                                                languageMerge.moduleConfigsContainsArrays |= hasArray(dictionaryConfig);
-                                            }
-                                        });
-                            }
-                        }
+                    }
+                });
+
+                StringBuilder sb = new StringBuilder();
+                moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
+                    if (sb.length() > 0)
+                        sb.append("\n");
+                    sb.append(moduleName).append(':').append(webfxPath.toAbsolutePath());
+                });
+                TextFileReaderWriter.writeTextFile(sb.toString(), moduleCacheFile, true);
+
+            }
+
+            moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
+                // Conf collection
+                if (conf) {
+                    Path webfxConfDirectory = webfxPath.resolve("conf/");
+                    if (Files.isDirectory(webfxConfDirectory)) {
+                        ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxConfDirectory))
+                                .filter(AST_FILE_MATCHER::matches)
+                                .forEach(path -> {
+                                    Config config = CONFIG_CACHE.get(path);
+                                    if (config == null) {
+                                        String fileContent = TextFileReaderWriter.readTextFile(path);
+                                        config = ConfigParser.parseConfigFile(fileContent, path.toAbsolutePath().toString());
+                                        CONFIG_CACHE.put(path, config);
+                                    }
+                                    if (!config.isEmpty()) {
+                                        confMerge.moduleConfigs.add(new Pair<>(moduleName, config));
+                                        confMerge.moduleConfigsContainsArrays |= hasArray(config);
+                                    }
+                                });
+                    }
+                }
+                // I8n collection
+                if (i18n) {
+                    Path webfxI18nDirectory = webfxPath.resolve("i18n/");
+                    if (Files.isDirectory(webfxI18nDirectory)) {
+                        ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxI18nDirectory))
+                                .filter(AST_FILE_MATCHER::matches)
+                                .forEach(path -> {
+                                    Config i18nObject = I18N_CACHE.get(path);
+                                    if (i18nObject == null) {
+                                        String fileContent = TextFileReaderWriter.readTextFile(path);
+                                        i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
+                                        I18N_CACHE.put(path, i18nObject);
+                                    }
+                                    ReadOnlyAstArray languages = i18nObject.keys();
+                                    for (int i = 0; i < languages.size(); i++) {
+                                        String language = languages.getString(i);
+                                        ConfigMerge languageMerge = i18nMerges.get(language);
+                                        if (languageMerge == null)
+                                            i18nMerges.put(language, languageMerge = new ConfigMerge());
+                                        Config dictionaryConfig = i18nObject.childConfigAt(language);
+                                        languageMerge.moduleConfigs.add(new Pair<>(moduleName, dictionaryConfig));
+                                        languageMerge.moduleConfigsContainsArrays |= hasArray(dictionaryConfig);
+                                    }
+                                });
                     }
                 }
             });
@@ -138,8 +160,8 @@ public final class RootConfigFileGenerator {
             String[] lastModuleHeader = { null };
             if (!configMerge.moduleConfigsContainsArrays) {
                 selectedPath = propertiesPath;
-                for (Pair<ProjectModule, Config> moduleConfig : configMerge.moduleConfigs) {
-                    appendAstObjectToProperties(null, moduleConfig.get2(), sb, lastModuleHeader, moduleConfig.get1().getName());
+                for (Pair<String, Config> moduleConfig : configMerge.moduleConfigs) {
+                    appendAstObjectToProperties(null, moduleConfig.get2(), sb, lastModuleHeader, moduleConfig.get1());
                 }
             } else {
                 selectedPath = jsonPath;
@@ -199,7 +221,7 @@ public final class RootConfigFileGenerator {
     }
 
     private static class ConfigMerge {
-        private final List<Pair<ProjectModule, Config>> moduleConfigs = new ArrayList<>();
+        private final List<Pair<String /* module name */, Config>> moduleConfigs = new ArrayList<>();
         private boolean moduleConfigsContainsArrays;
     }
 }

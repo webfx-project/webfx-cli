@@ -34,8 +34,12 @@ public final class TextFileReaderWriter {
     }
 
     public static void writeTextFile(String content, Path path) {
+        writeTextFile(content, path, false);
+    }
+
+    public static void writeTextFile(String content, Path path, boolean silent) {
         try (TextFileThreadTransaction transaction = TextFileThreadTransaction.open()) {
-            transaction.addOperation(new TextFileOperation(path, content));
+            transaction.addOperation(new TextFileOperation(path, content, silent));
             transaction.commit(); // Executed now if not embed in a wider transaction, or later on commit of the wider transaction
         }
     }

@@ -99,7 +99,7 @@ public final class Update extends CommonSubcommand implements Runnable {
                         if (tasks.meta)
                             MetaFileGenerator.generateExecutableModuleMetaResourceFile(module);
                         if (tasks.conf || tasks.i18n)
-                            RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module, tasks.conf, tasks.i18n);
+                            RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module, tasks.conf, tasks.i18n, !tasks.pom);
                     });
 
         // Generating or updating Maven module files (pom.xml)

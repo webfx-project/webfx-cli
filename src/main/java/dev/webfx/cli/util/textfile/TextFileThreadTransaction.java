@@ -90,13 +90,17 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                 writer.flush();
                 writer.close();
                 toWritePaths.remove(op.path);
-                Logger.log((exists ? "Updated " :  "Created " ) + op.path);
-                executedOperationsCounts++;
+                if (!op.silent) {
+                    Logger.log((exists ? "Updated " : "Created ") + op.path);
+                    executedOperationsCounts++;
+                }
             } else { // Delete file
                 if (Files.deleteIfExists(op.path)) {
                     deletedPaths.add(op.path);
-                    Logger.log("Deleted " + op.path);
-                    executedOperationsCounts++;
+                    if (!op.silent) {
+                        Logger.log("Deleted " + op.path);
+                        executedOperationsCounts++;
+                    }
                 }
                 toDeletePaths.remove(op.path);
             }

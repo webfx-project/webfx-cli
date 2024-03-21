@@ -26,6 +26,10 @@ public final class WebFXHiddenFolder {
         return getCliSubFolder("maven-workspace");
     }
 
+    public static Path getCacheFolder() {
+        return getCliSubFolder("cache");
+    }
+
     public static Path getGraalVmHome() {
         Path hiddenVmFolder = getCliSubFolder("graalvm");
         Path binPath = ReusableStream.create(() -> Files.exists(hiddenVmFolder) ? SplitFiles.uncheckedWalk(hiddenVmFolder) : Spliterators.emptySpliterator())
