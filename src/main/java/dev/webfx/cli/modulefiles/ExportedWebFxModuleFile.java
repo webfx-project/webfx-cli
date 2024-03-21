@@ -5,6 +5,8 @@ import dev.webfx.cli.modulefiles.abstr.XmlModuleFileImpl;
 import dev.webfx.cli.core.Module;
 import org.w3c.dom.Element;
 
+import java.nio.file.Path;
+
 /**
  * WebFX module file read from resources (only used for reading the JDK modules when initializing the ModuleRegistry)
  *
@@ -19,5 +21,10 @@ public final class ExportedWebFxModuleFile extends XmlModuleFileImpl implements 
     @Override
     public boolean fileExists() {
         return true;
+    }
+
+    @Override
+    public Path getModuleFilePath() {
+        return null; // Actually never called
     }
 }

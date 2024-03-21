@@ -35,6 +35,7 @@ public final class XmlUtil {
     }
 
     public static Document parseXmlFile(File xmlFile) {
+        //System.out.println("Parsing file " + xmlFile);
         return parseXmlSource(new InputSource(xmlFile.toURI().toASCIIString()));
     }
 
@@ -124,13 +125,19 @@ public final class XmlUtil {
         return (Element) lookupNode(item, xpath + "[@" + attribute + "='" + value + "']");
     }
 
+    private final static XPathFactory X_PATH_FACTORY = XPathFactory.newInstance();
+    private final static XPath X_PATH = X_PATH_FACTORY.newXPath();
+    private final static Map<String, XPathExpression> X_PATH_EXPRESSION_CACHE = new HashMap<>();
+
     private static <T> T lookup(Object item, String xpathExpression, QName returnType) {
         if (item == null)
             return null;
-        XPathFactory xpf = XPathFactory.newInstance();
-        XPath xpath = xpf.newXPath();
         try {
-            XPathExpression expression = xpath.compile(xpathExpression);
+            XPathExpression expression = X_PATH_EXPRESSION_CACHE.get(xpathExpression);
+            if (expression == null) {
+                expression = X_PATH.compile(xpathExpression);
+                X_PATH_EXPRESSION_CACHE.put(xpathExpression, expression);
+            }
             return (T) expression.evaluate(item, returnType);
         } catch (XPathExpressionException e) {
             throw new RuntimeException(e);

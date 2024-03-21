@@ -54,9 +54,11 @@ public final class JavaSourceRootAnalyzer {
                         ProjectModule projectModule = getProjectModule();
                         if (projectModule.isAggregate())
                             return ReusableStream.empty();
-                        WebFxModuleFile webFxModuleFile = projectModule.getWebFxModuleFile();
-                        if (projectModule instanceof M2ProjectModule && ((M2WebFxModuleFile) webFxModuleFile).isExported())
-                            return webFxModuleFile.javaSourcePackagesFromExportSnapshot();
+                        if (projectModule instanceof M2ProjectModule) {
+                            M2WebFxModuleFile webFxModuleFile = ((M2ProjectModule) projectModule).getM2WebFxModuleFile();
+                            if (webFxModuleFile.isExported())
+                                return webFxModuleFile.javaSourcePackagesFromExportSnapshot();
+                        }
                         return javaSourceFilesCache
                                 .map(JavaFile::getPackageName)
                                 .distinct();

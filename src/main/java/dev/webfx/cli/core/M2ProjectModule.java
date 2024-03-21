@@ -2,6 +2,8 @@ package dev.webfx.cli.core;
 
 import dev.webfx.cli.modulefiles.M2MavenPomModuleFile;
 import dev.webfx.cli.modulefiles.M2WebFxModuleFile;
+import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
+import dev.webfx.cli.modulefiles.abstr.WebFxModuleFileCache;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.io.IOException;
@@ -16,7 +18,8 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     private final Path m2ProjectHomeDirectory;
     private M2MavenPomModuleFile mavenPomModuleFile;
-    private M2WebFxModuleFile webFxModuleFile;
+    private M2WebFxModuleFile m2WebFxModuleFile;
+    private WebFxModuleFile webFxModuleFileCache;
     private Boolean hasSourceDirectory;
     private Path sourceDirectory;
 
@@ -64,18 +67,24 @@ public class M2ProjectModule extends ProjectModuleImpl {
         return mavenPomModuleFile;
     }
 
+    public M2WebFxModuleFile getM2WebFxModuleFile() {
+        if (m2WebFxModuleFile == null)
+            m2WebFxModuleFile = new M2WebFxModuleFile(this);
+        return m2WebFxModuleFile;
+    }
+
     @Override
-    public M2WebFxModuleFile getWebFxModuleFile() {
-        if (webFxModuleFile == null)
-            webFxModuleFile = new M2WebFxModuleFile(this);
-        return webFxModuleFile;
+    public WebFxModuleFile getWebFxModuleFile() {
+        if (webFxModuleFileCache == null)
+            webFxModuleFileCache = new WebFxModuleFileCache(getM2WebFxModuleFile());
+        return webFxModuleFileCache;
     }
 
     public M2WebFxModuleFile getWebFxModuleFileWithExportSnapshotContainingThisModule() {
         M2ProjectModule moduleWithExport = this;
         while ((moduleWithExport.getParentModule() != null && (moduleWithExport = moduleWithExport.getParentModule()) != null)) {
-            if (moduleWithExport.getWebFxModuleFile().lookupExportedSnapshotProjectElement(this) != null)
-                return moduleWithExport.getWebFxModuleFile();
+            if (moduleWithExport.getM2WebFxModuleFile().lookupExportedSnapshotProjectElement(this) != null)
+                return moduleWithExport.getM2WebFxModuleFile();
         }
         return null;
     }
@@ -147,7 +156,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public boolean hasMainJavaSourceDirectory() {
-        if (getWebFxModuleFile().isExported())
+        if (getM2WebFxModuleFile().isExported())
             return getWebFxModuleFile().hasMainJavaSourceDirectory();
         return hasSourceDirectory();
     }
@@ -165,7 +174,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     @Override
     public boolean hasMainWebFxSourceDirectory() {
-        if (getWebFxModuleFile().isExported())
+        if (getM2WebFxModuleFile().isExported())
             return getWebFxModuleFile().hasMainWebFxSourceDirectory();
         return hasSourceDirectory() && Files.exists(getMainWebFxSourceDirectory());
     }
@@ -184,7 +193,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
 
     private final ReusableStream<String> fileResourcePackagesCache =
             ReusableStream.create(() -> {
-                        M2WebFxModuleFile webFxModuleFile = getWebFxModuleFile();
+                        M2WebFxModuleFile webFxModuleFile = getM2WebFxModuleFile();
                         if (webFxModuleFile.isExported())
                             return webFxModuleFile.resourcePackagesFromExportSnapshot();
                         return ReusableStream.empty();

@@ -1,6 +1,8 @@
 package dev.webfx.cli.core;
 
 import dev.webfx.cli.modulefiles.*;
+import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
+import dev.webfx.cli.modulefiles.abstr.WebFxModuleFileCache;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
@@ -18,7 +20,7 @@ public class DevProjectModule extends ProjectModuleImpl {
     private final Path homeDirectory;
     private Boolean hasSourceDirectory, hasMainJavaSourceDirectory, hasMainResourcesDirectory, hasMainWebFxDirectory, hasTestJavaSourceDirectory;
     private DevJavaModuleInfoFile mainJavaModuleInfoFile;
-    private DevWebFxModuleFile webFxModuleFile;
+    private WebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
     private DevGwtModuleFile gwtModuleFile;
     private DevGwtHtmlFile gwtHtmlFile;
@@ -89,9 +91,9 @@ public class DevProjectModule extends ProjectModuleImpl {
         return webFxRootModule;
     }
 
-    public DevWebFxModuleFile getWebFxModuleFile() {
+    public WebFxModuleFile getWebFxModuleFile() {
         if (webFxModuleFile == null)
-            webFxModuleFile = new DevWebFxModuleFile(this);
+            webFxModuleFile = new WebFxModuleFileCache(new DevWebFxModuleFile(this));
         return webFxModuleFile;
     }
 

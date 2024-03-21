@@ -12,7 +12,7 @@ import org.w3c.dom.Node;
 /**
  * @author Bruno Salmon
  */
-public interface WebFxModuleFile extends XmlGavModuleFile {
+public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFile {
 
     default boolean isExecutable() {
         return getBooleanProjectAttributeValue("executable");

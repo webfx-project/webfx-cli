@@ -5,6 +5,8 @@ import dev.webfx.cli.modulefiles.abstr.XmlModuleFileImpl;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 
+import java.nio.file.Path;
+
 /**
  * WebFX module file read from resources (only used for reading the JDK modules when initializing the ModuleRegistry)
  *
@@ -21,4 +23,10 @@ public final class ResWebFxModuleFile extends XmlModuleFileImpl implements WebFx
     public boolean fileExists() {
         return true;
     }
+
+    @Override
+    public Path getModuleFilePath() {
+        return null; // Actually never called
+    }
+
 }

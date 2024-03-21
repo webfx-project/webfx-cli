@@ -450,9 +450,9 @@ final public class ModuleRegistry {
                     // We keep m2 projects only
                     .filter(M2ProjectModule.class::isInstance).map(M2ProjectModule.class::cast)
                     // We keep only those with an export snapshot (at this point, all modules listed in the export snapshot are included)
-                    .filter(m2 -> m2.getWebFxModuleFile().isExported())
+                    .filter(m2 -> m2.getM2WebFxModuleFile().isExported())
                     // We keep only one module per export snapshot (the one that generated the snapshot - which is the first project listed in <export-snapshot>
-                    .filter(m2 -> m2.getName().equals(m2.getWebFxModuleFile().lookupExportedSnapshotFirstProjectName()))
+                    .filter(m2 -> m2.getName().equals(m2.getM2WebFxModuleFile().lookupExportedSnapshotFirstProjectName()))
                     // Registering the export snapshot usages on the fly while pulling this stream
                     .map(this::registerExportSnapshotUsages)
                     // This stream is for an on the fly registration, so no need to repeat and process the same modules again
@@ -461,12 +461,12 @@ final public class ModuleRegistry {
     private final Map<String /* package or class name */, List<SnapshotUsages>> registeredSnapshotUsages = new HashMap<>();
 
     private M2ProjectModule registerExportSnapshotUsages(M2ProjectModule m2) {
-        m2.getWebFxModuleFile().javaPackagesFromExportSnapshotUsage()
+        m2.getM2WebFxModuleFile().javaPackagesFromExportSnapshotUsage()
                 .forEach(javaPackageName -> {
                     List<SnapshotUsages> usages = registeredSnapshotUsages.computeIfAbsent(javaPackageName, k -> new ArrayList<>());
                     usages.add(new SnapshotUsages(m2, m2.getWebFxModuleFile().modulesUsingJavaPackageFromExportSnapshot(javaPackageName).collect(Collectors.toList())));
                 });
-        m2.getWebFxModuleFile().javaClassesFromExportSnapshotUsage()
+        m2.getM2WebFxModuleFile().javaClassesFromExportSnapshotUsage()
                 .forEach(javaClassName -> {
                     List<SnapshotUsages> usages = registeredSnapshotUsages.computeIfAbsent(javaClassName, k -> new ArrayList<>());
                     usages.add(new SnapshotUsages(m2, m2.getWebFxModuleFile().modulesUsingJavaClassFromExportSnapshot(javaClassName).collect(Collectors.toList())));
