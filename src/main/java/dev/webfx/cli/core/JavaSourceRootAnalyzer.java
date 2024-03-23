@@ -154,24 +154,11 @@ public final class JavaSourceRootAnalyzer {
                     return webFxModuleFile.detectedUsedBySourceModulesDependenciesFromExportSnapshot();
                 if (webFxModuleFile.isAggregate())
                     return ReusableStream.empty();
-                ReusableStream<ModuleDependency> usedModules = usedJavaPackagesCache
+                return usedJavaPackagesCache
                         .map(p -> projectModule.getRootModule().searchJavaPackageModule(p, projectModule))
                         //.map(this::replaceEmulatedModuleWithNativeIfApplicable)
                         .filter(module -> module != getProjectModule() && !module.getName().equals(projectModule.getName()))
-                        .map(m -> ModuleDependency.createSourceDependency(projectModule, m));
-                if (requiresJavaBaseJ2clEmulation()) {
-                    usedModules = ReusableStream.concat(
-                            usedModules,
-                            ReusableStream.of(ModuleDependency.createVertispanJ2clEmulationDependency(projectModule, projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL), projectModule.getTarget().hasTag(TargetTag.J2CL)))
-                    );
-                }
-                if (requiresJavaTimeJ2clEmulation()) {
-                    usedModules = ReusableStream.concat(
-                            usedModules,
-                            ReusableStream.of(ModuleDependency.createVertispanJ2clEmulationDependency(projectModule, projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVATIME_EMUL_J2CL), projectModule.getTarget().hasTag(TargetTag.J2CL)))
-                    );
-                }
-                return usedModules
+                        .map(m -> ModuleDependency.createSourceDependency(projectModule, m))
                         .distinct()
                         .cache();
             }).name("detectedByCodeAnalyzerSourceDependenciesCache");
@@ -461,7 +448,7 @@ public final class JavaSourceRootAnalyzer {
         return usesJavaPackage(packageName) && getSourceFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
     }
 
-    private boolean requiresJavaBaseJ2clEmulation() {
+    public boolean requiresJavaBaseJ2clEmulation() {
         if (!projectModule.getBuildInfo().isJ2clCompilable)
             return false;
         if (SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(projectModule.getName()))
@@ -475,12 +462,15 @@ public final class JavaSourceRootAnalyzer {
                usesJavaClass("java.util.Properties");
     }
 
-    private boolean requiresJavaTimeJ2clEmulation() {
+    public boolean requiresJavaTimeJ2clEmulation() {
         if (!projectModule.getBuildInfo().isJ2clCompilable)
             return false;
         if (SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(projectModule.getName()))
             return false;
-        return usesJavaPackage("java.time");
+        if (usesJavaPackage("java.time"))
+            return true;
+        return ProjectModule.filterDestinationProjectModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
+                .anyMatch(pm -> pm.getMainJavaSourceRootAnalyzer().usesJavaPackage("java.time"));
     }
 
     ///// Services
@@ -742,8 +732,6 @@ public final class JavaSourceRootAnalyzer {
     private ReusableStream<Module> collectExecutableEmulationModules() {
         RootModule rootModule = projectModule.getRootModule();
         if (projectModule.isExecutable(Platform.J2CL)) {
-            boolean isUsingJavaTime = ProjectModule.filterDestinationProjectModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
-                    .anyMatch(pm -> pm.getMainJavaSourceRootAnalyzer().usesJavaPackage("java.time"));
             boolean isUsingJavaNio = ProjectModule.mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                     .anyMatch(pm -> pm.getName().equals(SpecificModules.JAVA_NIO_EMUL));
             return ReusableStream.of(
@@ -751,7 +739,7 @@ public final class JavaSourceRootAnalyzer {
                     rootModule.searchRegisteredModule(SpecificModules.J2CL_PROCESSORS),
                     rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_FAT_J2CL),
                     rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL),
-                    isUsingJavaTime ? rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVATIME_EMUL_J2CL) : null,
+                    requiresJavaTimeJ2clEmulation() ? rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVATIME_EMUL_J2CL) : null,
                     isUsingJavaNio ? rootModule.searchRegisteredModule(SpecificModules.JAVA_NIO_EMUL) : null
             ).filter(Objects::nonNull);
         }

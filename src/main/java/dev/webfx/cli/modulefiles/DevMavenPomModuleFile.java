@@ -249,20 +249,25 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
     }
 
     private void addSourceRootDependencies(JavaSourceRootAnalyzer javaSourceRootAnalyzer, boolean test, Node dependenciesNode, Set<String> gas) {
-        BuildInfo buildInfo = javaSourceRootAnalyzer.getProjectModule().getBuildInfo();
+        ProjectModuleImpl projectModule = javaSourceRootAnalyzer.getProjectModule();
+        BuildInfo buildInfo = projectModule.getBuildInfo();
         try (BuildInfoThreadLocal closable = BuildInfoThreadLocal.open(buildInfo)) { // To pass this buildInfo to ArtifactResolver when sorting the dependencies via Module.compareTo()
             // We need to get all dependencies of the module, to populate <dependencies> in the pom.xml
             ReusableStream<ModuleDependency> dependencies =
                     // For a GWT executable module, we need to list all transitive dependencies (to pull all the source code to compile by GWT)
-                    buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies()
-                            .filter(dep -> !SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL.equals(dep.getDestinationModule().getName()))
-                            :
+                    buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies() :
                     // For other modules, we just need the direct dependencies, but also the implicit providers
                     ReusableStream.concat(
                             javaSourceRootAnalyzer.getDirectDependencies(),
                             javaSourceRootAnalyzer.getTransitiveDependencies()
-                                    .filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER)
-                    ).distinct();
+                                    .filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER),
+                            // Also adding optional runtime dependency to java base/time j2cl (if used) to make J2CL compilation successful with Vertispan plugin
+                            // (ignoring executable modules as this case is managed by JavaSourceRootAnalyzer.collectExecutableEmulationModules())
+                            !buildInfo.isExecutable && javaSourceRootAnalyzer.requiresJavaBaseJ2clEmulation() ? ReusableStream.of(ModuleDependency.createVertispanJ2clEmulationDependency(projectModule, projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL), projectModule.getTarget().hasTag(TargetTag.J2CL))) : null,
+                            !buildInfo.isExecutable && javaSourceRootAnalyzer.requiresJavaTimeJ2clEmulation() ? ReusableStream.of(ModuleDependency.createVertispanJ2clEmulationDependency(projectModule, projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVATIME_EMUL_J2CL), projectModule.getTarget().hasTag(TargetTag.J2CL))) : null
+                    )
+                            .filter(Objects::nonNull)
+                            .distinct();
             // Once we have these dependencies, we proceed them to populate the <dependencies> node
             dependencies
                     // The <dependencies> node actually lists the destination modules, which are the most important
