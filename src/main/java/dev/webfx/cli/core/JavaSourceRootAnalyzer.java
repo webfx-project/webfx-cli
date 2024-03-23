@@ -611,11 +611,11 @@ public final class JavaSourceRootAnalyzer {
                         // implementing modules may also declare additional providers
                         .flatMap(collectingSourceRoot::resolveInterfaceDependencyIfExecutable)
         )).collect(Collectors.toList()));
-        // Doing it again on openjfx executable modules, because in some case the previous list is not complete for any
-        // strange reason, and some optional services are missing in the end in the pom.xml.
-        // Ex: webfx update -p -M kbs-backoffice-application-openjfx
+        // Doing it again on executable modules, because in some cases the previous list is not complete for any strange
+        // reason, and some optional services are consequently missing in the end.
+        // Ex: webfx update -p -M kbs-backoffice-application-openjfx => missing dependencies in pom.xml
         // TODO Investigate why and provide a better fix
-        if (executableSourceRoot == collectingSourceRoot && executableModule.getTarget().hasTag(TargetTag.OPENJFX)) {
+        if (executableSourceRoot == collectingSourceRoot) {
             walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(
                     collectingSourceRoot.getTransitiveDependenciesWithoutImplicitProviders()
                             // Note: the previous stream may contain interface modules, so we resolve them here because the
