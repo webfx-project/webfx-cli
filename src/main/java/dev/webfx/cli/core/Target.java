@@ -2,7 +2,9 @@ package dev.webfx.cli.core;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Bruno Salmon
@@ -25,7 +27,12 @@ public final class Target {
     private Target(ProjectModule module, TargetTag[] tags) {
         this.module = module;
         this.tags = Arrays.stream(tags).collect(Collectors.toUnmodifiableList());
-        platformTags = this.tags.stream().filter(TargetTag::isPlatformTag).collect(Collectors.toUnmodifiableList());
+        platformTags = this.tags.stream()
+                // filtering platform tags (ex: GWT, JRE, GLUON, VERTX, ...) from this tag and transitive implied tags (ex: SERVER => JRE)
+                .flatMap(tag -> Stream.concat(Stream.of(tag), Stream.of(tag.getTransitiveImpliedTags())))
+                .filter(Objects::nonNull)
+                .filter(TargetTag::isPlatformTag)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     ProjectModule getModule() {
