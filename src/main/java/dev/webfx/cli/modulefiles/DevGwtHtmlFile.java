@@ -26,6 +26,11 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
         StringBuilder headSb = new StringBuilder(), bodySb = new StringBuilder();
         ReusableStream<ProjectModule> transitiveProjectModules =
                 ProjectModule.filterProjectModules(getProjectModule().getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()).distinct();
+        // Calling a terminal operation - here count() - otherwise the next stream may not provide a complete list
+        // (although it's ended with a terminal operation) for any strange reason.
+        // TODO Investigate why and provide a better fix
+        transitiveProjectModules.count();
+        // Now the stream should be complete
         ReusableStream.concat(
                 transitiveProjectModules.map(m -> m.getWebFxModuleFile().getHtmlNode()),
                 ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order=\"0\"><script type=\"text/javascript\" src=\"" + getGeneratedJsFileName() + "\" charset=\"utf-8\"/></body></html>"), "/html"))
