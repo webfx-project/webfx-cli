@@ -605,24 +605,20 @@ public final class JavaSourceRootAnalyzer {
         ProjectModuleImpl collectingModule = collectingSourceRoot.getProjectModule();
         List<ProjectModule> walkingModules = new HashList<>();
         walkingModules.add(collectingModule);
-        walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(
+        ReusableStream<ProjectModule> transitiveModulesWithInterfacesResolved = ProjectModule.filterProjectModules(mapDestinationModules(
                 collectingSourceRoot.getTransitiveDependenciesWithoutImplicitProviders()
                         // Note: the previous stream may contain interface modules, so we resolve them here because the
                         // implementing modules may also declare additional providers
                         .flatMap(collectingSourceRoot::resolveInterfaceDependencyIfExecutable)
-        )).collect(Collectors.toList()));
-        // Doing it again on executable modules, because in some cases the previous list is not complete for any strange
-        // reason, and some optional services are consequently missing in the end.
-        // Ex: webfx update -p -M kbs-backoffice-application-openjfx => missing dependencies in pom.xml
+        ));
+        // Calling a terminal operation - here count() - for executable modules, otherwise collect() may not provide a
+        // complete list (although it's also a terminal operation) for any strange reason, and some optional services
+        // may be missing in the end in the pom.xml. Ex: webfx update -p -M kbs-backoffice-application-openjfx
         // TODO Investigate why and provide a better fix
-        if (executableSourceRoot == collectingSourceRoot) {
-            walkingModules.addAll(ProjectModule.filterProjectModules(mapDestinationModules(
-                    collectingSourceRoot.getTransitiveDependenciesWithoutImplicitProviders()
-                            // Note: the previous stream may contain interface modules, so we resolve them here because the
-                            // implementing modules may also declare additional providers
-                            .flatMap(collectingSourceRoot::resolveInterfaceDependencyIfExecutable)
-            )).collect(Collectors.toList()));
-        }
+        if (executableSourceRoot == collectingSourceRoot)
+            transitiveModulesWithInterfacesResolved.count();
+        // Now the stream should be complete
+        walkingModules.addAll(transitiveModulesWithInterfacesResolved.collect(Collectors.toList()));
         List<String/* SPI */> requiredServices = new HashList<>();
         ReusableStream<ProjectModule> requiredSearchScope = executableSourceRoot.getRequiredProvidersModulesSearchScope();
         List<String/* SPI */> optionalServices = new HashList<>();
