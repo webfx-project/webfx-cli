@@ -92,7 +92,6 @@ final class BuildRunCommon {
         return executableModules.findFirst().orElse(null);
     }
 
-
     ReusableStream<DevProjectModule> findExecutableModules(DevProjectModule startingModule) {
         boolean openJfx = fatjar || openJfxDesktop;
         boolean gluon = gluonDesktop || android || ios;
@@ -114,7 +113,7 @@ final class BuildRunCommon {
         Path targetPath = module.getHomeDirectory().resolve("target");
         if (module.isExecutable(Platform.GWT)) {
             if (gwt)
-                executablePaths.add(targetPath.resolve(module.getName() + "-" + module.getVersion() + "/" + module.getName().replace('-', '_') + "/index.html"));
+                executablePaths.add(module.getGwtExecutableFilePath());
         } else if (module.isExecutable(Platform.JRE)) {
             String applicationName = DevMavenPomModuleFile.getApplicationName(module);
             if (module.getTarget().hasTag(TargetTag.OPENJFX)) {

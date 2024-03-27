@@ -9,6 +9,8 @@ import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import org.w3c.dom.Node;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Scanner;
 
@@ -85,6 +87,10 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
                 .replace("${generatedHeadContent}", headSb)
                 .replace("${generatedBodyContent}", bodySb);
         TextFileReaderWriter.writeTextFileIfNewOrModified(text, getModuleFilePath());
+        // Also updating index.html in target if exists (so user don't have to recompile the app for just a style change)
+        Path targetIndexHtmlPath = getProjectModule().getGwtExecutableFilePath();
+        if (Files.exists(targetIndexHtmlPath))
+            TextFileReaderWriter.writeTextFileIfNewOrModified(text, targetIndexHtmlPath);
     }
 
     private String getGeneratedJsFileName() {

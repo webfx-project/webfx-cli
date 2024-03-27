@@ -229,4 +229,8 @@ public class DevProjectModule extends ProjectModuleImpl {
         artifactId = null;
     }
 
+    public Path getGwtExecutableFilePath() {
+        return getHomeDirectory().resolve("target").resolve(getName() + "-" + getVersion() + "/" + getName().replace('-', '_') + "/index.html");
+    }
+
 }
