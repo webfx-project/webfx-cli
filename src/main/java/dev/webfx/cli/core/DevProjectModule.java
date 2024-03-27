@@ -3,14 +3,18 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.*;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFileCache;
+import dev.webfx.cli.util.sort.TopologicalSort;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
+import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
 import javax.lang.model.SourceVersion;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Spliterators;
+import java.nio.file.Paths;
+import java.util.*;
 
 /**
  * @author Bruno Salmon
@@ -231,6 +235,62 @@ public class DevProjectModule extends ProjectModuleImpl {
 
     public Path getGwtExecutableFilePath() {
         return getHomeDirectory().resolve("target").resolve(getName() + "-" + getVersion() + "/" + getName().replace('-', '_') + "/index.html");
+    }
+
+    private LinkedHashMap<String, Path> moduleWebFxPaths;
+    public LinkedHashMap<String, Path> collectThisAndTransitiveWebFXPaths(boolean canUseCache) {
+        if (moduleWebFxPaths != null)
+            return moduleWebFxPaths;
+
+        moduleWebFxPaths = new LinkedHashMap<>();
+
+        String moduleCacheName = getHomeDirectory().toAbsolutePath().toString().replace('/', '~') + "-transitive-webfx.txt";
+        Path moduleCacheFile = WebFXHiddenFolder.getCacheFolder().resolve(moduleCacheName);
+        boolean cacheRead = false;
+        if (canUseCache && Files.exists(moduleCacheFile)) {
+            try (Scanner scanner = new Scanner(moduleCacheFile)) {
+                while (scanner.hasNextLine()) {
+                    String line = scanner.nextLine();
+                    int p = line.indexOf(':');
+                    String moduleName = line.substring(0, p);
+                    String webfxPathUri = line.substring(p + 1);
+                    // URI stored in cache so that we can retrieve the path even if inside jar or zip files
+                    moduleWebFxPaths.put(moduleName, Paths.get(new URI(webfxPathUri)));
+                }
+                cacheRead = true;
+            } catch (Exception ignored) {
+            }
+        }
+        if (!cacheRead) {
+            // Creating the dependency graph of the transitive modules (i.e. list of dependencies for each module)
+            Map<Module, List<Module>> dependencyGraph =
+                    ModuleDependency.createDependencyGraph(getMainJavaSourceRootAnalyzer().getTransitiveDependencies());
+            // We sort these transitive modules in the order explained above (most dependent modules first, starting
+            // with the executable module). Configuration values will be considered only once in the merge, i.e. the
+            // first time they will appear in that order, and the consequent occurrences will be commented in the merged
+            // configuration file.
+            List<Module> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
+
+            sortedModules.forEach(m -> {
+                if (m instanceof ProjectModule) {
+                    ProjectModule pm = (ProjectModule) m;
+                    if (pm.hasMainWebFxSourceDirectory()) {
+                        moduleWebFxPaths.put(pm.getName(), pm.getMainWebFxSourceDirectory());
+                    }
+                }
+            });
+
+            StringBuilder sb = new StringBuilder();
+            moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
+                if (sb.length() > 0)
+                    sb.append("\n");
+                // URI stored in cache so that we can retrieve the path even if inside jar or zip files
+                sb.append(moduleName).append(':').append(webfxPath.toUri());
+            });
+            TextFileReaderWriter.writeTextFile(sb.toString(), moduleCacheFile, true);
+        }
+
+        return moduleWebFxPaths;
     }
 
 }
