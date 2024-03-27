@@ -144,6 +144,10 @@ public final class XmlUtil {
         }
     }
 
+    public static ReusableStream<Node> nodeListToNodeReusableStream(NodeList nodeList) {
+        return nodeListToReusableStream(nodeList, node -> node);
+    }
+
     public static ReusableStream<String> nodeListToTextContentReusableStream(NodeList nodeList) {
         return nodeListToReusableStream(nodeList, Node::getTextContent);
     }

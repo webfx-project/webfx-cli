@@ -330,11 +330,11 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         return mavenRepositories;
     }
 
-    private Node htmlNode;
+    private ReusableStream<Node> htmlNode;
     @Override
-    public Node getHtmlNode() {
+    public ReusableStream<Node> getHtmlNodes() {
         if (htmlNode == null)
-            htmlNode = WebFxModuleFileDelegate.super.getHtmlNode();
+            htmlNode = WebFxModuleFileDelegate.super.getHtmlNodes().cache();
         return htmlNode;
     }
 

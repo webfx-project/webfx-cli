@@ -9,6 +9,8 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+import static dev.webfx.cli.util.xml.XmlUtil.nodeListToNodeReusableStream;
+
 /**
  * @author Bruno Salmon
  */
@@ -179,8 +181,8 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
         });
     }
 
-    default Node getHtmlNode() {
-        return lookupNode("html");
+    default ReusableStream<Node> getHtmlNodes() {
+        return nodeListToNodeReusableStream(lookupNodeList("html"));
     }
 
     default Node getMavenManualNode() {

@@ -226,8 +226,8 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
-    default Node getHtmlNode() {
-        return getDelegate().getHtmlNode();
+    default ReusableStream<Node> getHtmlNodes() {
+        return getDelegate().getHtmlNodes();
     }
 
     @Override

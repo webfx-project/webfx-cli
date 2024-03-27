@@ -1,8 +1,8 @@
 package dev.webfx.cli.modulefiles;
 
-import dev.webfx.cli.modulefiles.abstr.DevModuleFileImpl;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.ProjectModule;
+import dev.webfx.cli.modulefiles.abstr.DevModuleFileImpl;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.cli.util.xml.XmlUtil;
@@ -32,7 +32,7 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
         transitiveProjectModules.count();
         // Now the stream should be complete
         ReusableStream.concat(
-                transitiveProjectModules.map(m -> m.getWebFxModuleFile().getHtmlNode()),
+                transitiveProjectModules.flatMap(m -> m.getWebFxModuleFile().getHtmlNodes()),
                 ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order=\"0\"><script type=\"text/javascript\" src=\"" + getGeneratedJsFileName() + "\" charset=\"utf-8\"/></body></html>"), "/html"))
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
