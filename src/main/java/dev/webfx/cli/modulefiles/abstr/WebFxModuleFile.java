@@ -129,7 +129,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     }
 
     default ReusableStream<ModuleDependency> getResourceModuleDependencies() {
-        return lookupDependencies("dependencies/resource-module", ModuleDependency.Type.RESOURCE, "provided");
+        return lookupDependencies("dependencies/resource-module", ModuleDependency.Type.RESOURCE, null);
     }
 
     default ReusableStream<LibraryModule> getRequiredWebFxLibraryModules() {

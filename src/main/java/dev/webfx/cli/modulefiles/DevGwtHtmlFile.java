@@ -19,6 +19,7 @@ import java.util.Scanner;
  */
 public class DevGwtHtmlFile extends DevModuleFileImpl {
 
+    private static final String MAIN_CSS_RELATIVE_PATH = "dev/webfx/kit/css/main.css";
     public DevGwtHtmlFile(DevProjectModule module) {
         super(module, module.getMainResourcesDirectory().resolve("public/index.html"));
     }
@@ -32,10 +33,13 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
         // (although it's ended with a terminal operation) for any strange reason.
         // TODO Investigate why and provide a better fix
         transitiveProjectModules.count();
+        Path mainCssPath = getModule().getMainResourcesDirectory().resolve("public").resolve(MAIN_CSS_RELATIVE_PATH);
+        boolean isMainCssPresent = Files.exists(mainCssPath);
         // Now the stream should be complete
         ReusableStream.concat(
                 transitiveProjectModules.flatMap(m -> m.getWebFxModuleFile().getHtmlNodes()),
-                ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order=\"0\"><script type=\"text/javascript\" src=\"" + getGeneratedJsFileName() + "\" charset=\"utf-8\"/></body></html>"), "/html"))
+                ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order='0'><script type='text/javascript' src='" + getGeneratedJsFileName() + "' charset='utf-8'/></body></html>"), "/html")),
+                isMainCssPresent ? ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><head><link rel='stylesheet' href='" + MAIN_CSS_RELATIVE_PATH + "'></link></head></html>"), "/html")) : null
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
                 .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.getChildNodes(), n -> n))

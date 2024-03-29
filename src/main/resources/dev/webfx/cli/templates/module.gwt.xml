@@ -22,4 +22,7 @@
     <!-- Including the public folder that contains source web files such as index.html -->
     <public path="public"/>
 
+    <!-- Including the possible resources related to CSS (fonts, images, etc...) -->
+    <resource path="dev/webfx/kit/css"/>
+
 </module>

@@ -54,12 +54,10 @@ public final class XmlUtil {
             } catch (FileNotFoundException ie) {
                 return null;
             } catch (IOException e) {
-                e.printStackTrace();
-                return null;
+                throw new RuntimeException(e);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException(e);
         }
     }
 

@@ -31,7 +31,7 @@ public final class Update extends CommonSubcommand implements Runnable {
     @Option(names={"-x", "--gwt-xml"}, description = "Update module.gwt.xml files.")
     boolean gwtXml;
 
-    @Option(names={"-s", "--gwt-super"}, description = "Update GWT super source files.")
+    @Option(names={"-u", "--gwt-super"}, description = "Update GWT super source files.")
     boolean gwtSuperSources;
 
     @Option(names={"-e", "--gwt-embed"}, description = "Update GWT embed resource files.")
@@ -49,6 +49,9 @@ public final class Update extends CommonSubcommand implements Runnable {
     @Option(names={"-i", "--i18n"}, description = "Update WebFX i18n files.")
     boolean i18n;
 
+    @Option(names={"-s", "--css"}, description = "Update WebFX CSS files.")
+    boolean css;
+
     @Override
     public void run() {
         setUpLogger();
@@ -64,6 +67,7 @@ public final class Update extends CommonSubcommand implements Runnable {
         tasks.meta = meta;
         tasks.conf = conf;
         tasks.i18n = i18n;
+        tasks.css = css;
         execute(cleanSnapshots, tasks, getWorkspace());
     }
 
@@ -92,7 +96,7 @@ public final class Update extends CommonSubcommand implements Runnable {
     static void executeUpdateTasks(DevProjectModule workingModule, UpdateTasks tasks) {
         // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties) <- always present
         // and config file for executable modules (dev.webfx.platform.conf/src-root.properties) <- present only when using modules with config
-        if (tasks.meta || tasks.conf || tasks.i18n)
+        if (tasks.meta || tasks.conf || tasks.i18n || tasks.css)
             getWorkingAndChildrenModulesInDepth(workingModule)
                     .filter(ProjectModule::isExecutable)
                     .forEach(module -> {
@@ -101,7 +105,9 @@ public final class Update extends CommonSubcommand implements Runnable {
                         if (tasks.conf)
                             RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module, !tasks.pom);
                         if (tasks.i18n)
-                            RootI18nFileGenerator.generateExecutableModuleI18nResourceFile(module, !tasks.pom);
+                            I18nFilesGenerator.generateExecutableModuleI18nResourceFiles(module, !tasks.pom);
+                        if (tasks.css)
+                            CssFilesGenerator.generateExecutableModuleCssResourceFiles(module, !tasks.pom);
                     });
 
         // Generating or updating Maven module files (pom.xml)
@@ -168,7 +174,8 @@ public final class Update extends CommonSubcommand implements Runnable {
                 graalvm,
                 meta,
                 conf,
-                i18n;
+                i18n,
+                css;
 
         void enableAllTasksIfUnset() {
             if (!pom &&
@@ -181,7 +188,8 @@ public final class Update extends CommonSubcommand implements Runnable {
                 !graalvm &&
                 !meta &&
                 !conf &&
-                !i18n) {
+                !i18n &&
+                !css) {
                     pom =
                     moduleInfo =
                     metaInfServices =
@@ -193,6 +201,7 @@ public final class Update extends CommonSubcommand implements Runnable {
                     meta =
                     conf =
                     i18n =
+                    css =
                     true;
             }
         }

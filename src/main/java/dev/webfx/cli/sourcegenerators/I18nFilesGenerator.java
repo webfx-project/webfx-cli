@@ -17,11 +17,11 @@ import java.util.Map;
 /**
  * @author Bruno Salmon
  */
-public final class RootI18nFileGenerator {
+public final class I18nFilesGenerator {
 
     private final static Map<Path, Config> I18N_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
-    public static void generateExecutableModuleI18nResourceFile(DevProjectModule module, boolean canUseCache) {
+    public static void generateExecutableModuleI18nResourceFiles(DevProjectModule module, boolean canUseCache) {
         if (module.isExecutable()) {
             // We will collect here all configurations from all transitive modules and merge them into a single
             // configuration file. The order is important when doing that merge, because configuration values can be
