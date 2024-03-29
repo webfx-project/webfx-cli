@@ -30,7 +30,7 @@ public final class CssFilesGenerator {
 
         String cssTag = isWebExecutable ? "web@" : "javafx@";
 
-        Path mergedCssFolder = module.getMainResourcesDirectory().resolve((isWebExecutable ? "public/" : "") + "dev/webfx/kit/css");
+        Path mergedCssSourceFolder = module.getMainResourcesDirectory().resolve((isWebExecutable ? "public/" : "") + "dev/webfx/kit/css");
 
         Map<Path /* relative path to merged css file */, StringBuilder /* content concatenation */> cssMerges = new HashMap<>();
 
@@ -62,6 +62,8 @@ public final class CssFilesGenerator {
             }
         });
 
+        Path mergedCssTargetFolder = isWebExecutable ? module.getGwtExecutableFilePath().getParent().resolve("dev/webfx/kit/css") : null;
+
         // Writing down all css files other than main.css (main.css will be merged directly in index.html)
         for (Map.Entry<Path, StringBuilder> entry : cssMerges.entrySet()) {
             Path path = entry.getKey();
@@ -84,7 +86,12 @@ public final class CssFilesGenerator {
                     cssContent = "/* @font-face rules listed first, otherwise they are ignored (OpenJFX bug) */\n\n" + fontFaces + cssContent;
                 }
             }
-            TextFileReaderWriter.writeTextFileIfNewOrModified(cssContent, mergedCssFolder.resolve(path));
+            TextFileReaderWriter.writeTextFileIfNewOrModified(cssContent, mergedCssSourceFolder.resolve(path));
+            if (isWebExecutable) {
+                Path targetCssPath = mergedCssTargetFolder.resolve(path);
+                if (Files.exists(targetCssPath))
+                    TextFileReaderWriter.writeTextFileIfNewOrModified(cssContent, targetCssPath);
+            }
         }
     }
 
