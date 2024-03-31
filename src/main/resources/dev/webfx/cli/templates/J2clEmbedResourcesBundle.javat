@@ -1,5 +1,5 @@
 // File managed by WebFX (DO NOT EDIT MANUALLY)
-package dev.webfx.platform.resource.j2cl.embed;
+package dev.webfx.platform.resource.j2cl;
 
 import org.treblereel.j2cl.processors.annotations.GWT3Resource;
 import org.treblereel.j2cl.processors.common.resources.ClientBundle;

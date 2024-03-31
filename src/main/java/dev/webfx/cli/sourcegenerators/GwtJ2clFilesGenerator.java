@@ -11,11 +11,10 @@ public final class GwtJ2clFilesGenerator {
         module.getGwtHtmlFile().writeFile();
         if (module.getBuildInfo().isForJ2cl) {
             J2clEmbedResourcesBundleSourceGenerator.generateJ2clClientBundleSource(module);
-            J2clEntryPointSourceGenerator.generateEntryPointSource(module);
+            GwtJ2clEntryPointSourceGenerator.generateJ2clEntryPointSource(module);
         } else { // GWT
             GwtEmbedResourcesBundleSourceGenerator.generateGwtClientBundleSource(module);
-            GwtServiceLoaderSuperSourceGenerator.generateServiceLoaderSuperSource(module);
-            GwtArraySuperSourceGenerator.generateArraySuperSource(module);
+            GwtJ2clEntryPointSourceGenerator.generateGwtEntryPointSource(module);
             module.getGwtModuleFile().writeFile();
         }
     }

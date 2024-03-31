@@ -13,6 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class J2clEmbedResourcesBundleSourceGenerator {
 
+    static final String GENERATED_PROVIDER_CLASS_NAME = "dev.webfx.platform.resource.j2cl.J2clEmbedResourcesBundle$ProvidedJ2clResourceBundle";
+    private static final String GENERATED_PROVIDER_JAVA_FILE = "dev/webfx/platform/resource/j2cl/J2clEmbedResourcesBundle.java";
+
     static void generateJ2clClientBundleSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module EmbedResourcesBundle super source for GWT");
         StringBuilder resourceDeclaration = new StringBuilder();
@@ -42,10 +45,10 @@ final class J2clEmbedResourcesBundleSourceGenerator {
     }
 
     static Path getJavaFilePath(DevProjectModule module) {
-        return module.getMainResourcesDirectory().resolve("dev/webfx/platform/resource/j2cl/embed/J2clEmbedResourcesBundle.java");
+        return module.getMainResourcesDirectory().resolve(GENERATED_PROVIDER_JAVA_FILE);
     }
 
-    static String getProviderClassName(DevProjectModule module) {
-        return "dev.webfx.platform.resource.j2cl.embed.J2clEmbedResourcesBundle$ProvidedJ2clResourceBundle";
+    static String getProviderClassName() {
+        return GENERATED_PROVIDER_CLASS_NAME;
     }
 }

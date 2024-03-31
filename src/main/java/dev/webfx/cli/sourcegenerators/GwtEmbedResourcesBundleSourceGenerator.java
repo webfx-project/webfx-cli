@@ -13,6 +13,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class GwtEmbedResourcesBundleSourceGenerator {
 
+    static final String GENERATED_PROVIDER_CLASS_NAME = "dev.webfx.platform.resource.gwt.GwtEmbedResourcesBundle$ProvidedGwtResourceBundle";
+    private static final String GENERATED_PROVIDER_JAVA_FILE = "super/dev/webfx/platform/resource/gwt/GwtEmbedResourcesBundle.java";
+
+
     static void generateGwtClientBundleSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module EmbedResourcesBundle super source for GWT");
         StringBuilder resourceDeclaration = new StringBuilder();
@@ -29,24 +33,18 @@ final class GwtEmbedResourcesBundleSourceGenerator {
                     resourceRegistration
                             .append("            registerResource(\"").append(r).append("\", R.").append(resourceMethodName).append("());\n");
                 });
-        String packageName = getPackageName(module);
         String source = resourceNumber.get() == 0 ? null // if no resource, setting the source to null so writeTextFile() will actually delete the file if exists
-                : ResourceTextFileReader.readTemplate("EmbedResourcesBundle.javat")
-                        .replace("${package}", packageName)
+                : ResourceTextFileReader.readTemplate("GwtEmbedResourcesBundle.javat")
                         .replace("${resourceDeclaration}", resourceDeclaration)
                         .replace("${resourceRegistration}", resourceRegistration);
         TextFileReaderWriter.writeTextFileIfNewOrModified(source, getJavaFilePath(module));
     }
 
-    static String getPackageName(DevProjectModule module) {
-        return module.getMainJavaModuleFile().getJavaModuleName() + ".embed";
-    }
-
     static Path getJavaFilePath(DevProjectModule module) {
-        return module.getMainResourcesDirectory().resolve("super").resolve(getPackageName(module).replaceAll("\\.", "/")).resolve("EmbedResourcesBundle.java");
+        return module.getMainResourcesDirectory().resolve(GENERATED_PROVIDER_JAVA_FILE);
     }
 
-    static String getProviderClassName(DevProjectModule module) {
-        return getPackageName(module)+ ".EmbedResourcesBundle$ProvidedGwtResourceBundle";
+    static String getProviderClassName() {
+        return GENERATED_PROVIDER_CLASS_NAME;
     }
 }

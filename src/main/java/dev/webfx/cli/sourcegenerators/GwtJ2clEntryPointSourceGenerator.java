@@ -9,20 +9,31 @@ import dev.webfx.lib.reusablestream.ReusableStream;
 /**
  * @author Bruno Salmon
  */
-final class J2clEntryPointSourceGenerator {
+final class GwtJ2clEntryPointSourceGenerator {
 
-    static void generateEntryPointSource(DevProjectModule module) {
-        String template = ResourceTextFileReader.readTemplate("J2clEntryPoint.javat");
+    static void generateJ2clEntryPointSource(DevProjectModule module) {
+        generateGwtJ2clEntryPointSource(module, true);
+    }
+
+    static void generateGwtEntryPointSource(DevProjectModule module) {
+        generateGwtJ2clEntryPointSource(module, false);
+    }
+
+    private static void generateGwtJ2clEntryPointSource(DevProjectModule module, boolean j2cl) {
+        String templateName = j2cl ? "J2clEntryPoint.javat" : "GwtEntryPoint.javat";
+        String javaFilePath = j2cl ? "dev/webfx/platform/boot/j2cl/J2clEntryPoint.java" : "super/dev/webfx/platform/boot/gwt/GwtEntryPoint.java";
+        String bundleSpiClassName = j2cl ? "dev.webfx.platform.resource.spi.impl.j2cl.J2clResourceBundle" : "dev.webfx.platform.resource.spi.impl.gwt.GwtResourceBundle";
+        String template = ResourceTextFileReader.readTemplate(templateName);
         StringBuilder sb = new StringBuilder();
         module.getMainJavaSourceRootAnalyzer().getExecutableProviders()
                 .forEach(providers -> {
                     String spiClassName = providers.getSpiClassName();
                     ReusableStream<String> providerClassNames = providers.getProviderClassNames();
-                    if (spiClassName.equals("dev.webfx.platform.resource.spi.impl.j2cl.J2clResourceBundle")) {
-                        if (TextFileReaderWriter.fileExists(J2clEmbedResourcesBundleSourceGenerator.getJavaFilePath(module)))
+                    if (spiClassName.equals(bundleSpiClassName)) {
+                        if (TextFileReaderWriter.fileExists(j2cl ? J2clEmbedResourcesBundleSourceGenerator.getJavaFilePath(module) : GwtEmbedResourcesBundleSourceGenerator.getJavaFilePath(module)))
                             providerClassNames = ReusableStream.concat(
                                     providerClassNames,
-                                    ReusableStream.of(J2clEmbedResourcesBundleSourceGenerator.getProviderClassName(module))
+                                    ReusableStream.of(j2cl ? J2clEmbedResourcesBundleSourceGenerator.getProviderClassName() : GwtEmbedResourcesBundleSourceGenerator.getProviderClassName())
                             );
                     }
                     if (!providerClassNames.isEmpty()) {
@@ -53,11 +64,12 @@ final class J2clEntryPointSourceGenerator {
 
         TextFileReaderWriter.writeTextFileIfNewOrModified(
                 template,
-                module.getMainResourcesDirectory().resolve("dev/webfx/platform/boot/j2cl/entrypoint/J2clEntryPoint.java"));
+                module.getMainResourcesDirectory().resolve(javaFilePath));
     }
 
     private static String getProviderConstructorReference(String providerClassName) {
-        return providerClassName.replace('$', '.') + "::new";
+        return providerClassName.replace('$', '.')
+               + (providerClassName.endsWith(".GwtJsonObject") ? "::create" : "::new");
     }
 
 }

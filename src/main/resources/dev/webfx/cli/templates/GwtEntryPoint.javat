@@ -1,16 +1,16 @@
-package dev.webfx.platform.boot.j2cl;
+package dev.webfx.platform.boot.gwt;
 
-import dev.webfx.platform.reflect.RArray;
+import com.google.gwt.core.client.EntryPoint;
 import dev.webfx.platform.boot.ApplicationBooter;
 import dev.webfx.platform.boot.spi.ApplicationBooterProvider;
-import org.treblereel.j2cl.processors.annotations.GWT3EntryPoint;
+import dev.webfx.platform.reflect.RArray;
 
 import static dev.webfx.platform.service.gwtj2cl.ServiceRegistry.*;
 
-public final class J2clEntryPoint implements ApplicationBooterProvider {
+public final class GwtEntryPoint implements ApplicationBooterProvider, EntryPoint {
 
-    @GWT3EntryPoint
-    public void entryPoint() {
+    @Override
+    public void onModuleLoad() {
         registerArrayConstructors();
         registerServiceProviders();
         ApplicationBooter.start(this, null);
