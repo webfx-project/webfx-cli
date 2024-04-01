@@ -93,7 +93,7 @@ public final class Build extends CommonSubcommand implements Runnable {
 */
         String command = "mvn " +
                 (brc.clean ? "clean " : "") +
-                (gluonModule != null ? "install " : "package ") +
+                (gluonModule != null || brc.j2cl ? "install " : "package ") + // for Gluon & J2CL: 1) install 2) subsequent build (see below)
                 (brc.fatjar ? "-P openjfx-fatjar " : "") +
                 (brc.openJfxDesktop ? "-P openjfx-desktop " : "") +
                 (brc.gwt ? "-P gwt-compile " : "");
@@ -116,6 +116,17 @@ public final class Build extends CommonSubcommand implements Runnable {
                 .setWorkingDirectory(workspace.getTopRootModule().getHomeDirectory())
                 .executeAndWait()
                 .getExitCode();
+        // Subsequent build (after mvn install on all modules) for J2CL executed under application-j2cl module.
+        // This is to minimise the java language limitations coming from Javac 8 call by Vertispan plugin. Javac 8 is
+        // called only on the reactor modules, so we limit the reactor to application-j2cl module.
+        if (brc.j2cl && exitCode == 0) {
+            exitCode = new ProcessCall()
+                    .setCommand("mvn package -P j2cl")
+                    .setWorkingDirectory(brc.findExecutableModule(workspace).getHomeDirectory())
+                    .executeAndWait()
+                    .getExitCode();
+        }
+        // Subsequent build for Gluon (after mvn install on all modules)
         if (gluonModule != null && exitCode == 0) {
             if (brc.gluonDesktop) {
                 if (OperatingSystem.isWindows()) {
