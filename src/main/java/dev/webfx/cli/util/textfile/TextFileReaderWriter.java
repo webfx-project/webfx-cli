@@ -2,9 +2,9 @@ package dev.webfx.cli.util.textfile;
 
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
 public final class TextFileReaderWriter {
 
@@ -17,35 +17,26 @@ public final class TextFileReaderWriter {
     }
 
     public static void writeTextFileIfNewOrModified(String content, Path path) {
-        writeTextFileIfNewOrModified(content, readTextFile(path), path);
-    }
-
-    public static void writeTextFileIfNewOrModified(String newContent, String oldContent, Path path) {
-        if (newContent == null && fileExists(path) || !areTextFileContentsIdentical(newContent, oldContent))
-            writeTextFile(newContent, path);
-    }
-
-    private static boolean areTextFileContentsIdentical(String content1, String content2) {
-        return Objects.equals(removeLR(content1), removeLR(content2));
-    }
-
-    private static String removeLR(String content) {
-        return content == null ? null : content.replaceAll("\r", "");
+        writeTextFile(content, path, true, false);
     }
 
     public static void writeTextFile(String content, Path path) {
         writeTextFile(content, path, false);
     }
 
-    public static void writeTextFile(String content, Path path, boolean silent) {
+    public static void writeTextFile(String content, Path path, boolean skipIfUnmodified) {
+        writeTextFile(content, path, skipIfUnmodified, false);
+    }
+
+    public static void writeTextFile(String content, Path path, boolean onlyIfNewOrModified, boolean silent) {
         try (TextFileThreadTransaction transaction = TextFileThreadTransaction.open()) {
-            transaction.addOperation(new TextFileOperation(path, content, silent));
+            transaction.addOperation(new TextFileOperation(path, content, onlyIfNewOrModified, silent));
             transaction.commit(); // Executed now if not embed in a wider transaction, or later on commit of the wider transaction
         }
     }
 
     public static void deleteTextFile(Path path) {
-        writeTextFile(null, path);
+        writeTextFile(null, path, false);
     }
 
     public static boolean fileExists(Path path) {
@@ -57,6 +48,18 @@ public final class TextFileReaderWriter {
                 return false;
         }
         return Files.exists(path);
+    }
+
+    public static void deleteFolder(Path folderPath) {
+        try {
+            if (Files.exists(folderPath))
+                SplitFiles.walk(folderPath).forEachRemaining(path -> {
+                    if (Files.isRegularFile(path))
+                        deleteTextFile(path);
+                });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

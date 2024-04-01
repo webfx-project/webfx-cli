@@ -2,10 +2,13 @@ package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.*;
 import dev.webfx.cli.sourcegenerators.*;
+import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.cli.util.textfile.TextFileThreadTransaction;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+
+import java.nio.file.Path;
 
 /**
  * @author Bruno Salmon
@@ -94,10 +97,42 @@ public final class Update extends CommonSubcommand implements Runnable {
     }
 
     static void executeUpdateTasks(DevProjectModule workingModule, UpdateTasks tasks) {
+        boolean allTasksEnabled = tasks.areAllTasksEnabled();
+
+        // For most tasks we will iterate the working module and its children in depth, so we cache this stream.
+        ReusableStream<DevProjectModule> workingAndChildrenModulesInDepthCache =
+                getWorkingAndChildrenModulesInDepth(workingModule).cache();
+
+        // When we execute all update tasks, we first virtually delete the folders before regenerating their content.
+        // This is how the CLI will detect and garbage collect all files that are not regenerated to keep everything clean.
+        if (allTasksEnabled) {
+            workingAndChildrenModulesInDepthCache
+                    .forEach(m -> {
+                        Path mainResourcesDirectory = m.getMainResourcesDirectory();
+                        // Cleaning all generated resources from executable modules
+                        if (m.isExecutable()) {
+                            // resources under dev/webfx (meta, conf, i18n & css resources)
+                            TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("dev/webfx"));
+                            if (m.isExecutable(Platform.GWT)) {
+                                // resources under public/dev/webfx (containing merges css file for gwt executables)
+                                TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("public/dev/webfx"));
+                                // resources under super (containing super sources for gwt executables)
+                                TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("super"));
+                            }
+                            if (m.isExecutable(Platform.JRE) && m.getTarget().hasTag(TargetTag.GLUON)) {
+                                // Cleaning GraalVM conf
+                                TextFileReaderWriter.deleteFolder(m.getHomeDirectory().resolve("src/main/graalvm_conf"));
+                            }
+                        }
+                        // Cleaning META-INF/services
+                        TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("META-INF/services"));
+                    });
+        }
+
         // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties) <- always present
         // and config file for executable modules (dev.webfx.platform.conf/src-root.properties) <- present only when using modules with config
         if (tasks.meta || tasks.conf || tasks.i18n || tasks.css)
-            getWorkingAndChildrenModulesInDepth(workingModule)
+            workingAndChildrenModulesInDepthCache
                     .filter(ProjectModule::isExecutable)
                     .forEach(module -> {
                         if (tasks.meta)
@@ -112,12 +147,12 @@ public final class Update extends CommonSubcommand implements Runnable {
 
         // Generating or updating Maven module files (pom.xml)
         if (tasks.pom)
-            getWorkingAndChildrenModulesInDepth(workingModule)
+            workingAndChildrenModulesInDepthCache
                     .forEach(m -> m.getMavenModuleFile().updateAndWrite());
 
         // Generating files for Java modules (module-info.java and META-INF/services)
         if (tasks.moduleInfo || tasks.metaInfServices)
-            getWorkingAndChildrenModulesInDepth(workingModule)
+            workingAndChildrenModulesInDepthCache
                     .filter(DevProjectModule::hasMainJavaSourceDirectory)
                     // Skipping module-info.java for some special cases
                     .filter(m -> !SpecificModules.skipJavaModuleInfo(m.getName()))
@@ -135,23 +170,16 @@ public final class Update extends CommonSubcommand implements Runnable {
 
         if (tasks.gwtXml || tasks.indexHtml || tasks.gwtSuperSources || tasks.gwtEmbedResource)
             // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
-            getWorkingAndChildrenModulesInDepth(workingModule)
+            workingAndChildrenModulesInDepthCache
                     .filter(m -> m.isExecutable(Platform.GWT) || m.isExecutable(Platform.J2CL))
                     .forEach(GwtJ2clFilesGenerator::generateGwtJ2clFiles);
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
         if (tasks.graalvm)
-            getWorkingAndChildrenModulesInDepth(workingModule)
+            workingAndChildrenModulesInDepthCache
                     .filter(m -> m.isExecutable(Platform.JRE))
                     .filter(m -> m.getTarget().hasTag(TargetTag.GLUON))
                     .forEach(GluonFilesGenerator::generateGraalVmReflectionJson);
-    }
-
-    private static ReusableStream<DevProjectModule> getWorkingAndChildrenModules(DevProjectModule workingModule) {
-        return workingModule
-                .getThisAndChildrenModules()
-                .filter(DevProjectModule.class::isInstance)
-                .map(DevProjectModule.class::cast);
     }
 
     private static ReusableStream<DevProjectModule> getWorkingAndChildrenModulesInDepth(DevProjectModule workingModule) {
@@ -161,7 +189,7 @@ public final class Update extends CommonSubcommand implements Runnable {
                 .map(DevProjectModule.class::cast);
     }
 
-    final static class UpdateTasks {
+    public final static class UpdateTasks {
 
         private boolean
                 pom,
@@ -177,19 +205,24 @@ public final class Update extends CommonSubcommand implements Runnable {
                 i18n,
                 css;
 
+        private boolean areAllTasksSetToValue(boolean value) {
+            return pom == value &&
+                moduleInfo == value &&
+                metaInfServices == value &&
+                indexHtml == value &&
+                gwtXml == value &&
+                gwtSuperSources == value &&
+                gwtEmbedResource == value &&
+                graalvm == value &&
+                meta == value &&
+                conf == value &&
+                i18n == value &&
+                css == value;
+
+        }
+
         void enableAllTasksIfUnset() {
-            if (!pom &&
-                !moduleInfo &&
-                !metaInfServices &&
-                !indexHtml &&
-                !gwtXml &&
-                !gwtSuperSources &&
-                !gwtEmbedResource &&
-                !graalvm &&
-                !meta &&
-                !conf &&
-                !i18n &&
-                !css) {
+            if (areAllTasksSetToValue(false)) {
                     pom =
                     moduleInfo =
                     metaInfServices =
@@ -204,6 +237,10 @@ public final class Update extends CommonSubcommand implements Runnable {
                     css =
                     true;
             }
+        }
+
+        boolean areAllTasksEnabled() {
+            return areAllTasksSetToValue(true);
         }
     }
 }

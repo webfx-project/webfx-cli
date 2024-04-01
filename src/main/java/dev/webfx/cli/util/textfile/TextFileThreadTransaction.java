@@ -7,10 +7,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Bruno Salmon
@@ -41,10 +38,17 @@ public final class TextFileThreadTransaction implements AutoCloseable {
 
     void addOperation(TextFileOperation operation) {
         operations.add(operation);
-        if (operation.content == null)
-            toDeletePaths.add(operation.path);
-        else
-            toWritePaths.add(operation.path);
+        Path path = operation.path;
+        if (operation.content == null) { // Delete operation
+            toDeletePaths.add(path);
+            // When a delete operation occurs, we remove any previous pending write operation on that same file
+            toWritePaths.remove(path);
+        } else { // Write operation (create or update)
+            toWritePaths.add(path);
+            // When a write operation occurs, we remove any previous pending delete operation on that same file
+            toDeletePaths.remove(path);
+            deletedPaths.remove(path);
+        }
     }
 
     public int executedOperationsCount() {
@@ -52,14 +56,17 @@ public final class TextFileThreadTransaction implements AutoCloseable {
     }
 
     public void commit() {
-        if (previousTransaction == null)
-            operations.forEach(this::commitOperation);
-        else {
-            previousTransaction.operations.addAll(operations);
-            previousTransaction.toWritePaths.addAll(toWritePaths);
-            previousTransaction.toDeletePaths.addAll(toDeletePaths);
-            previousTransaction.deletedPaths.addAll(deletedPaths);
-        }
+        // Committing all operations
+        operations.forEach(operation -> {
+            // Either immediately if not embed in a previous transaction
+            if (previousTransaction == null)
+                commitOperation(operation); // executed now
+            else { // Or just transferring it to the previous transaction
+                previousTransaction.addOperation(operation); // will be executed on transaction commit
+                // Also transferring already deleted paths (probably empty because the operation was not yet executed)
+                previousTransaction.deletedPaths.addAll(deletedPaths);
+            }
+        });
         operations.clear();
         toWritePaths.clear();
         toDeletePaths.clear();
@@ -76,33 +83,42 @@ public final class TextFileThreadTransaction implements AutoCloseable {
 
     private void commitOperation(TextFileOperation op) {
         try {
-            if (op.content != null) { // Write file
-                boolean exists = Files.exists(op.path);
-                if (!exists) {
-                    Files.createDirectories(op.path.getParent()); // Creating all necessary directories
-                    if (deletedPaths.contains(op.path)) {
-                        deletedPaths.remove(op.path);
-                        executedOperationsCounts--;
+            Path path = op.path;
+            if (op.content != null) { // Write operation
+                if (toWritePaths.contains(path)) { // Checking if the file is still to write (no subsequent delete operation occurs)
+                    boolean exists = Files.exists(path);
+                    if (!exists) {
+                        Files.createDirectories(path.getParent()); // Creating all necessary parent directories
+                        if (deletedPaths.contains(path)) {
+                            deletedPaths.remove(path);
+                            executedOperationsCounts--;
+                        }
+                    } else if (op.onlyIfNewOrModified) {
+                        String previousContent = TextFileReaderWriter.readTextFile(path);
+                        if (areTextFileContentsIdentical(op.content, previousContent))
+                            return;
                     }
-                }
-                BufferedWriter writer = Files.newBufferedWriter(op.path, StandardCharsets.UTF_8);
-                writer.write(op.content);
-                writer.flush();
-                writer.close();
-                toWritePaths.remove(op.path);
-                if (!op.silent) {
-                    Logger.log((exists ? "Updated " : "Created ") + op.path);
-                    executedOperationsCounts++;
-                }
-            } else { // Delete file
-                if (Files.deleteIfExists(op.path)) {
-                    deletedPaths.add(op.path);
+                    BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
+                    writer.write(op.content);
+                    writer.flush();
+                    writer.close();
+                    toWritePaths.remove(path);
                     if (!op.silent) {
-                        Logger.log("Deleted " + op.path);
+                        Logger.log((exists ? "Updated " : "Created ") + path);
                         executedOperationsCounts++;
                     }
                 }
-                toDeletePaths.remove(op.path);
+            } else { // Delete operation
+                if (toDeletePaths.contains(path)) {
+                    if (Files.deleteIfExists(path)) {
+                        deletedPaths.add(path);
+                        if (!op.silent) {
+                            Logger.log("Deleted " + path);
+                            executedOperationsCounts++;
+                        }
+                    }
+                    toDeletePaths.remove(path);
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -112,6 +128,14 @@ public final class TextFileThreadTransaction implements AutoCloseable {
     @Override
     public void close() {
         threadLocalTransactions.set(previousTransaction);
+    }
+
+    private static boolean areTextFileContentsIdentical(String content1, String content2) {
+        return Objects.equals(removeLR(content1), removeLR(content2));
+    }
+
+    private static String removeLR(String content) {
+        return content == null ? null : content.replaceAll("\r", "");
     }
 
 }

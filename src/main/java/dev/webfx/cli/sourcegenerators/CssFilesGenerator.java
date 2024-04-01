@@ -37,12 +37,12 @@ public final class CssFilesGenerator {
         Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache);
 
         moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
-            Path webfxWebCssDirectory = webfxPath.resolve("css");
-            if (Files.isDirectory(webfxWebCssDirectory)) {
-                ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxWebCssDirectory))
+            Path webfxCssDirectory = webfxPath.resolve("css");
+            if (Files.isDirectory(webfxCssDirectory)) {
+                ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxCssDirectory))
                         .filter(CSS_FILE_MATCHER::matches)
                         .forEach(path -> {
-                            Path relativeCssPath = webfxWebCssDirectory.relativize(path);
+                            Path relativeCssPath = webfxCssDirectory.relativize(path);
                             String fileName = relativeCssPath.getFileName().toString();
                             if (fileName.contains(cssTag)) {
                                 String cssContent = CSS_CACHE.get(path);
@@ -87,7 +87,7 @@ public final class CssFilesGenerator {
                 }
             }
             TextFileReaderWriter.writeTextFileIfNewOrModified(cssContent, mergedCssSourceFolder.resolve(path));
-            if (isWebExecutable) {
+            if (mergedCssTargetFolder != null) {
                 Path targetCssPath = mergedCssTargetFolder.resolve(path);
                 if (Files.exists(targetCssPath))
                     TextFileReaderWriter.writeTextFileIfNewOrModified(cssContent, targetCssPath);
