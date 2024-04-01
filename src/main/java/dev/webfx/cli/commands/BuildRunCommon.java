@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
  * @author Bruno Salmon
  */
 final class BuildRunCommon {
+    final boolean clean;
     final boolean build;
     final boolean run;
     final boolean gwt;
@@ -32,7 +33,8 @@ final class BuildRunCommon {
     final boolean rpm;
     final boolean open;
 
-    public BuildRunCommon(boolean build, boolean run, boolean gwt, boolean j2cl, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open) {
+    public BuildRunCommon(boolean clean, boolean build, boolean run, boolean gwt, boolean j2cl, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open) {
+        this.clean = clean;
         this.build = build;
         this.run = run;
         this.gwt = gwt;

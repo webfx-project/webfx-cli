@@ -51,6 +51,9 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"-b", "--build"}, description = "(Re)build the application before running it")
     boolean build;
 
+    @CommandLine.Option(names= {"-c", "--clean"}, description = "Clean the target folder before the build")
+    boolean clean;
+
     @CommandLine.Option(names= {"--AppImage"}, description = "Takes the AppImage as executable (Linux)")
     boolean appImage;
 
@@ -74,7 +77,7 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(build, true, gwt, j2cl, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
+        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {

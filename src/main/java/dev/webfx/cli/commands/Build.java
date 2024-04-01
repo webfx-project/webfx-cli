@@ -16,6 +16,9 @@ import java.nio.file.Path;
 @Command(name = "build", description = "Build a WebFX application.")
 public final class Build extends CommonSubcommand implements Runnable {
 
+    @CommandLine.Option(names= {"-c", "--clean"}, description = "Clean the target folder before the build")
+    boolean clean;
+
     @CommandLine.Option(names = {"-g", "--gwt"}, description = "Includes the GWT compilation")
     private boolean gwt;
 
@@ -69,7 +72,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(true, run, gwt, j2cl, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
+        execute(new BuildRunCommon(clean, true, run, gwt, j2cl, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
@@ -89,6 +92,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             throw new CommandLine.ParameterException(new CommandLine(this), "Missing required build option");
 */
         String command = "mvn " +
+                (brc.clean ? "clean " : "") +
                 (gluonModule != null ? "install " : "package ") +
                 (brc.fatjar ? "-P openjfx-fatjar " : "") +
                 (brc.openJfxDesktop ? "-P openjfx-desktop " : "") +
