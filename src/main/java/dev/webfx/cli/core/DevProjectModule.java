@@ -27,7 +27,7 @@ public class DevProjectModule extends ProjectModuleImpl {
     private WebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
     private DevGwtModuleFile gwtModuleFile;
-    private DevGwtHtmlFile gwtHtmlFile;
+    private DevGwtJ2clHtmlFile gwtJ2clHtmlFile;
     // The webfx root module of the application repository which may be different from the root module in case of
     // aggregate modules with different submodules (each submodule is a different app repo with its own root webfx module).
     private DevProjectModule webFxRootModule;
@@ -145,10 +145,10 @@ public class DevProjectModule extends ProjectModuleImpl {
         return gwtModuleFile;
     }
 
-    public DevGwtHtmlFile getGwtHtmlFile() {
-        if (gwtHtmlFile == null)
-            gwtHtmlFile = new DevGwtHtmlFile(this);
-        return gwtHtmlFile;
+    public DevGwtJ2clHtmlFile getGwtJ2clHtmlFile() {
+        if (gwtJ2clHtmlFile == null)
+            gwtJ2clHtmlFile = new DevGwtJ2clHtmlFile(this);
+        return gwtJ2clHtmlFile;
     }
 
     public DevProjectModule getOrCreateChildProjectModule(String name) {

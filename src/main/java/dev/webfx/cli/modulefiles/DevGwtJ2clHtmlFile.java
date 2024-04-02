@@ -1,5 +1,6 @@
 package dev.webfx.cli.modulefiles;
 
+import dev.webfx.cli.core.Workaround;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.ProjectModule;
 import dev.webfx.cli.modulefiles.abstr.DevModuleFileImpl;
@@ -17,10 +18,10 @@ import java.util.Scanner;
 /**
  * @author Bruno Salmon
  */
-public class DevGwtHtmlFile extends DevModuleFileImpl {
+public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
 
     private static final String MAIN_CSS_RELATIVE_PATH = "dev/webfx/kit/css/main.css";
-    public DevGwtHtmlFile(DevProjectModule module) {
+    public DevGwtJ2clHtmlFile(DevProjectModule module) {
         super(module, module.getMainResourcesDirectory().resolve("public/index.html"));
     }
 
@@ -29,10 +30,8 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
         StringBuilder headSb = new StringBuilder(), bodySb = new StringBuilder();
         ReusableStream<ProjectModule> transitiveProjectModules =
                 ProjectModule.filterProjectModules(getProjectModule().getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()).distinct();
-        // Calling a terminal operation - here count() - otherwise the next stream may not provide a complete list
-        // (although it's ended with a terminal operation) for any strange reason.
-        // TODO Investigate why and provide a better fix
-        transitiveProjectModules.count();
+        // Fixing possible incomplete stream
+        Workaround.fixTerminalReusableStream(transitiveProjectModules); // TODO: remove this once fixed
         Path mainCssPath = getModule().getMainResourcesDirectory().resolve("public").resolve(MAIN_CSS_RELATIVE_PATH);
         boolean isMainCssPresent = Files.exists(mainCssPath);
         // Now the stream should be complete
@@ -43,7 +42,7 @@ public class DevGwtHtmlFile extends DevModuleFileImpl {
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
                 .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.getChildNodes(), n -> n))
-                .sorted(Comparator.comparingInt(DevGwtHtmlFile::getNodeOrder))
+                .sorted(Comparator.comparingInt(DevGwtJ2clHtmlFile::getNodeOrder))
                 .filter(headOrBodyNode -> checkNodeConditions(headOrBodyNode, transitiveProjectModules))
                 .forEach(headOrBodyNode -> {
                     String nodeName = headOrBodyNode.getNodeName();

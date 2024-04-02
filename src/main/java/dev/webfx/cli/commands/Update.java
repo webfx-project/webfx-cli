@@ -34,11 +34,11 @@ public final class Update extends CommonSubcommand implements Runnable {
     @Option(names={"-x", "--gwt-xml"}, description = "Update module.gwt.xml files.")
     boolean gwtXml;
 
-    @Option(names={"-u", "--gwt-super"}, description = "Update GWT super source files.")
-    boolean gwtSuperSources;
+    @Option(names={"-y", "--entry"}, description = "Update GWT/J2CL entry point source files.")
+    boolean entryPoint;
 
-    @Option(names={"-e", "--gwt-embed"}, description = "Update GWT embed resource files.")
-    boolean gwtEmbedResource;
+    @Option(names={"-e", "--embed"}, description = "Update GWT/J2CL embed resource files.")
+    boolean embedResource;
 
     @Option(names={"-a", "--graalvm"}, description = "Update GraalVM files (Gluon).")
     boolean graalvm;
@@ -64,8 +64,8 @@ public final class Update extends CommonSubcommand implements Runnable {
         tasks.metaInfServices = metaInfServices;
         tasks.indexHtml = indexHtml;
         tasks.gwtXml = gwtXml;
-        tasks.gwtSuperSources = gwtSuperSources;
-        tasks.gwtEmbedResource = gwtEmbedResource;
+        tasks.entryPoint = entryPoint;
+        tasks.embedResource = embedResource;
         tasks.graalvm = graalvm;
         tasks.meta = meta;
         tasks.conf = conf;
@@ -171,17 +171,17 @@ public final class Update extends CommonSubcommand implements Runnable {
                         boolean j2cl = m.getTarget().hasTag(TargetTag.J2CL);
                         boolean teavm = m.getTarget().isAnyPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM
                         boolean web = gwt || j2cl || m.getTarget().hasTag(TargetTag.EMUL);
-                        if (jre && !web) // Not for TeaVM because the TeaVM modules in module-info.java are not recognised by JPMS
+                        if (tasks.moduleInfo && jre && !web) // Not for TeaVM because the TeaVM modules in module-info.java are not recognised by JPMS
                             JavaFilesGenerator.generateModuleInfoJavaFile(m);
-                        if (jre /* for GraalVM */ || teavm)
+                        if (tasks.metaInfServices && (jre /* for GraalVM */ || teavm))
                             JavaFilesGenerator.generateMetaInfServicesFiles(m);
                     });
 
-        if (tasks.gwtXml || tasks.indexHtml || tasks.gwtSuperSources || tasks.gwtEmbedResource)
+        if (tasks.gwtXml || tasks.indexHtml || tasks.entryPoint || tasks.embedResource)
             // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
             workingAndChildrenModulesInDepthCache
                     .filter(m -> m.isExecutable(Platform.GWT) || m.isExecutable(Platform.J2CL))
-                    .forEach(GwtJ2clFilesGenerator::generateGwtJ2clFiles);
+                    .forEach(m -> GwtJ2clFilesGenerator.generateGwtJ2clFiles(m, tasks.gwtXml, tasks.indexHtml, tasks.entryPoint, tasks.embedResource));
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
         if (tasks.graalvm)
@@ -206,8 +206,8 @@ public final class Update extends CommonSubcommand implements Runnable {
                 metaInfServices,
                 indexHtml,
                 gwtXml,
-                gwtSuperSources,
-                gwtEmbedResource,
+                entryPoint,
+                embedResource,
                 graalvm,
                 meta,
                 conf,
@@ -220,8 +220,8 @@ public final class Update extends CommonSubcommand implements Runnable {
                 metaInfServices == value &&
                 indexHtml == value &&
                 gwtXml == value &&
-                gwtSuperSources == value &&
-                gwtEmbedResource == value &&
+                entryPoint == value &&
+                embedResource == value &&
                 graalvm == value &&
                 meta == value &&
                 conf == value &&
@@ -237,8 +237,8 @@ public final class Update extends CommonSubcommand implements Runnable {
                     metaInfServices =
                     indexHtml =
                     gwtXml =
-                    gwtSuperSources =
-                    gwtEmbedResource =
+                    entryPoint =
+                    embedResource =
                     graalvm =
                     meta =
                     conf =

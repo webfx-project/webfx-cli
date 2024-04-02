@@ -611,12 +611,9 @@ public final class JavaSourceRootAnalyzer {
                         // implementing modules may also declare additional providers
                         .flatMap(collectingSourceRoot::resolveInterfaceDependencyIfExecutable)
         ));
-        // Calling a terminal operation - here count() - for executable modules, otherwise collect() may not provide a
-        // complete list (although it's also a terminal operation) for any strange reason, and some optional services
-        // may be missing in the end in the pom.xml. Ex: webfx update -p -M kbs-backoffice-application-openjfx
-        // TODO Investigate why and provide a better fix
+        // Fixing possible incomplete list, causing missing optional services in pom.xml. Ex: webfx update -p -M kbs-backoffice-application-openjfx
         if (executableSourceRoot == collectingSourceRoot)
-            transitiveModulesWithInterfacesResolved.count();
+            Workaround.fixTerminalReusableStream(transitiveModulesWithInterfacesResolved); // TODO: remove this once fixed
         // Now the stream should be complete
         walkingModules.addAll(transitiveModulesWithInterfacesResolved.collect(Collectors.toList()));
         List<String/* SPI */> requiredServices = new HashList<>();
