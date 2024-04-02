@@ -43,7 +43,7 @@ public final class RootConfigFileGenerator {
                                 .forEach(path -> {
                                     Config config = CONFIG_CACHE.get(path);
                                     if (config == null) {
-                                        String fileContent = TextFileReaderWriter.readTextFile(path);
+                                        String fileContent = TextFileReaderWriter.readInputTextFile(path);
                                         config = ConfigParser.parseConfigFile(fileContent, path.toAbsolutePath().toString());
                                         CONFIG_CACHE.put(path, config);
                                     }

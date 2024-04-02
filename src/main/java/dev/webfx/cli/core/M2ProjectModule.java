@@ -90,9 +90,11 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     Boolean tryEvaluateUsesJavaPackageWithoutDownloadingSources(String javaPackage) {
+        /* Commented as this may cause reading lots of java files from the jar, which is slower than computing usage
         // If the sources are already present, we can skip this section and just do a sources analyse to compute the requested usage.
         if (sourceDirectory != null)
             return null;
+        */
         // But if they are absent, we try to compute the usage without downloading the sources (if possible with the export snapshot).
         // If this module is an aggregate module, we don't expect any sources, so we return false
         if (isAggregate())
@@ -109,9 +111,11 @@ public class M2ProjectModule extends ProjectModuleImpl {
     }
 
     Boolean tryEvaluateUsesJavaClassWithoutDownloadingSources(String javaClass) {
+        /* Commented as this may cause reading lots of java files from the jar, which is slower than computing usage
         // If the sources are already present, we can skip this section and just do a sources analyse to compute the requested usage.
         if (sourceDirectory != null)
             return null;
+        */
         // But if they are absent, we try to compute the usage without downloading the sources (if possible with the export snapshot).
         // If this module is an aggregate module, we don't expect any sources, so we return false
         if (isAggregate())

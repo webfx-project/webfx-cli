@@ -21,11 +21,22 @@ public final class TextFileThreadTransaction implements AutoCloseable {
     private final Set<Path> toDeletePaths = new HashSet<>();
     private final Set<Path> deletedPaths = new HashSet<>();
     private final Set<Path> toWritePaths = new HashSet<>();
+    public int readInputFilesCount;
+    public int outputFilesCount; // = created + updated + unmodified
+    public int createdOutputFilesCount;
+    public int updatedOutputFilesCount;
+    public int unmodifiedOutputFilesCount;
+    public int deletedOutputFilesCount; // in addition to outputFilesCount
     private int executedOperationsCounts;
 
     public static TextFileThreadTransaction open() {
         threadLocalTransactions.set(new TextFileThreadTransaction(get()));
         return get();
+    }
+
+    @Override
+    public void close() {
+        threadLocalTransactions.set(previousTransaction);
     }
 
     static TextFileThreadTransaction get() {
@@ -86,18 +97,19 @@ public final class TextFileThreadTransaction implements AutoCloseable {
             Path path = op.path;
             if (op.content != null) { // Write operation
                 if (toWritePaths.contains(path)) { // Checking if the file is still to write (no subsequent delete operation occurs)
+                    if (!op.silent)
+                        outputFilesCount++;
                     boolean exists = Files.exists(path);
                     if (!exists) {
                         Files.createDirectories(path.getParent()); // Creating all necessary parent directories
-                        if (deletedPaths.contains(path)) {
-                            deletedPaths.remove(path);
-                            executedOperationsCounts--;
-                        }
-                    } else if (op.onlyIfNewOrModified) {
-                        String previousContent = TextFileReaderWriter.readTextFile(path);
-                        if (areTextFileContentsIdentical(op.content, previousContent))
-                            return;
-                    }
+                        if (!op.silent)
+                            createdOutputFilesCount++;
+                    } else if (op.onlyIfNewOrModified && areTextFileContentsIdentical(op.content, TextFileReaderWriter.readOutputTextFile(path))) {
+                        if (!op.silent)
+                            unmodifiedOutputFilesCount++;
+                        return;
+                    } else if (!op.silent)
+                        updatedOutputFilesCount++;
                     BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
                     writer.write(op.content);
                     writer.flush();
@@ -109,11 +121,12 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                     }
                 }
             } else { // Delete operation
-                if (toDeletePaths.contains(path)) {
+                if (toDeletePaths.contains(path)) { // Checking if the file is still to delete (no subsequent write operation occurs)
                     if (Files.deleteIfExists(path)) {
                         deletedPaths.add(path);
                         if (!op.silent) {
                             Logger.log("Deleted " + path);
+                            deletedOutputFilesCount++;
                             executedOperationsCounts++;
                         }
                     }
@@ -123,11 +136,6 @@ public final class TextFileThreadTransaction implements AutoCloseable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public void close() {
-        threadLocalTransactions.set(previousTransaction);
     }
 
     private static boolean areTextFileContentsIdentical(String content1, String content2) {

@@ -1,5 +1,6 @@
 package dev.webfx.cli.util.xml;
 
+import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import org.w3c.dom.*;
 import org.xml.sax.InputSource;
 import dev.webfx.lib.reusablestream.ReusableStream;
@@ -35,11 +36,13 @@ public final class XmlUtil {
     }
 
     public static Document parseXmlFile(File xmlFile) {
-        //System.out.println("Parsing file " + xmlFile);
-        return parseXmlSource(new InputSource(xmlFile.toURI().toASCIIString()));
+        //return parseXmlSource(new InputSource(xmlFile.toURI().toASCIIString()));
+        return parseXmlString(TextFileReaderWriter.readInputTextFile(xmlFile.toPath()));
     }
 
     public static Document parseXmlString(String xmlString) {
+        if (xmlString == null)
+            return null;
         InputSource is = new InputSource();
         is.setCharacterStream(new StringReader(xmlString));
         return parseXmlSource(is);

@@ -52,7 +52,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         BuildInfo buildInfo = projectModule.getBuildInfo();
         String templateFileName =
                 isMavenRootModule ? "pom_root.xml" // (((RootModule) projectModule).isInlineWebFxParent() ? "pom_root_inline.xml" : "pom_root.xml")
-                        : isAggregate() ? "pom_aggregate.xml"
+                        : projectModule.isAggregate() ? "pom_aggregate.xml"
                         : !buildInfo.isExecutable ? "pom_not_executable.xml"
                         : buildInfo.isForGwt ? "pom_gwt_executable.xml"
                         : buildInfo.isForJ2cl ? "pom_j2cl_executable.xml"

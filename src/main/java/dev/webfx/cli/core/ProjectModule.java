@@ -208,6 +208,9 @@ public interface ProjectModule extends Module {
     }
 
     default boolean isAggregate() {
+        // parent modules are not aggregates (no need to load webfx.xml or pom.xml to know that)
+        if (getName().endsWith("-parent")) // ex: webfx-parent, webfx-stack-parent
+            return false;
         return getWebFxModuleFile().skipMavenPomUpdate() ?
                 getMavenModuleFile().isAggregate()
                 : getWebFxModuleFile().isAggregate();

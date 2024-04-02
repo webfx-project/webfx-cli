@@ -287,7 +287,7 @@ public class DevProjectModule extends ProjectModuleImpl {
                 // URI stored in cache so that we can retrieve the path even if inside jar or zip files
                 sb.append(moduleName).append(':').append(webfxPath.toUri());
             });
-            TextFileReaderWriter.writeTextFile(sb.toString(), moduleCacheFile, true);
+            TextFileReaderWriter.writeTextFile(sb.toString(), moduleCacheFile, true, true);
         }
 
         return moduleWebFxPaths;

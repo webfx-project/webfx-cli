@@ -43,7 +43,7 @@ public final class I18nFilesGenerator {
                             .forEach(path -> {
                                 Config i18nObject = I18N_CACHE.get(path);
                                 if (i18nObject == null) {
-                                    String fileContent = TextFileReaderWriter.readTextFile(path);
+                                    String fileContent = TextFileReaderWriter.readInputTextFile(path);
                                     i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
                                     I18N_CACHE.put(path, i18nObject);
                                 }

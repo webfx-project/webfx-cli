@@ -95,7 +95,7 @@ public final class Rename extends CommonSubcommand {
         }
 
         private static void replaceModuleNameInXmlFile(Path xmlPath, String moduleName, String moduleNewName) {
-            String xmlContent = TextFileReaderWriter.readTextFile(xmlPath);
+            String xmlContent = TextFileReaderWriter.readInputTextFile(xmlPath);
             if (xmlContent != null)
                 TextFileReaderWriter.writeTextFile(xmlContent.replace(">" + moduleName + "</", ">" + moduleNewName + "</"), xmlPath);
         }

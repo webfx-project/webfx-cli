@@ -50,12 +50,12 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
     @Override
     public boolean shouldTakeChildrenModuleNamesFromPomInstead() {
         return !isExported() // No, if the module is exported as the snapshot itself contains the effective children module names
-                // No, if children modules names are explicitly listed in webfx.xml (<modules> section without <subdirectories-modules/> directive)
-                && !(isAggregate() && !shouldSubdirectoriesChildrenModulesBeAdded())
-                // No, if the module name ends with "-parent" as it's not meant to have children
-                && !getProjectModule().getName().endsWith("-parent")
-                // Yes, otherwise (ie no <modules/> section or with <subdirectories-modules/> directive)
-                ;
+               // No, if the module name ends with "-parent" as it's not meant to have children
+               && !getProjectModule().getName().endsWith("-parent")
+               // No, if children modules names are explicitly listed in webfx.xml (<modules> section without <subdirectories-modules/> directive)
+               && !(isAggregate() && !shouldSubdirectoriesChildrenModulesBeAdded())
+               // Yes, otherwise (ie no <modules/> section or with <subdirectories-modules/> directive)
+               ;
     }
 
     public Element lookupExportedSnapshotProjectElement(M2ProjectModule module) {

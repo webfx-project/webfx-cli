@@ -8,9 +8,36 @@ import java.nio.file.Path;
 
 public final class TextFileReaderWriter {
 
-    public static String readTextFile(Path path) {
+    public static String readInputTextFile(Path path) {
+        return readTextFile(path, true);
+    }
+
+    public static String readOutputTextFile(Path path) {
+        return readTextFile(path, false);
+    }
+
+    public static String readCliTextFile(Path path) {
+        return readTextFile(path, false);
+    }
+
+    public static void incrementReadInputFilesCount() {
+        TextFileThreadTransaction transaction = TextFileThreadTransaction.get();
+        if (transaction != null)
+            transaction.readInputFilesCount++;
+    }
+
+    private static String readTextFile(Path path, boolean input) {
         try {
-            return SplitFiles.uncheckedReadTextFile(path);
+            String content = SplitFiles.uncheckedReadTextFile(path);
+            if (input) {
+                incrementReadInputFilesCount();
+                /*
+                FileSystem fileSystem = path.getFileSystem();
+                boolean isInsideJar = fileSystem.provider().getScheme().equals("jar");
+                System.out.println("Reading " + TextFileThreadTransaction.get().readInputFilesCount + ") " + (isInsideJar ? "JAR " + fileSystem + "!" : "") + path);
+                */
+            }
+            return content;
         } catch (RuntimeException e) {
             return null;
         }

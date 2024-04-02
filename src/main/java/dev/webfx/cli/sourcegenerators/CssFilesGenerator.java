@@ -47,7 +47,7 @@ public final class CssFilesGenerator {
                             if (fileName.contains(cssTag)) {
                                 String cssContent = CSS_CACHE.get(path);
                                 if (cssContent == null) {
-                                    cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + TextFileReaderWriter.readTextFile(path);
+                                    cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + TextFileReaderWriter.readInputTextFile(path);
                                     CSS_CACHE.put(path, cssContent);
                                 }
                                 if (fileName.contains("@")) {

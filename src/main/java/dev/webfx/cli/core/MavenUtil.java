@@ -55,7 +55,7 @@ public final class MavenUtil {
     private static final Set<String> NOT_FOUND_ARTIFACTS = new HashSet<>();
 
     static {
-        String content = TextFileReaderWriter.readTextFile(NOT_FOUND_ARTIFACTS_PATH);
+        String content = TextFileReaderWriter.readCliTextFile(NOT_FOUND_ARTIFACTS_PATH);
         if (content != null)
             NOT_FOUND_ARTIFACTS.addAll(Arrays.asList(content.split("\n")));
     }

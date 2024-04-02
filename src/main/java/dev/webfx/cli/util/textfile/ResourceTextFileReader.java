@@ -7,6 +7,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -17,6 +19,7 @@ public final class ResourceTextFileReader {
     private static final Class<?> ROOT_CLASS = WebFxCLI.class; // Class located in dev.webfx.cli root package
     private static final String ROOT_RESOURCE_FOLDER = ROOT_CLASS.getPackageName().replace('.', '/') + '/'; // Should be "dev/webfx/cli/"
     private static final String TEMPLATE_RESOURCE_FOLDER = ROOT_RESOURCE_FOLDER + "templates/"; // Should be 'dev/webfx/cli/templates/'
+    private static final Map<String, String> RESOURCE_TEXT_CACHE = new HashMap<>();
 
     public static String readTemplate(String templateName) {
         return uncheckedReadResourceTextFile(TEMPLATE_RESOURCE_FOLDER + templateName);
@@ -31,6 +34,9 @@ public final class ResourceTextFileReader {
     }
 
     public static String readResourceTextFile(String fileName) throws IOException {
+        String content = RESOURCE_TEXT_CACHE.get(fileName);
+        if (content != null)
+            return content;
         if (fileName.startsWith(ROOT_RESOURCE_FOLDER))
             fileName = fileName.substring(ROOT_RESOURCE_FOLDER.length());
         else if (fileName.startsWith("/" + ROOT_RESOURCE_FOLDER))
@@ -45,7 +51,9 @@ public final class ResourceTextFileReader {
                 return null;
             }
             try (InputStreamReader isr = new InputStreamReader(is); BufferedReader reader = new BufferedReader(isr)) {
-                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+                content = reader.lines().collect(Collectors.joining(System.lineSeparator()));
+                RESOURCE_TEXT_CACHE.put(fileName, content);
+                return content;
             }
         }
     }

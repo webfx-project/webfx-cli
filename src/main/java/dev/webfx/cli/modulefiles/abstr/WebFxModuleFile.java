@@ -65,7 +65,8 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     }
 
     default boolean shouldTakeChildrenModuleNamesFromPomInstead() {
-        return !isAggregate(); // Default behaviour: yes if there is no <modules/> section
+        // Default behaviour: yes if there is no <modules/> section and no directive specific to leaf modules (ex: exported package or dependencies)
+        return !isAggregate() && lookupNode("exported-packages") == null && lookupNode("dependencies") == null; // Default behaviour: yes if there is no <modules/> section
     }
 
     default boolean shouldSubdirectoriesChildrenModulesBeAdded() {
