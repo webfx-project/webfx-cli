@@ -9,6 +9,7 @@
     <dependencies>
         <used-by-source-modules/>
         <plugin-module>webfx-platform-ast-json-plugin</plugin-module>
+        <plugin-module>webfx-platform-ast-yaml-plugin</plugin-module>
         <plugin-module>webfx-platform-ast-factory-generic</plugin-module>
     </dependencies>
 

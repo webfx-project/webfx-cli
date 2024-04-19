@@ -11,7 +11,7 @@ import java.nio.file.PathMatcher;
  */
 final class AstUtil {
 
-    final static PathMatcher AST_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{properties,json}");
+    final static PathMatcher AST_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{properties,json,yaml}");
 
     static boolean hasArray(ReadOnlyAstObject astObject) {
         for (Object key : astObject.keys()) {
