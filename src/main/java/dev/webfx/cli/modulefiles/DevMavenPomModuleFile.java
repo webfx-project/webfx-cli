@@ -34,7 +34,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
     }
 
     public boolean isAggregate() {
-        return aggregate != null ? aggregate : lookupNode("modules") != null;
+        return aggregate != null ? aggregate : lookupNode("modules[1]") != null;
     }
 
     @Override
@@ -242,7 +242,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             if (parentModule != module.getParentDirectoryModule())
                 XmlUtil.createAndAppendElement(parentNode, "relativePath");
         }
-        Node modelVersionNode = lookupNode("modelVersion");
+        Node modelVersionNode = lookupNode("modelVersion[1]");
         if (modelVersionNode == null)
             prependElementWithTextContent("modelVersion", "4.0.0");
         return true;

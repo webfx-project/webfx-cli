@@ -141,7 +141,7 @@ public final class XmlUtil {
             }
             return (T) expression.evaluate(item, returnType);
         } catch (XPathExpressionException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error while evaluating xpath expression: " + xpathExpression + "\n" + e.getMessage(), e);
         }
     }
 

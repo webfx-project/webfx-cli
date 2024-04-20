@@ -43,7 +43,7 @@ public class XmlGavUtil {
     }
 
     private static Node lookupParentNode(Node node) {
-        return XmlUtil.lookupNode(node, "parent");
+        return XmlUtil.lookupNode(node, "parent[1]");
     }
 
     private static String lookupGavTagContent(String tagName, boolean lookInGroupIfNull, int artifactTokenIndex, Node node) {

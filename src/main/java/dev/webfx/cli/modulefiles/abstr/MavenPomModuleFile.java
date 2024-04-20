@@ -8,11 +8,11 @@ import dev.webfx.lib.reusablestream.ReusableStream;
 public interface MavenPomModuleFile extends XmlGavModuleFile, PathBasedModuleFile {
 
     default boolean isAggregate() {
-        return lookupNode("modules") != null;
+        return lookupNode("/project[1]/modules[1]") != null;
     }
 
     default ReusableStream<String> getChildrenModuleNames() {
-        return lookupNodeListTextContent("modules//module");
+        return lookupNodeListTextContent("/project[1]/modules[1]//module");
     }
 
 }

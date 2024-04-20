@@ -59,7 +59,7 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
     }
 
     public Element lookupExportedSnapshotProjectElement(M2ProjectModule module) {
-        Node exportedProjectNode = lookupNode("/project/export-snapshot/project[@name='" + module.getName() + "']");
+        Node exportedProjectNode = lookupNode("(/project/export-snapshot/project[@name='" + module.getName() + "'])[1]");
         if (exportedProjectNode instanceof Element)
             return (Element) exportedProjectNode;
         return null;
