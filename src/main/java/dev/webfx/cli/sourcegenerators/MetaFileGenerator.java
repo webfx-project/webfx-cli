@@ -10,7 +10,8 @@ import dev.webfx.platform.meta.Meta;
  * @author Bruno Salmon
  */
 public final class MetaFileGenerator {
-    public static void generateExecutableModuleMetaResourceFile(DevProjectModule module) {
+
+    public static boolean generateExecutableModuleMetaResourceFile(DevProjectModule module) {
         if (module.isExecutable()) {
             ProjectModule applicationModule = module.getApplicationModule();
             String applicationModuleName = applicationModule != null ? applicationModule.getName() : "";
@@ -20,6 +21,8 @@ public final class MetaFileGenerator {
                             .replace("${executableModuleVersion}", module.getVersion())
                             .replace("${applicationModuleName}", applicationModuleName)
                     , module.getMainResourcesDirectory().resolve(Meta.META_EXE_RESOURCE_FILE_PATH));
+            return true;
         }
+        return false;
     }
 }

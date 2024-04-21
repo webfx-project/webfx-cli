@@ -24,6 +24,6 @@ public interface PathBasedModuleFile extends ModuleFile {
 
     void readFile();
 
-    void writeFile();
+    boolean writeFile();
 
 }

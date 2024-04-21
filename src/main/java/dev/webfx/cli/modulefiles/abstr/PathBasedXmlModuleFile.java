@@ -27,8 +27,11 @@ public interface PathBasedXmlModuleFile extends PathBasedModuleFile, XmlModuleFi
         }
     }
 
-    default void writeFile() {
-        TextFileReaderWriter.writeTextFileIfNewOrModified(getXmlContent(), getModuleFilePath());
+    default boolean writeFile() {
+        String xmlContent = getXmlContent();
+        if (xmlContent != null)
+            TextFileReaderWriter.writeTextFileIfNewOrModified(xmlContent, getModuleFilePath());
+        return xmlContent != null;
     }
 
 }

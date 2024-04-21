@@ -4,15 +4,16 @@ import org.w3c.dom.Document;
 
 public interface DevXmlModuleFile extends PathBasedXmlModuleFile, DevModuleFile {
 
-    default void updateAndWrite() {
+    default boolean updateAndWrite() {
         if (getModuleFilePath() == null)
-            return;
+            return false;
         boolean recreate = recreateOnUpdateAndWrite();
         if (recreate)
             createDocument(); // The document is created AND UPDATED (so no need to call updateDocument() a second time)
         Document document = getDocument();
         if (document != null && (recreate || updateDocument(document)))
-            writeFile();
+            return writeFile();
+        return false;
     }
 
     default boolean recreateOnUpdateAndWrite() {

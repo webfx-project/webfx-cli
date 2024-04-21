@@ -22,11 +22,11 @@ public final class CssFilesGenerator {
     private final static PathMatcher CSS_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.css");
     private final static Map<Path, String> CSS_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
-    public static void generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache) {
+    public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache) {
         boolean isWebExecutable = module.isExecutable(Platform.GWT) || module.isExecutable(Platform.J2CL);
         boolean isJavaFxExecutable = !isWebExecutable && module.isExecutable() && (module.getTarget().hasTag(TargetTag.OPENJFX) || module.getTarget().hasTag(TargetTag.GLUON));
         if (!isWebExecutable && !isJavaFxExecutable)
-            return;
+            return 0;
 
         String cssTag = isWebExecutable ? "web@" : "javafx@";
 
@@ -87,12 +87,15 @@ public final class CssFilesGenerator {
                 }
             }
             TextFileReaderWriter.writeTextFileIfNewOrModified(cssContent, mergedCssSourceFolder.resolve(path));
+            // In addition, we update the target css file if it exists
             if (mergedCssTargetFolder != null) {
                 Path targetCssPath = mergedCssTargetFolder.resolve(path);
                 if (Files.exists(targetCssPath))
                     TextFileReaderWriter.writeTextFileIfNewOrModified(cssContent, targetCssPath);
             }
         }
+
+        return cssMerges.size();
     }
 
 }

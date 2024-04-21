@@ -228,16 +228,12 @@ public class DevProjectModule extends ProjectModuleImpl {
         return homeDirectory != null && homeDirectory.startsWith(getRootModule().getHomeDirectory());
     }
 
-    public void rename(String newName) {
-        name = newName;
-        artifactId = null;
-    }
-
     public Path getGwtExecutableFilePath() {
         return getHomeDirectory().resolve("target").resolve(getName() + "-" + getVersion() + "/" + getName().replace('-', '_') + "/index.html");
     }
 
     private LinkedHashMap<String, Path> moduleWebFxPaths;
+
     public LinkedHashMap<String, Path> collectThisAndTransitiveWebFXPaths(boolean canUseCache) {
         if (moduleWebFxPaths != null)
             return moduleWebFxPaths;

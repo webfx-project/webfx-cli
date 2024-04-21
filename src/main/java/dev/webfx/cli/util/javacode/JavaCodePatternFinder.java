@@ -1,5 +1,7 @@
 package dev.webfx.cli.util.javacode;
 
+import dev.webfx.cli.util.stopwatch.StopWatch;
+
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -7,7 +9,9 @@ import java.util.regex.Pattern;
 /**
  * @author Bruno Salmon
  */
-class JavaCodePatternFinder implements Iterable<String> {
+public class JavaCodePatternFinder implements Iterable<String> {
+
+    public static final StopWatch JAVA_PARSING_STOPWATCH = StopWatch.createSystemNanoStopWatch();
 
     private final JavaCodePattern javaCodePattern;
     private final JavaCode javaCode;
@@ -24,23 +28,35 @@ class JavaCodePatternFinder implements Iterable<String> {
     @Override
     public Iterator<String> iterator() {
         return new Iterator<>() {
-            private final Matcher matcher = javaCodePattern.getPattern().matcher(getTextCode());
+            private final Matcher matcher;
             private final StringOrCommentFinder blockCommentFinder = new StringOrCommentFinder("/*", "*/");
             private final StringOrCommentFinder inlineCommentFinder = new StringOrCommentFinder("//", "\n");
             private final StringOrCommentFinder stringFinder = new StringOrCommentFinder("\"", "\"");
-
+            {
+                JAVA_PARSING_STOPWATCH.on();
+                matcher = javaCodePattern.getPattern().matcher(getTextCode());
+                JAVA_PARSING_STOPWATCH.off();
+            }
             @Override
             public boolean hasNext() {
+                JAVA_PARSING_STOPWATCH.on();
+                boolean hasNext = false;
                 while (matcher.find()) {
-                    if (!isInsideStringOrComment(matcher.start(javaCodePattern.getMatchingGroup())))
-                        return true;
+                    if (!isInsideStringOrComment(matcher.start(javaCodePattern.getMatchingGroup()))) {
+                        hasNext = true;
+                        break;
+                    }
                 }
-                return false;
+                JAVA_PARSING_STOPWATCH.off();
+                return hasNext;
             }
 
             @Override
             public String next() {
-                return mapFoundGroup(matcher.group(javaCodePattern.getMatchingGroup()));
+                JAVA_PARSING_STOPWATCH.on();
+                String next = mapFoundGroup(matcher.group(javaCodePattern.getMatchingGroup()));
+                JAVA_PARSING_STOPWATCH.off();
+                return next;
             }
 
             private boolean isInsideStringOrComment(int index) {
@@ -130,15 +146,21 @@ class JavaCodePatternFinder implements Iterable<String> {
     String resolveFullClassName(String className) {
         if (className.contains("."))
             return className;
+        JAVA_PARSING_STOPWATCH.on();
         Iterator<String> classImportIterator = new JavaCodePatternFinder(new JavaCodePattern(Pattern.compile("^\\s*import\\s+([a-z][a-z_0-9]*(\\.[a-z][a-z_0-9]*)*\\." + className + "\\s*)\\s*;", Pattern.MULTILINE), 1), javaCode).iterator();
-        return classImportIterator.hasNext() ? classImportIterator.next()
+        String fullClassName = classImportIterator.hasNext() ? classImportIterator.next()
                 : javaCodePackageName() + "." + className;
+        JAVA_PARSING_STOPWATCH.off();
+        return fullClassName;
     }
 
     String javaCodePackageName() {
+        JAVA_PARSING_STOPWATCH.on();
         Iterator<String> packageIterator = new JavaCodePatternFinder(new JavaCodePattern(Pattern.compile("^\\s*package\\s+([a-z][a-z_0-9]*(\\.[a-z][a-z_0-9]*)*)\\s*;", Pattern.MULTILINE), 1), javaCode).iterator();
-        return packageIterator.hasNext() ?
+        String packageName = packageIterator.hasNext() ?
                 packageIterator.next()
                 : null;
+        JAVA_PARSING_STOPWATCH.off();
+        return packageName;
     }
 }

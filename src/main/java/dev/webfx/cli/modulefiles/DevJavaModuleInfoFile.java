@@ -26,10 +26,10 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
     }
 
     @Override
-    public void writeFile() {
+    public boolean writeFile() {
         DevProjectModule module = getProjectModule();
         if (module.getWebFxModuleFile().skipJavaModuleInfoUpdate())
-            return;
+            return false;
         StringBuilder sb = new StringBuilder("// File managed by WebFX (DO NOT EDIT MANUALLY)\n");
         String description = module.getWebFxModuleFile().getDescription();
         if (description != null) {
@@ -72,6 +72,7 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
         sb.append("\n}");
 
         TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), getModuleFilePath());
+        return true;
     }
 
     private static void processSection(StringBuilder sb, String sectionName, String keyword, ReusableStream<String> tokens) {

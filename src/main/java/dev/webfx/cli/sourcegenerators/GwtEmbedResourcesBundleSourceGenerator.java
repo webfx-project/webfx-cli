@@ -17,7 +17,7 @@ final class GwtEmbedResourcesBundleSourceGenerator {
     private static final String GENERATED_PROVIDER_JAVA_FILE = "super/dev/webfx/platform/resource/gwt/GwtEmbedResourcesBundle.java";
 
 
-    static void generateGwtClientBundleSource(DevProjectModule module) {
+    static boolean generateGwtClientBundleSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module EmbedResourcesBundle super source for GWT");
         StringBuilder resourceDeclaration = new StringBuilder();
         StringBuilder resourceRegistration = new StringBuilder();
@@ -38,6 +38,7 @@ final class GwtEmbedResourcesBundleSourceGenerator {
                         .replace("${resourceDeclaration}", resourceDeclaration)
                         .replace("${resourceRegistration}", resourceRegistration);
         TextFileReaderWriter.writeTextFileIfNewOrModified(source, getJavaFilePath(module));
+        return source != null;
     }
 
     static Path getJavaFilePath(DevProjectModule module) {

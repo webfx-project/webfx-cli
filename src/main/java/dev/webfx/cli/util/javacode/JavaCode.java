@@ -10,8 +10,8 @@ import java.util.function.Supplier;
  */
 public final class JavaCode {
 
-    /*public static int filesCount;
-    public static int locCount;*/
+    public static int filesCount;
+    /*public static int locCount;*/
 
     private Supplier<Path> javaPathSupplier;
     private Path javaFilePath;
@@ -34,7 +34,8 @@ public final class JavaCode {
             if (javaFilePath == null)
                 javaFilePath = javaPathSupplier.get();
             textCode = TextFileReaderWriter.readInputTextFile(javaFilePath);
-            /*filesCount++;
+            filesCount++;
+            /*
             String[] lines = textCode.split("\r\n|\r|\n");
             int loc = lines.length + 1;
             System.out.println(loc + " for " + javaFilePath);

@@ -1,12 +1,20 @@
 package dev.webfx.cli.util.textfile;
 
 import dev.webfx.cli.util.splitfiles.SplitFiles;
+import dev.webfx.cli.util.stopwatch.StopWatch;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class TextFileReaderWriter {
+
+    public static final StopWatch FILE_READING_STOPWATCH = StopWatch.createSystemNanoStopWatch();
+
+    public static final StopWatch FILE_WRITING_STOPWATCH = StopWatch.createSystemNanoStopWatch();
+
+    public static final StopWatch FILE_DELETING_STOPWATCH = StopWatch.createSystemNanoStopWatch();
+
 
     public static String readInputTextFile(Path path) {
         return readTextFile(path, true);
@@ -27,8 +35,10 @@ public final class TextFileReaderWriter {
     }
 
     private static String readTextFile(Path path, boolean input) {
+        String content = null;
+        FILE_READING_STOPWATCH.on();
         try {
-            String content = SplitFiles.uncheckedReadTextFile(path);
+            content = SplitFiles.uncheckedReadTextFile(path);
             if (input) {
                 incrementReadInputFilesCount();
                 /*
@@ -37,10 +47,11 @@ public final class TextFileReaderWriter {
                 System.out.println("Reading " + TextFileThreadTransaction.get().readInputFilesCount + ") " + (isInsideJar ? "JAR " + fileSystem + "!" : "") + path);
                 */
             }
-            return content;
-        } catch (RuntimeException e) {
-            return null;
+        } catch (RuntimeException ignored) {
+        } finally {
+            FILE_READING_STOPWATCH.off();
         }
+        return content;
     }
 
     public static void writeTextFileIfNewOrModified(String content, Path path) {
@@ -79,6 +90,7 @@ public final class TextFileReaderWriter {
 
     public static void deleteFolder(Path folderPath) {
         try {
+            FILE_DELETING_STOPWATCH.on();
             if (Files.exists(folderPath))
                 SplitFiles.walk(folderPath).forEachRemaining(path -> {
                     if (Files.isRegularFile(path))
@@ -86,6 +98,8 @@ public final class TextFileReaderWriter {
                 });
         } catch (IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            FILE_DELETING_STOPWATCH.off();
         }
     }
 

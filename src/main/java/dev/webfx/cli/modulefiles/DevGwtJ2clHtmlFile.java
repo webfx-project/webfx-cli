@@ -26,7 +26,7 @@ public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
     }
 
     @Override
-    public void writeFile() {
+    public boolean writeFile() {
         StringBuilder headSb = new StringBuilder(), bodySb = new StringBuilder();
         ReusableStream<ProjectModule> transitiveProjectModules =
                 ProjectModule.filterProjectModules(getProjectModule().getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()).distinct();
@@ -94,6 +94,7 @@ public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
         Path targetIndexHtmlPath = getProjectModule().getGwtExecutableFilePath();
         if (Files.exists(targetIndexHtmlPath))
             TextFileReaderWriter.writeTextFileIfNewOrModified(text, targetIndexHtmlPath);
+        return true;
     }
 
     private String getGeneratedJsFileName() {

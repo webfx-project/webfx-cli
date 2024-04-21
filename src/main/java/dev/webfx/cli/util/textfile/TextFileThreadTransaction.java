@@ -27,7 +27,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
     public int updatedOutputFilesCount;
     public int unmodifiedOutputFilesCount;
     public int deletedOutputFilesCount; // in addition to outputFilesCount
-    private int executedOperationsCounts;
+    private int changedFilesCount;
 
     public static TextFileThreadTransaction open() {
         threadLocalTransactions.set(new TextFileThreadTransaction(get()));
@@ -62,8 +62,8 @@ public final class TextFileThreadTransaction implements AutoCloseable {
         }
     }
 
-    public int executedOperationsCount() {
-        return executedOperationsCounts;
+    public int changedFilesCount() {
+        return changedFilesCount;
     }
 
     public void commit() {
@@ -117,7 +117,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                     toWritePaths.remove(path);
                     if (!op.silent) {
                         Logger.log((exists ? "Updated " : "Created ") + path);
-                        executedOperationsCounts++;
+                        changedFilesCount++;
                     }
                 }
             } else { // Delete operation
@@ -127,7 +127,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                         if (!op.silent) {
                             Logger.log("Deleted " + path);
                             deletedOutputFilesCount++;
-                            executedOperationsCounts++;
+                            changedFilesCount++;
                         }
                     }
                     toDeletePaths.remove(path);

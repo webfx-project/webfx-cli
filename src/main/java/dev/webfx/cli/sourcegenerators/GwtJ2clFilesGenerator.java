@@ -1,5 +1,6 @@
 package dev.webfx.cli.sourcegenerators;
 
+import dev.webfx.cli.commands.UpdateTasks;
 import dev.webfx.cli.core.DevProjectModule;
 
 /**
@@ -7,21 +8,45 @@ import dev.webfx.cli.core.DevProjectModule;
  */
 public final class GwtJ2clFilesGenerator {
 
-    public static void generateGwtJ2clFiles(DevProjectModule module, boolean gwtXml, boolean indexHtml, boolean entryPoint, boolean embedResource) {
-        if (indexHtml)
-            module.getGwtJ2clHtmlFile().writeFile();
-        if (module.getBuildInfo().isForJ2cl) {
-            if (embedResource)
-                J2clEmbedResourcesBundleSourceGenerator.generateJ2clClientBundleSource(module);
-            if (entryPoint)
+    public static void generateGwtJ2clFiles(DevProjectModule module, UpdateTasks tasks) {
+        if (tasks.indexHtml) { // Common to GWT & J2CL
+            tasks.indexHtmlStopWatch.on();
+            if (module.getGwtJ2clHtmlFile().writeFile())
+                tasks.indexHtmlCount++;
+            tasks.indexHtmlStopWatch.off();
+        }
+        if (module.getBuildInfo().isForJ2cl) { // J2CL only
+            if (tasks.embedResource) {
+                tasks.embedResourceStopWatch.on();
+                if (J2clEmbedResourcesBundleSourceGenerator.generateJ2clClientBundleSource(module))
+                    tasks.embedResourceCount++;
+                tasks.embedResourceStopWatch.off();
+            }
+            if (tasks.entryPoint) {
+                tasks.entryPointStopWatch.on();
                 GwtJ2clEntryPointSourceGenerator.generateJ2clEntryPointSource(module);
-        } else { // GWT
-            if (embedResource)
-                GwtEmbedResourcesBundleSourceGenerator.generateGwtClientBundleSource(module);
-            if (entryPoint)
+                tasks.entryPointCount++;
+                tasks.entryPointStopWatch.off();
+            }
+        } else { // GWT only
+            if (tasks.embedResource) {
+                tasks.embedResourceStopWatch.on();
+                if (GwtEmbedResourcesBundleSourceGenerator.generateGwtClientBundleSource(module))
+                    tasks.embedResourceCount++;
+                tasks.embedResourceStopWatch.off();
+            }
+            if (tasks.entryPoint) {
+                tasks.entryPointStopWatch.on();
                 GwtJ2clEntryPointSourceGenerator.generateGwtEntryPointSource(module);
-            if (gwtXml)
-                module.getGwtModuleFile().writeFile();
+                tasks.entryPointCount++;
+                tasks.entryPointStopWatch.off();
+            }
+            if (tasks.gwtXml) {
+                tasks.gwtXmlStopWatch.on();
+                if (module.getGwtModuleFile().writeFile())
+                    tasks.gwtXmlCount++;
+                tasks.gwtXmlStopWatch.off();
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package dev.webfx.cli.util.xml;
 
+import dev.webfx.cli.util.stopwatch.StopWatch;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import org.w3c.dom.*;
 import org.xml.sax.InputSource;
@@ -24,6 +25,13 @@ import java.util.function.Function;
  * @author Bruno Salmon
  */
 public final class XmlUtil {
+
+    public static final StopWatch XML_PARSING_STOPWATCH = StopWatch.createSystemNanoStopWatch();
+
+    public static final StopWatch XML_FORMATING_STOPWATCH = StopWatch.createSystemNanoStopWatch();
+
+    public static final StopWatch XPATH_EVALUATING_STOPWATCH = StopWatch.createSystemNanoStopWatch();
+
 
     public static Document newDocument() {
         try {
@@ -50,6 +58,7 @@ public final class XmlUtil {
 
     public static Document parseXmlSource(InputSource is) {
         try {
+            XML_PARSING_STOPWATCH.on();
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             try {
@@ -61,6 +70,8 @@ public final class XmlUtil {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            XML_PARSING_STOPWATCH.off();
         }
     }
 
@@ -74,6 +85,7 @@ public final class XmlUtil {
 
     private static String formatText(Node node, String method) {
         try {
+            XML_FORMATING_STOPWATCH.on();
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             if (node instanceof Document)
@@ -99,6 +111,8 @@ public final class XmlUtil {
         } catch (TransformerException e) {
             e.printStackTrace();
             return null;
+        } finally {
+            XML_FORMATING_STOPWATCH.off();
         }
     }
 
@@ -134,6 +148,7 @@ public final class XmlUtil {
         if (item == null)
             return null;
         try {
+            XPATH_EVALUATING_STOPWATCH.on();
             XPathExpression expression = X_PATH_EXPRESSION_CACHE.get(xpathExpression);
             if (expression == null) {
                 expression = X_PATH.compile(xpathExpression);
@@ -142,6 +157,8 @@ public final class XmlUtil {
             return (T) expression.evaluate(item, returnType);
         } catch (XPathExpressionException e) {
             throw new RuntimeException("Error while evaluating xpath expression: " + xpathExpression + "\n" + e.getMessage(), e);
+        } finally {
+            XPATH_EVALUATING_STOPWATCH.off();
         }
     }
 

@@ -17,10 +17,12 @@ import java.util.List;
  * @author Bruno Salmon
  */
 final class ConfigMerge {
+
     final List<Pair<String /* module name */, Config>> moduleConfigs = new ArrayList<>();
     boolean moduleConfigsContainsArrays;
 
-    void mergeConfigs(Path propertiesPath, Path jsonPath) {
+    boolean mergeConfigs(Path propertiesPath, Path jsonPath) {
+        boolean generatedFiles = false;
         Path selectedPath = null;
         if (!moduleConfigs.isEmpty()) {
             StringBuilder sb = new StringBuilder();
@@ -37,13 +39,16 @@ final class ConfigMerge {
             }
             if (sb.length() == 0)
                 selectedPath = null; // In order to delete the conf files (see below)
-            else
+            else {
                 TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), selectedPath);
+                generatedFiles = true;
+            }
         }
         if (selectedPath != propertiesPath)
             TextFileReaderWriter.deleteTextFile(propertiesPath);
         if (selectedPath != jsonPath)
             TextFileReaderWriter.deleteTextFile(jsonPath);
+        return generatedFiles;
     }
 
     private static void appendAstObjectToProperties(String prefix, ReadOnlyAstObject config, StringBuilder sb, String[] lastModuleHeader, String moduleName) {

@@ -16,7 +16,7 @@ final class J2clEmbedResourcesBundleSourceGenerator {
     static final String GENERATED_PROVIDER_CLASS_NAME = "dev.webfx.platform.resource.j2cl.J2clEmbedResourcesBundle$ProvidedJ2clResourceBundle";
     private static final String GENERATED_PROVIDER_JAVA_FILE = "dev/webfx/platform/resource/j2cl/J2clEmbedResourcesBundle.java";
 
-    static void generateJ2clClientBundleSource(DevProjectModule module) {
+    static boolean generateJ2clClientBundleSource(DevProjectModule module) {
         //GwtFilesGenerator.logSection("Generating " + module.getName() + " module EmbedResourcesBundle super source for GWT");
         StringBuilder resourceDeclaration = new StringBuilder();
         StringBuilder resourceRegistration = new StringBuilder();
@@ -42,6 +42,7 @@ final class J2clEmbedResourcesBundleSourceGenerator {
                         .replace("${resourceDeclaration}", resourceDeclaration)
                         .replace("${resourceRegistration}", resourceRegistration);
         TextFileReaderWriter.writeTextFileIfNewOrModified(source, getJavaFilePath(module));
+        return source != null;
     }
 
     static Path getJavaFilePath(DevProjectModule module) {

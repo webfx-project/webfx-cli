@@ -11,7 +11,7 @@ import java.util.Objects;
  */
 public final class GluonFilesGenerator {
 
-    public static void generateGraalVmReflectionJson(DevProjectModule gluonModule) {
+    public static boolean generateGraalVmReflectionJson(DevProjectModule gluonModule) {
         StringBuilder sb = new StringBuilder();
         ProjectModule.filterProjectModules(gluonModule.getMainJavaSourceRootAnalyzer().getTransitiveModules())
                 .map(module -> module.getWebFxModuleFile().getGraalVmReflectionJson())
@@ -37,6 +37,7 @@ public final class GluonFilesGenerator {
                     }
                 });
         TextFileReaderWriter.writeTextFileIfNewOrModified(sb.length() == 0 ? null : "[\n" + sb + "\n]", gluonModule.getHomeDirectory().resolve("src/main/graalvm_conf/reflection.json"));
+        return sb.length() > 0;
     }
 
 }

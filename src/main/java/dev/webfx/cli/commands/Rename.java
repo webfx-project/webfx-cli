@@ -84,7 +84,7 @@ public final class Rename extends CommonSubcommand {
                 Path homeDirectory = module.getHomeDirectory();
                 if (homeDirectory.endsWith(module.getName()))
                     homeDirectory.toFile().renameTo(homeDirectory.getParent().resolve(moduleNewName).toFile());
-                Update.executeUpdateTasks(new CommandWorkspace(workspace).getWorkingDevProjectModule().getRootModule(), new Update.UpdateTasks());
+                Update.executeUpdateTasks(new CommandWorkspace(workspace).getWorkingDevProjectModule().getRootModule(), new UpdateTasks());
                 transaction.commit();
             }
         }
