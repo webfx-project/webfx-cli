@@ -77,29 +77,29 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                             .stream().sorted()
                             .map(a -> "<list>" + a + "</list>")
                             .collect(Collectors.joining("\n"))
-                    + "</attachList>\n";
+                    + "</attachList>";
             // 2) <resourcesList> => lists all resource files potentially used by the application
-            gluonConfig += "<resourcesList>\n"
-                    + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
-                    .flatMap(ProjectModule::getResourcePackages)
-                    .distinct()
-                    .stream().sorted()
-                    .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
-                    .collect(Collectors.joining("\n"))
-                    + "</resourcesList>\n";
+            gluonConfig += "\n<resourcesList>\n"
+                   + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
+                           .flatMap(ProjectModule::getResourcePackages)
+                           .distinct()
+                           .stream().sorted()
+                           .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
+                           .collect(Collectors.joining("\n"))
+                   + "</resourcesList>";
             // 3) application identifier
             String applicationId = projectModule.getApplicationId();
             if (applicationId != null)
-                gluonConfig += "<appIdentifier>" + applicationId + "</appIdentifier>\n";
+                gluonConfig += "\n<appIdentifier>" + applicationId + "</appIdentifier>";
             // 4) <releaseConfiguration> => application label
             String applicationLabel = projectModule.getApplicationLabel();
             if (applicationLabel != null)
-                gluonConfig += "<releaseConfiguration>\n"
+                gluonConfig += "\n<releaseConfiguration>\n"
                         + "<!-- macOS/iOS -->\n"
                         + "<bundleName>" + applicationLabel + "</bundleName>\n"
                         + "<!-- Android -->\n"
                         + "<appLabel>" + applicationLabel + "</appLabel>\n"
-                        + "</releaseConfiguration>\n";
+                        + "</releaseConfiguration>";
             template = template.replace("${plugin.gluonfx.configuration}", gluonConfig);
         }
         // J2CL resources
