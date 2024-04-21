@@ -1,12 +1,13 @@
 package dev.webfx.cli.modulefiles.abstr;
 
-import dev.webfx.cli.core.*;
 import dev.webfx.cli.core.Module;
+import dev.webfx.cli.core.*;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.Node;
+
+import java.util.List;
 
 /**
  * @author Bruno Salmon
@@ -226,12 +227,12 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
-    default ReusableStream<Node> getHtmlNodes() {
+    default ReusableStream<Element> getHtmlNodes() {
         return getDelegate().getHtmlNodes();
     }
 
     @Override
-    default Node getMavenManualNode() {
+    default Element getMavenManualNode() {
         return getDelegate().getMavenManualNode();
     }
 
@@ -412,7 +413,7 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
-    default Node getOrCreateXmlNode() {
+    default Element getOrCreateXmlNode() {
         return getDelegate().getOrCreateXmlNode();
     }
 
@@ -422,7 +423,7 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
-    default NodeList lookupNodeList(String xpathExpression) {
+    default List<Node> lookupNodeList(String xpathExpression) {
         return getDelegate().lookupNodeList(xpathExpression);
     }
 
@@ -432,7 +433,7 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
-    default Node lookupOrCreateNode(String xpath) {
+    default Element lookupOrCreateNode(String xpath) {
         return getDelegate().lookupOrCreateNode(xpath);
     }
 

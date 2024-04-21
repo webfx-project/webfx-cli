@@ -1,7 +1,7 @@
 package dev.webfx.cli.modulefiles.abstr;
 
 import dev.webfx.cli.core.Module;
-import org.w3c.dom.Document;
+import org.dom4j.Document;
 
 import java.nio.file.Path;
 

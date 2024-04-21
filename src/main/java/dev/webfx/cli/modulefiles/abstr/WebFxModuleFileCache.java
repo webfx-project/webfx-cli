@@ -2,8 +2,9 @@ package dev.webfx.cli.modulefiles.abstr;
 
 import dev.webfx.cli.core.*;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.Node;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -330,17 +331,17 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         return mavenRepositories;
     }
 
-    private ReusableStream<Node> htmlNode;
+    private ReusableStream<Element> htmlNode;
     @Override
-    public ReusableStream<Node> getHtmlNodes() {
+    public ReusableStream<Element> getHtmlNodes() {
         if (htmlNode == null)
             htmlNode = WebFxModuleFileDelegate.super.getHtmlNodes().cache();
         return htmlNode;
     }
 
-    private Node mavenManualNode;
+    private Element mavenManualNode;
     @Override
-    public Node getMavenManualNode() {
+    public Element getMavenManualNode() {
         if (mavenManualNode == null)
             mavenManualNode = WebFxModuleFileDelegate.super.getMavenManualNode();
         return mavenManualNode;

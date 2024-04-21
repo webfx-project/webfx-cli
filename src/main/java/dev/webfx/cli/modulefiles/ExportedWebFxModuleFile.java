@@ -3,7 +3,7 @@ package dev.webfx.cli.modulefiles;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.cli.modulefiles.abstr.XmlModuleFileImpl;
 import dev.webfx.cli.core.Module;
-import org.w3c.dom.Element;
+import org.dom4j.Element;
 
 import java.nio.file.Path;
 

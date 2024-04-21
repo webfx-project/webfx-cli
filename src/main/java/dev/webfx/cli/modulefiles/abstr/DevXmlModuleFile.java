@@ -1,6 +1,6 @@
 package dev.webfx.cli.modulefiles.abstr;
 
-import org.w3c.dom.Document;
+import org.dom4j.Document;
 
 public interface DevXmlModuleFile extends PathBasedXmlModuleFile, DevModuleFile {
 
