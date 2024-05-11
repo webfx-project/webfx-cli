@@ -3,22 +3,29 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.abstr.GavApi;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
+import dev.webfx.cli.util.stopwatch.StopWatch;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Bruno Salmon
  */
 public final class MavenUtil {
+
+    public static final StopWatch MAVEN_INVOCATION_STOPWATCH = StopWatch.createSystemNanoStopWatch();
+
     //private final static boolean USE_MAVEN_INVOKER = false; // if false, just using shell invocation
     private final static boolean ASK_MAVEN_LOCAL_REPOSITORY = false; // if false, we will use the default path: ${user.home}/.m2/repository
+
     final static Path M2_LOCAL_REPOSITORY = ASK_MAVEN_LOCAL_REPOSITORY ?
             // Maven invocation (advantage: returns the correct path 100% sure / disadvantage: takes a few seconds to execute)
             Path.of(new ProcessCall("mvn", "-N", "help:evaluate", "-Dexpression=settings.localRepository", "-q", "-DforceStdout").getLastResultLine())
@@ -63,10 +70,7 @@ public final class MavenUtil {
     private static void addNotFoundArtifact(String artifact) {
         NOT_FOUND_ARTIFACTS.add(artifact);
         try {
-            FileWriter fileWriter = new FileWriter(NOT_FOUND_ARTIFACTS_PATH.toFile(), true);
-            fileWriter.write(artifact);
-            fileWriter.write('\n');
-            fileWriter.close();
+            TextFileReaderWriter.writeTextFileNow(artifact + "\n", NOT_FOUND_ARTIFACTS_PATH);
             Logger.warning(artifact + " was not found in Maven repositories, and is now blacklisted in " + NOT_FOUND_ARTIFACTS_PATH);
         } catch (IOException e) {
             Logger.warning("Couldn't write to file " + NOT_FOUND_ARTIFACTS_PATH.getFileName());
@@ -83,9 +87,12 @@ public final class MavenUtil {
         String artifact = groupId + ":" + artifactId + ":" + version + ":" + classifier;
         if (!NOT_FOUND_ARTIFACTS.contains(artifact)) {
             try {
+                MAVEN_INVOCATION_STOPWATCH.on();
                 return MAVEN_ARTIFACT_DOWNLOADER.downloadArtifact(groupId, artifactId, version, classifier);
             } catch (ArtifactNotFoundException e) {
                 addNotFoundArtifact(artifact);
+            } finally {
+                MAVEN_INVOCATION_STOPWATCH.off();
             }
         }
         return false;
@@ -114,6 +121,7 @@ public final class MavenUtil {
     }
 
     public static int invokeMavenGoal(String goal, ProcessCall processCall) {
+        MAVEN_INVOCATION_STOPWATCH.on();
         boolean gluonPluginCall = goal.contains("gluonfx:");
         Path graalVmHome = gluonPluginCall ? WebFXHiddenFolder.getGraalVmHome() : null;
         processCall.setCommand("mvn " + goal);
@@ -133,7 +141,8 @@ public final class MavenUtil {
                     throw new ArtifactNotFoundException(firstErrorLine);
                 throw new CliException("Error(s) detected during Maven invocation:\n" + String.join("\n", processCall.getErrorLines()));
             }
-            return processCall.getExitCode();
+        MAVEN_INVOCATION_STOPWATCH.off();
+        return processCall.getExitCode();
         }/* else {
             processCall.logCallCommand();
             InvocationRequest request = new DefaultInvocationRequest();

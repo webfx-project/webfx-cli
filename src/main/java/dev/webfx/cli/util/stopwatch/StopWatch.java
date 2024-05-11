@@ -47,6 +47,14 @@ public final class StopWatch {
         return runCount;
     }
 
+    public void incRunCount() {
+        runCount++;
+    }
+
+    public void decRunCount() {
+        runCount--;
+    }
+
     public void reset() {
         runCount = 0;
         running = stopped = false;
@@ -65,7 +73,7 @@ public final class StopWatch {
         if (running != this.running) {
             this.running = running;
             if (running)
-                runCount++;
+                incRunCount();
         }
     }
 

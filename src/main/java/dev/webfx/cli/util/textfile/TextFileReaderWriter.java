@@ -3,7 +3,9 @@ package dev.webfx.cli.util.textfile;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.stopwatch.StopWatch;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -73,6 +75,18 @@ public final class TextFileReaderWriter {
         }
     }
 
+    public static void writeTextFileNow(String content, Path path) throws IOException {
+        try {
+            FILE_WRITING_STOPWATCH.on();
+            BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
+            writer.write(content);
+            writer.flush();
+            writer.close();
+        } finally {
+            FILE_WRITING_STOPWATCH.off();
+        }
+    }
+
     public static void deleteTextFile(Path path) {
         writeTextFile(null, path, false);
     }
@@ -90,7 +104,6 @@ public final class TextFileReaderWriter {
 
     public static void deleteFolder(Path folderPath) {
         try {
-            FILE_DELETING_STOPWATCH.on();
             if (Files.exists(folderPath))
                 SplitFiles.walk(folderPath).forEachRemaining(path -> {
                     if (Files.isRegularFile(path))
@@ -98,6 +111,16 @@ public final class TextFileReaderWriter {
                 });
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    static boolean deleteFile(Path path) throws IOException {
+        try {
+            FILE_DELETING_STOPWATCH.on();
+            boolean deleted = Files.deleteIfExists(path);
+            if (!deleted)
+                FILE_DELETING_STOPWATCH.decRunCount();
+            return deleted;
         } finally {
             FILE_DELETING_STOPWATCH.off();
         }

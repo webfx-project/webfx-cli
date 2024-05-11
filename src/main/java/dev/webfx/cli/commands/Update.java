@@ -4,6 +4,7 @@ import dev.webfx.cli.core.*;
 import dev.webfx.cli.sourcegenerators.*;
 import dev.webfx.cli.util.javacode.JavaCode;
 import dev.webfx.cli.util.javacode.JavaCodePatternFinder;
+import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.stopwatch.StopWatch;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.cli.util.textfile.TextFileThreadTransaction;
@@ -102,8 +103,12 @@ public final class Update extends CommonSubcommand implements Runnable {
             if (times) {
                 long totalTime = updateStopWatch.getStopWatchElapsedTime();
 
-                log(new ExecutionTimesReport("Executed operations", totalTime)
+                log(new ExecutionTimesReport("Technical operations breakdown", totalTime)
                         .addRow("Files read", TextFileReaderWriter.FILE_READING_STOPWATCH)
+                        .addRow("Files written", TextFileReaderWriter.FILE_WRITING_STOPWATCH)
+                        .addRow("Files deleted", TextFileReaderWriter.FILE_DELETING_STOPWATCH)
+                        .addRow("Files tree walk", SplitFiles.FILE_TREE_WALKING_STOPWATCH)
+                        .addRow("Maven invocation", MavenUtil.MAVEN_INVOCATION_STOPWATCH)
                         .addRow("XML parsed", XmlUtil.XML_PARSING_STOPWATCH)
                         .addRow("XML formatted", XmlUtil.XML_FORMATING_STOPWATCH)
                         .addRow("XML searches (XPath)", XmlUtil.XPATH_EVALUATING_STOPWATCH)
@@ -112,7 +117,7 @@ public final class Update extends CommonSubcommand implements Runnable {
                         .addTotalRow()
                         .generateReport());
 
-                log(new ExecutionTimesReport("Generated build files", totalTime)
+                log(new ExecutionTimesReport("Generated build files breakdown", totalTime)
                         .addRow("pom.xml", tasks.pomCount, tasks.pomStopWatch)
                         .addRow("module-info.java", tasks.moduleInfoCount, tasks.moduleInfoStopWatch)
                         .addRow("META-INF/services", tasks.metaInfServicesCount, tasks.metaInfServicesStopWatch)

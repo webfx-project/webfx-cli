@@ -2,9 +2,7 @@ package dev.webfx.cli.util.textfile;
 
 import dev.webfx.cli.core.Logger;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -110,10 +108,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                         return;
                     } else if (!op.silent)
                         updatedOutputFilesCount++;
-                    BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
-                    writer.write(op.content);
-                    writer.flush();
-                    writer.close();
+                    TextFileReaderWriter.writeTextFileNow(op.content, path);
                     toWritePaths.remove(path);
                     if (!op.silent) {
                         Logger.log((exists ? "Updated " : "Created ") + path);
@@ -122,7 +117,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                 }
             } else { // Delete operation
                 if (toDeletePaths.contains(path)) { // Checking if the file is still to delete (no subsequent write operation occurs)
-                    if (Files.deleteIfExists(path)) {
+                    if (TextFileReaderWriter.deleteFile(path)) {
                         deletedPaths.add(path);
                         if (!op.silent) {
                             Logger.log("Deleted " + path);
