@@ -13,7 +13,6 @@ module webfx.cli {
     requires webfx.platform.conf;
     requires webfx.platform.meta;
     requires webfx.platform.util;
-    requires webfx.platform.console;
 
     // Exported packages
     exports dev.webfx.cli;
@@ -28,7 +27,9 @@ module webfx.cli {
     exports dev.webfx.cli.util.process;
     exports dev.webfx.cli.util.sort;
     exports dev.webfx.cli.util.splitfiles;
+    exports dev.webfx.cli.util.stopwatch;
     exports dev.webfx.cli.util.textfile;
+    exports dev.webfx.cli.util.texttable;
     exports dev.webfx.cli.util.xml;
 
     // Resources packages

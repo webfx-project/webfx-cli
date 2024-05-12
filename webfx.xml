@@ -17,7 +17,7 @@
 
         <webfx-library artifact="dev.webfx:webfx-lib-reusablestream:0.1.0-SNAPSHOT"/>
         <webfx-library artifact="dev.webfx:webfx-platform:0.1.0-SNAPSHOT"/> <!-- for webfx-platform-meta -->
-        <library artifact="info.picocli:picocli:4.7.5" name="info.picocli"/>
+        <library artifact="info.picocli:picocli:4.7.6" name="info.picocli"/>
         <library artifact="org.apache.commons:commons-compress:1.21" name="org.apache.commons.compress"/>
         <!-- <library artifact="org.apache.maven.shared:maven-invoker:3.2.0"/> Not used -->
 
