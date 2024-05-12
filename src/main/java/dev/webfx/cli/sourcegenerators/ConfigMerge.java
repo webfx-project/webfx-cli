@@ -22,6 +22,8 @@ final class ConfigMerge {
     boolean moduleConfigsContainsArrays;
 
     boolean mergeConfigs(Path propertiesPath, Path jsonPath) {
+        //  Configuration values will be considered only once in the merge, i.e. the first time they will appear in that
+        //  order, and the consequent occurrences will be commented in the merged configuration file.
         boolean generatedFiles = false;
         Path selectedPath = null;
         if (!moduleConfigs.isEmpty()) {

@@ -33,7 +33,7 @@ public final class RootConfigFileGenerator {
         // Conf Initialisation
         ConfigMerge confMerge = new ConfigMerge();
 
-        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache);
+        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, false);
 
         moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
             // Conf collection

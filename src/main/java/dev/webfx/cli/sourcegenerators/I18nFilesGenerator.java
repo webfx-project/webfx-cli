@@ -33,7 +33,7 @@ public final class I18nFilesGenerator {
         // I18n Initialisation
         Map<String, ConfigMerge> i18nMerges = new HashMap<>();
 
-        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache);
+        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, false);
 
         moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
             // I8n collection

@@ -77,22 +77,21 @@ public interface RootModule extends ProjectModule {
                 modulesList = devModulesList;
             // 3) Third criterion = the modules position in dependencies (we keep the one closest to the target module)
             // Creating the dependency graph of the transitive modules starting from the target module (probably executable module)
-            Map<Module, List<Module>> dependencyGraph =
-                    ModuleDependency.createDependencyGraph(
+            Map<ProjectModule, List<ProjectModule>> dependencyGraph =
                             // Note: calling get getTransitiveDependencies() at this point seems to freeze its transitive
                             // dependencies before their final computation completion (so they remain incomplete and this
                             // has big consequences afterward). Calling getTransitiveDependenciesWithoutImplicitProviders()
                             // instead is working fine so far without creating subsequent problems.
-                            targetModule.getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders());
+                            targetModule.getProjectModulesDependencyGraph(false);
             // Now we do a topological sort of all modules in the dependency graph
-            List<Module> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
+            List<ProjectModule> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
             // Going back to our modules list, we sort it following the same order as the topological sort
-            modulesList.sort(Comparator.comparingInt((ProjectModule o) -> {
-                int indexOf = sortedModules.indexOf(o);
+            modulesList.sort(Comparator.comparingInt(pm -> {
+                int indexOf = sortedModules.indexOf(pm);
                 return indexOf != -1 ? indexOf : Integer.MAX_VALUE;
             }));
             // The first module in the list should be now the closest from the target module from the topological point of view
-            return ReusableStream.of(modulesList.get(0));
+            modules = ReusableStream.of(modulesList.get(0));
         }
         return modules;
     }

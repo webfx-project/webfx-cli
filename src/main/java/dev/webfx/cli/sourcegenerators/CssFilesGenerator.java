@@ -34,7 +34,7 @@ public final class CssFilesGenerator {
 
         Map<Path /* relative path to merged css file */, StringBuilder /* content concatenation */> cssMerges = new HashMap<>();
 
-        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache);
+        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, true);
 
         moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
             Path webfxCssDirectory = webfxPath.resolve("css");

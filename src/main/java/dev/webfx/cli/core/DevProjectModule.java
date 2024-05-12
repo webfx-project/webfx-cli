@@ -3,6 +3,7 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.*;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFileCache;
+import dev.webfx.cli.util.hashlist.HashList;
 import dev.webfx.cli.util.sort.TopologicalSort;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
@@ -15,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Bruno Salmon
@@ -232,15 +234,19 @@ public class DevProjectModule extends ProjectModuleImpl {
         return getHomeDirectory().resolve("target").resolve(getName() + "-" + getVersion() + "/" + getName().replace('-', '_') + "/index.html");
     }
 
-    private LinkedHashMap<String, Path> moduleWebFxPaths;
+    private LinkedHashMap<String, Path> moduleWebFxPathsAsc;
+    private LinkedHashMap<String, Path> moduleWebFxPathsDesc;
 
-    public LinkedHashMap<String, Path> collectThisAndTransitiveWebFXPaths(boolean canUseCache) {
-        if (moduleWebFxPaths != null)
-            return moduleWebFxPaths;
+    public LinkedHashMap<String, Path> collectThisAndTransitiveWebFXPaths(boolean canUseCache, boolean asc) {
+        if (asc && moduleWebFxPathsAsc != null)
+            return moduleWebFxPathsAsc;
+        if (!asc && moduleWebFxPathsDesc != null)
+            return moduleWebFxPathsDesc;
 
-        moduleWebFxPaths = new LinkedHashMap<>();
+        LinkedHashMap<String, Path> moduleWebFxPaths = new LinkedHashMap<>();
 
-        String moduleCacheName = getHomeDirectory().toAbsolutePath().toString().replace('/', '~') + "-transitive-webfx.txt";
+        // Reading the cache file (if allowed)
+        String moduleCacheName = getHomeDirectory().toAbsolutePath().toString().replace('/', '~') + "-transitive-webfx-" + (asc ? "asc" : "desc") + ".txt";
         Path moduleCacheFile = WebFXHiddenFolder.getCacheFolder().resolve(moduleCacheName);
         boolean cacheRead = false;
         if (canUseCache && Files.exists(moduleCacheFile)) {
@@ -258,23 +264,57 @@ public class DevProjectModule extends ProjectModuleImpl {
             }
         }
         if (!cacheRead) {
-            // Creating the dependency graph of the transitive modules (i.e. list of dependencies for each module)
-            Map<Module, List<Module>> dependencyGraph =
-                    ModuleDependency.createDependencyGraph(getMainJavaSourceRootAnalyzer().getTransitiveDependencies());
-            // We sort these transitive modules in the order explained above (most dependent modules first, starting
-            // with the executable module). Configuration values will be considered only once in the merge, i.e. the
-            // first time they will appear in that order, and the consequent occurrences will be commented in the merged
-            // configuration file.
-            List<Module> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
+            // Creating the dependency graph of the transitive project modules (i.e. list of dependencies for each module)
+            Map<ProjectModule, List<ProjectModule>> modulesDependencyGraph = getProjectModulesDependencyGraph(true);
 
-            sortedModules.forEach(m -> {
-                if (m instanceof ProjectModule) {
-                    ProjectModule pm = (ProjectModule) m;
-                    if (pm.hasMainWebFxSourceDirectory()) {
-                        moduleWebFxPaths.put(pm.getName(), pm.getMainWebFxSourceDirectory());
-                    }
-                }
+            // We sort these transitive modules in the requested order (ascending = most independent modules first,
+            // ending with the executable module - descending = reverse order).
+            List<ProjectModule> sortedModules =
+                    asc ? TopologicalSort.sortAsc (modulesDependencyGraph) :
+                          TopologicalSort.sortDesc(modulesDependencyGraph);
+
+            // Reducing the modules to only WebFX project modules with a webfx source directory
+            sortedModules = sortedModules.stream()
+                    .filter(ProjectModule::hasMainWebFxSourceDirectory)
+                    .collect(Collectors.toList());
+
+            // The previous sort is not good enough, because it doesn't take in consideration that the modules may come
+            // from different repositories that also have (non-circular) dependencies between them, and modules coming
+            // from repository B that depends on repository A should always be listed second (if ascending), i.e.
+            // modules B listed after modules A. This is important, especially if there is an implicit dependency not
+            // known by WebFX, such as overriding in module B (typically application code) some CSS rules declared in
+            // module A (typically webfx-A, webfx-lib-A, or webfx-extras-A, etc...). These rules from B needs to be
+            // merged after the rules from A in the final CSS file, isn't it? But if these rules B are declared in a
+            // separate module B (such as a global CSS module for the application), there is no explicit code dependency
+            // between module B and module A, and the result of the previous sort may list module B first (because it
+            // looks like an independent module). We can resolve that wrong order by understanding that repository B
+            // depends (in general) on repository A, and therefore all modules B should be listed after modules A.
+            // In order to achieve that second sort, we first build the repository dependency graph from the modules
+            // dependency graph:
+            Map<ProjectModule, List<ProjectModule>> repositoriesDependencyGraph = new HashMap<>();
+            modulesDependencyGraph.forEach((module, moduleDeps) -> {
+                ProjectModule repoModule = getRepositoryModule(module);
+                List<ProjectModule> repoDeps = repositoriesDependencyGraph.computeIfAbsent(repoModule, k -> new HashList<>()); // HashList prevents duplicates
+                moduleDeps.stream().map(DevProjectModule::getRepositoryModule).forEach(repoDeps::add);
             });
+
+            // Then we sort these repositories in the same requested order
+            List<ProjectModule> sortedRepositoryModules =
+                    asc ? TopologicalSort.sortAsc (repositoriesDependencyGraph) :
+                          TopologicalSort.sortDesc(repositoriesDependencyGraph);
+
+            // Finally we execute that second sorting pass, which will group modules by repository (but modules inside
+            // the same repository keep the same order coming from the first sorting pass).
+            sortedModules.sort((pm1, pm2) -> {
+                ProjectModule rm1 = getRepositoryModule(pm1);
+                ProjectModule rm2 = getRepositoryModule(pm2);
+                int index1 = sortedRepositoryModules.indexOf(rm1);
+                int index2 = sortedRepositoryModules.indexOf(rm2);
+                return Integer.compare(index1, index2);
+            });
+
+            // Having the modules now correctly sorted, we finally collect the webfx paths for each module in that order
+            sortedModules.forEach(pm -> moduleWebFxPaths.put(pm.getName(), pm.getMainWebFxSourceDirectory()));
 
             StringBuilder sb = new StringBuilder();
             moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
@@ -286,7 +326,18 @@ public class DevProjectModule extends ProjectModuleImpl {
             TextFileReaderWriter.writeTextFile(sb.toString(), moduleCacheFile, true, true);
         }
 
+        if (asc)
+            moduleWebFxPathsAsc = moduleWebFxPaths;
+        else
+            moduleWebFxPathsDesc = moduleWebFxPaths;
+
         return moduleWebFxPaths;
+    }
+
+    private static ProjectModule getRepositoryModule(ProjectModule pm) {
+        if (pm instanceof DevProjectModule)
+            return ((DevProjectModule) pm).getWebFxRootModule();
+        return pm.getRootModule();
     }
 
 }

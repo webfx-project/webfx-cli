@@ -120,8 +120,8 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
         if (!sourceModule.equals(that.sourceModule)) return false;
         if (!destinationModule.equals(that.destinationModule)) return false;
         if (type != that.type) return false;
-        if (scope != null ? !scope.equals(that.scope) : that.scope != null) return false;
-        return classifier != null ? classifier.equals(that.classifier) : that.classifier == null;
+        if (!Objects.equals(scope, that.scope)) return false;
+        return Objects.equals(classifier, that.classifier);
 
     }
 
@@ -177,8 +177,19 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
         return createDependency(srcModule, dstModule, Type.IMPLICIT_PROVIDER);
     }
 
-    public static Map<Module, List<Module>> createDependencyGraph(ReusableStream<ModuleDependency> dependencies) {
-        return dependencies.collect(Collectors.groupingBy(ModuleDependency::getSourceModule,
-                Collectors.mapping(ModuleDependency::getDestinationModule, Collectors.toList())));
+    public static Map<Module, List<Module>> createModulesDependencyGraph(ReusableStream<ModuleDependency> dependencies) {
+        return dependencies.collect(
+                    Collectors.groupingBy(ModuleDependency::getSourceModule,
+                    Collectors.mapping(ModuleDependency::getDestinationModule, Collectors.toList()))
+                );
+    }
+
+    public static Map<ProjectModule, List<ProjectModule>> createProjectModulesDependencyGraph(ReusableStream<ModuleDependency> dependencies) {
+        // We reduce the dependencies to only between project modules
+        dependencies = dependencies.filter(dep -> dep.sourceModule instanceof ProjectModule && dep.destinationModule instanceof ProjectModule);
+        // We create the dependency graph from that
+        Map<Module, List<Module>> dependencyGraph = createModulesDependencyGraph(dependencies);
+        // We cast and result that dependency graph
+        return (Map<ProjectModule, List<ProjectModule>>) (Map) dependencyGraph;
     }
 }

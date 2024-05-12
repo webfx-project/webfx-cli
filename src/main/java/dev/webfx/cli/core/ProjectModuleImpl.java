@@ -3,6 +3,9 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.abstr.XmlGavModuleFile;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author Bruno Salmon
  */
@@ -257,6 +260,33 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         if (testJavaJavaSourceRootAnalyzer == null)
             testJavaJavaSourceRootAnalyzer = new JavaSourceRootAnalyzer(() -> hasTestJavaSourceDirectory() ? getTestJavaSourceDirectory() : null, this);
         return testJavaJavaSourceRootAnalyzer;
+    }
+
+    private Map<ProjectModule, List<ProjectModule>> dependencyGraphWithImplicitProvidersCache;
+    private Map<ProjectModule, List<ProjectModule>> dependencyGraphWithoutImplicitProvidersCache;
+
+    public Map<ProjectModule, List<ProjectModule>> getProjectModulesDependencyGraph(boolean withImplicitProviders) {
+        // Returning the cache value if present
+        if (withImplicitProviders && dependencyGraphWithImplicitProvidersCache != null)
+            return dependencyGraphWithImplicitProvidersCache;
+        if (!withImplicitProviders && dependencyGraphWithoutImplicitProvidersCache != null)
+            return dependencyGraphWithoutImplicitProvidersCache;
+
+        // Getting the requested dependencies (with or without implicit providers)
+        ReusableStream<ModuleDependency> dependencies = withImplicitProviders ?
+                getMainJavaSourceRootAnalyzer().getTransitiveDependencies() :
+                getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders();
+
+        // Computing the dependency graph of these dependencies
+        Map<ProjectModule, List<ProjectModule>> dependencyGraph = ModuleDependency.createProjectModulesDependencyGraph(dependencies);
+
+        // Caching that dependency graph for possible next calls
+        if (withImplicitProviders)
+            dependencyGraphWithImplicitProvidersCache = dependencyGraph;
+        else
+            dependencyGraphWithoutImplicitProvidersCache = dependencyGraph;
+
+        return dependencyGraph;
     }
 
     ///// Java packages
