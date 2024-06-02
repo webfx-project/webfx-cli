@@ -59,18 +59,20 @@ public final class MavenUtil {
     }
 
     private static final Path NOT_FOUND_ARTIFACTS_PATH = WebFXHiddenFolder.getMavenWorkspace().resolve("NOT_FOUND_ARTIFACTS.txt");
+    private static String NOT_FOUND_ARTIFACTS_CONTENT;
     private static final Set<String> NOT_FOUND_ARTIFACTS = new HashSet<>();
 
     static {
-        String content = TextFileReaderWriter.readCliTextFile(NOT_FOUND_ARTIFACTS_PATH);
-        if (content != null)
-            NOT_FOUND_ARTIFACTS.addAll(Arrays.asList(content.split("\n")));
+        NOT_FOUND_ARTIFACTS_CONTENT = TextFileReaderWriter.readCliTextFile(NOT_FOUND_ARTIFACTS_PATH);
+        if (NOT_FOUND_ARTIFACTS_CONTENT != null)
+            NOT_FOUND_ARTIFACTS.addAll(Arrays.asList(NOT_FOUND_ARTIFACTS_CONTENT.split("\n")));
     }
 
     private static void addNotFoundArtifact(String artifact) {
         NOT_FOUND_ARTIFACTS.add(artifact);
         try {
-            TextFileReaderWriter.writeTextFileNow(artifact + "\n", NOT_FOUND_ARTIFACTS_PATH);
+            NOT_FOUND_ARTIFACTS_CONTENT += artifact + "\n";
+            TextFileReaderWriter.writeTextFileNow(NOT_FOUND_ARTIFACTS_CONTENT, NOT_FOUND_ARTIFACTS_PATH);
             Logger.warning(artifact + " was not found in Maven repositories, and is now blacklisted in " + NOT_FOUND_ARTIFACTS_PATH);
         } catch (IOException e) {
             Logger.warning("Couldn't write to file " + NOT_FOUND_ARTIFACTS_PATH.getFileName());
