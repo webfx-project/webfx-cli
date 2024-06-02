@@ -6,6 +6,7 @@ import dev.webfx.cli.modulefiles.abstr.WebFxModuleFileCache;
 import dev.webfx.cli.util.hashlist.HashList;
 import dev.webfx.cli.util.sort.TopologicalSort;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
+import dev.webfx.cli.util.stopwatch.StopWatch;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
@@ -237,11 +238,13 @@ public class DevProjectModule extends ProjectModuleImpl {
     private LinkedHashMap<String, Path> moduleWebFxPathsAsc;
     private LinkedHashMap<String, Path> moduleWebFxPathsDesc;
 
-    public LinkedHashMap<String, Path> collectThisAndTransitiveWebFXPaths(boolean canUseCache, boolean asc) {
+    public LinkedHashMap<String, Path> collectThisAndTransitiveWebFXPaths(boolean canUseCache, boolean asc, StopWatch mergePrepStopWatch) {
         if (asc && moduleWebFxPathsAsc != null)
             return moduleWebFxPathsAsc;
         if (!asc && moduleWebFxPathsDesc != null)
             return moduleWebFxPathsDesc;
+
+        mergePrepStopWatch.on();
 
         LinkedHashMap<String, Path> moduleWebFxPaths = new LinkedHashMap<>();
 
@@ -330,6 +333,8 @@ public class DevProjectModule extends ProjectModuleImpl {
             moduleWebFxPathsAsc = moduleWebFxPaths;
         else
             moduleWebFxPathsDesc = moduleWebFxPaths;
+
+        mergePrepStopWatch.off();
 
         return moduleWebFxPaths;
     }

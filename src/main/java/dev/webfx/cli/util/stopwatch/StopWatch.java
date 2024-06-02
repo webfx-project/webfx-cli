@@ -14,6 +14,7 @@ public final class StopWatch {
     private long systemTimeAtStart;
     private long stopWatchElapsedTimeAtPause;
     private long stopWatchCumulativePauseDuration;
+    private StopWatchGroup group;
 
     public StopWatch(Supplier<Long> systemTimeGetter) {
         this.systemTimeGetter = systemTimeGetter;
@@ -25,6 +26,14 @@ public final class StopWatch {
 
     public static StopWatch createSystemMillisStopWatch() {
         return new StopWatch(System::currentTimeMillis);
+    }
+
+    public StopWatchGroup getGroup() {
+        return group;
+    }
+
+    public void setGroup(StopWatchGroup group) {
+        this.group = group;
     }
 
     public long getSystemTime() {
@@ -57,7 +66,8 @@ public final class StopWatch {
 
     public void reset() {
         runCount = 0;
-        running = stopped = false;
+        setRunning(false);
+        stopped = false;
         systemTimeAtStart = stopWatchElapsedTimeAtPause = stopWatchCumulativePauseDuration = 0;
     }
 
@@ -74,6 +84,8 @@ public final class StopWatch {
             this.running = running;
             if (running)
                 incRunCount();
+            if (group != null)
+                group.updateStopWatchRunningState(this, running);
         }
     }
 

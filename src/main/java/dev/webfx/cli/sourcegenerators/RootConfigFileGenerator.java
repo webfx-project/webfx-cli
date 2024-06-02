@@ -2,6 +2,7 @@ package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
+import dev.webfx.cli.util.stopwatch.StopWatch;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.platform.conf.Config;
@@ -21,7 +22,7 @@ public final class RootConfigFileGenerator {
 
     private final static Map<Path, Config> CONFIG_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
-    public static boolean generateExecutableModuleConfigurationResourceFile(DevProjectModule module, boolean canUseCache) {
+    public static boolean generateExecutableModuleConfigurationResourceFile(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch) {
         if (!module.isExecutable())
             return false;
         // We will collect here all configurations from all transitive modules and merge them into a single
@@ -33,7 +34,7 @@ public final class RootConfigFileGenerator {
         // Conf Initialisation
         ConfigMerge confMerge = new ConfigMerge();
 
-        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, false);
+        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, false, mergePrepStopWatch);
 
         moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
             // Conf collection

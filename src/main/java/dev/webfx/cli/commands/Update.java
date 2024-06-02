@@ -127,9 +127,10 @@ public final class Update extends CommonSubcommand implements Runnable {
                         .addRow("Web embed resource", tasks.embedResourceCount, tasks.embedResourceStopWatch)
                         .addRow("Graalvm", tasks.graalvmCount, tasks.graalvmStopWatch)
                         .addRow("Meta", tasks.metaCount, tasks.metaStopWatch)
-                        .addRow("Conf merge", tasks.confCount, tasks.confStopWatch)
-                        .addRow("i18n merge", tasks.i18nCount, tasks.i18nStopWatch)
-                        .addRow("css merge", tasks.cssCount, tasks.cssStopWatch)
+                        .addRow("Merge preparation", -tasks.mergePrepStopWatch.getRunCount(), tasks.mergePrepStopWatch)
+                        .addRow("Conf merge", tasks.confCount, tasks.confMergeStopWatch)
+                        .addRow("i18n merge", tasks.i18nCount, tasks.i18nMergeStopWatch)
+                        .addRow("css merge", tasks.cssCount, tasks.cssMergeStopWatch)
                         .addComplementRow("Dependencies computing, etc...")
                         .addTotalRow()
                         .generateReport());
@@ -191,7 +192,7 @@ public final class Update extends CommonSubcommand implements Runnable {
 
         // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties) <- always present
         // and config file for executable modules (dev.webfx.platform.conf/src-root.properties) <- present only when using modules with config
-        if (tasks.meta || tasks.conf || tasks.i18n || tasks.css)
+        if (tasks.meta || tasks.conf || tasks.i18n || tasks.css) {
             workingAndChildrenModulesInDepthCache
                     .filter(ProjectModule::isExecutable)
                     .forEach(module -> {
@@ -201,23 +202,26 @@ public final class Update extends CommonSubcommand implements Runnable {
                                 tasks.metaCount++;
                             tasks.metaStopWatch.off();
                         }
+                        // Merging tasks (conf, i18n & css)
+                        boolean canUseCache = !tasks.pom;
                         if (tasks.conf) {
-                            tasks.confStopWatch.on();
-                            if (RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module, !tasks.pom))
+                            tasks.confMergeStopWatch.on();
+                            if (RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module, canUseCache, tasks.mergePrepStopWatch))
                                 tasks.confCount++;
-                            tasks.confStopWatch.off();
+                            tasks.confMergeStopWatch.off();
                         }
                         if (tasks.i18n) {
-                            tasks.i18nStopWatch.on();
-                            tasks.i18nCount += I18nFilesGenerator.generateExecutableModuleI18nResourceFiles(module, !tasks.pom);
-                            tasks.i18nStopWatch.off();
+                            tasks.i18nMergeStopWatch.on();
+                            tasks.i18nCount += I18nFilesGenerator.generateExecutableModuleI18nResourceFiles(module, canUseCache, tasks.mergePrepStopWatch);
+                            tasks.i18nMergeStopWatch.off();
                         }
                         if (tasks.css) {
-                            tasks.cssStopWatch.on();
-                            tasks.cssCount += CssFilesGenerator.generateExecutableModuleCssResourceFiles(module, !tasks.pom);
-                            tasks.cssStopWatch.off();
+                            tasks.cssMergeStopWatch.on();
+                            tasks.cssCount += CssFilesGenerator.generateExecutableModuleCssResourceFiles(module, canUseCache, tasks.mergePrepStopWatch);
+                            tasks.cssMergeStopWatch.off();
                         }
                     });
+        }
 
         // Generating or updating Maven module files (pom.xml)
         if (tasks.pom) {
@@ -231,7 +235,7 @@ public final class Update extends CommonSubcommand implements Runnable {
         }
 
         // Generating files for Java modules (module-info.java and META-INF/services)
-        if (tasks.moduleInfo || tasks.metaInfServices)
+        if (tasks.moduleInfo || tasks.metaInfServices) {
             workingAndChildrenModulesInDepthCache
                     .filter(DevProjectModule::hasMainJavaSourceDirectory)
                     // Skipping module-info.java for some special cases
@@ -254,6 +258,7 @@ public final class Update extends CommonSubcommand implements Runnable {
                             tasks.metaInfServicesStopWatch.off();
                         }
                     });
+        }
 
         if (tasks.gwtXml || tasks.indexHtml || tasks.entryPoint || tasks.embedResource) {
             // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)

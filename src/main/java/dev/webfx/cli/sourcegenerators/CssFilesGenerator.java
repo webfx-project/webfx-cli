@@ -4,6 +4,7 @@ import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.Platform;
 import dev.webfx.cli.core.TargetTag;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
+import dev.webfx.cli.util.stopwatch.StopWatch;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
@@ -22,7 +23,7 @@ public final class CssFilesGenerator {
     private final static PathMatcher CSS_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.css");
     private final static Map<Path, String> CSS_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
-    public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache) {
+    public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch) {
         boolean isWebExecutable = module.isExecutable(Platform.GWT) || module.isExecutable(Platform.J2CL);
         boolean isJavaFxExecutable = !isWebExecutable && module.isExecutable() && (module.getTarget().hasTag(TargetTag.OPENJFX) || module.getTarget().hasTag(TargetTag.GLUON));
         if (!isWebExecutable && !isJavaFxExecutable)
@@ -34,7 +35,7 @@ public final class CssFilesGenerator {
 
         Map<Path /* relative path to merged css file */, StringBuilder /* content concatenation */> cssMerges = new HashMap<>();
 
-        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, true);
+        Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, true, mergePrepStopWatch);
 
         moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
             Path webfxCssDirectory = webfxPath.resolve("css");

@@ -37,7 +37,7 @@ final class ExecutionTimesReport {
             timeTable.newRow();
         timeTable
                 .addCell(firstColumnValue)
-                .addCell(count >= 0 ? formatNumber(count): "")
+                .addCell(count == -1 ? "" : formatNumber(count))
                 .addCell(formatNumber(timeMillis) + " ms")
                 .addCell((time * 100) / totalTime + " %");
         cumulativeTime += time;
@@ -60,9 +60,16 @@ final class ExecutionTimesReport {
     }
 
     private static String formatNumber(long number) {
+        // For negative numbers (i.e. merge preparation), we put the positive number in bracket (to indicate it's not
+        // added to the total count of files - because this operation is not generating any file)
+        boolean negative = number < 0;
+        if (negative)
+            number = -number;
         String text = String.valueOf(number);
         if (number > 1000)
             text = formatNumber(number / 1000) + " " + text.substring(text.length() - 3);
+        if (negative)
+            text = "(" + text + ")";
         return text;
     }
 

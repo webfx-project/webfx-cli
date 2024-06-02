@@ -1,6 +1,7 @@
 package dev.webfx.cli.commands;
 
 import dev.webfx.cli.util.stopwatch.StopWatch;
+import dev.webfx.cli.util.stopwatch.StopWatchGroup;
 
 /**
  * @author Bruno Salmon
@@ -31,9 +32,13 @@ public final class UpdateTasks {
             embedResourceStopWatch = StopWatch.createSystemNanoStopWatch(),
             graalvmStopWatch = StopWatch.createSystemNanoStopWatch(),
             metaStopWatch = StopWatch.createSystemNanoStopWatch(),
-            confStopWatch = StopWatch.createSystemNanoStopWatch(),
-            i18nStopWatch = StopWatch.createSystemNanoStopWatch(),
-            cssStopWatch = StopWatch.createSystemNanoStopWatch();
+            mergePrepStopWatch = StopWatch.createSystemNanoStopWatch(),
+            confMergeStopWatch = StopWatch.createSystemNanoStopWatch(),
+            i18nMergeStopWatch = StopWatch.createSystemNanoStopWatch(),
+            cssMergeStopWatch = StopWatch.createSystemNanoStopWatch();
+
+    // Creating a group for merging stopwatches, so that mergePrepStopWatch will automatically pause others while running
+    private final StopWatchGroup mergeGroup = new StopWatchGroup(mergePrepStopWatch, confMergeStopWatch, i18nMergeStopWatch, cssMergeStopWatch);
 
     public int
             pomCount,
