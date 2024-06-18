@@ -202,7 +202,7 @@ public enum TargetTag {
         }
     }
 
-    static TargetTag fromTagName(String tagName) {
+    public static TargetTag fromTagName(String tagName) {
         return Arrays.stream(TargetTag.values())
                 .filter(tag -> tagName.equals(tag.getTagName()))
                 .findFirst()

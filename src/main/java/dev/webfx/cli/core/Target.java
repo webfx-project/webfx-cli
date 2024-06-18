@@ -1,5 +1,7 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.lib.reusablestream.ReusableStream;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +28,10 @@ public final class Target {
 
     private Target(ProjectModule module, TargetTag[] tags) {
         this.module = module;
-        this.tags = Arrays.stream(tags).collect(Collectors.toUnmodifiableList());
+        ReusableStream<TargetTag> ignoredTargetTags = module == null ? null : module.getWebFxModuleFile().ignoredTargetTags();
+        this.tags = Arrays.stream(tags)
+                .filter(tag -> ignoredTargetTags == null || ignoredTargetTags.noneMatch(ignoredTag -> ignoredTag == tag))
+                .collect(Collectors.toUnmodifiableList());
         platformTags = this.tags.stream()
                 // filtering platform tags (ex: GWT, JRE, GLUON, VERTX, ...) from this tag and transitive implied tags (ex: SERVER => JRE)
                 .flatMap(tag -> Stream.concat(Stream.of(tag), Stream.of(tag.getTransitiveImpliedTags())))

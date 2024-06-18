@@ -228,6 +228,12 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
         });
     }
 
+    default ReusableStream<TargetTag> ignoredTargetTags() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("target-tags[1]/ignore-tag"), node ->
+                TargetTag.fromTagName(node.getTextContent())
+        );
+    }
+
     /* Export snapshot reading methods  */
 
     default boolean generatesExportSnapshot() {
