@@ -1,0 +1,16 @@
+// File managed by WebFX (DO NOT EDIT MANUALLY)
+package dev.webfx.kit.registry.javafxweb;
+
+import jsinterop.annotations.JsFunction;
+import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
+
+public class WebToJavaCallbacks {
+
+    public static void bindCallbackMethods(Object javaInstance) {
+        JsPropertyMap<Object> pm = Js.asPropertyMap(javaInstance);
+${bindCallbackMethodsBody}
+    }
+
+${JsFunctionsDeclaration}
+}

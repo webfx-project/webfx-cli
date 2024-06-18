@@ -17,6 +17,7 @@ public final class UpdateTasks {
             entryPoint,
             embedResource,
             graalvm,
+            callbacks,
             meta,
             conf,
             i18n,
@@ -30,7 +31,8 @@ public final class UpdateTasks {
             gwtXmlStopWatch = StopWatch.createSystemNanoStopWatch(),
             entryPointStopWatch = StopWatch.createSystemNanoStopWatch(),
             embedResourceStopWatch = StopWatch.createSystemNanoStopWatch(),
-            graalvmStopWatch = StopWatch.createSystemNanoStopWatch(),
+            //graalvmStopWatch = StopWatch.createSystemNanoStopWatch(),
+            callbacksStopWatch = StopWatch.createSystemNanoStopWatch(),
             metaStopWatch = StopWatch.createSystemNanoStopWatch(),
             mergePrepStopWatch = StopWatch.createSystemNanoStopWatch(),
             confMergeStopWatch = StopWatch.createSystemNanoStopWatch(),
@@ -48,7 +50,8 @@ public final class UpdateTasks {
             gwtXmlCount,
             entryPointCount,
             embedResourceCount,
-            graalvmCount,
+            //graalvmCount,
+            callbacksCount,
             metaCount,
             confCount,
             i18nCount,
@@ -62,7 +65,8 @@ public final class UpdateTasks {
                gwtXml == value &&
                entryPoint == value &&
                embedResource == value &&
-               graalvm == value &&
+               //graalvm == value &&
+               callbacks == value &&
                meta == value &&
                conf == value &&
                i18n == value &&
@@ -79,7 +83,8 @@ public final class UpdateTasks {
             gwtXml =
             entryPoint =
             embedResource =
-            graalvm =
+            //graalvm =
+            callbacks =
             meta =
             conf =
             i18n =
@@ -93,16 +98,17 @@ public final class UpdateTasks {
 
     int totalCount() {
         return pomCount +
-                moduleInfoCount +
-                metaInfServicesCount +
-                indexHtmlCount +
-                gwtXmlCount +
-                entryPointCount +
-                embedResourceCount +
-                graalvmCount +
-                metaCount +
-                confCount +
-                i18nCount +
-                cssCount;
+               moduleInfoCount +
+               metaInfServicesCount +
+               indexHtmlCount +
+               gwtXmlCount +
+               entryPointCount +
+               embedResourceCount +
+               //graalvmCount +
+               callbacksCount +
+               metaCount +
+               confCount +
+               i18nCount +
+               cssCount;
     }
 }

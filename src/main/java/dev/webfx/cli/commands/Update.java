@@ -45,8 +45,11 @@ public final class Update extends CommonSubcommand implements Runnable {
     @Option(names={"-e", "--embed"}, description = "Update GWT/J2CL embed resource files.")
     boolean embedResource;
 
-    @Option(names={"-a", "--graalvm"}, description = "Update GraalVM files (Gluon).")
-    boolean graalvm;
+    //@Option(names={"-a", "--graalvm"}, description = "Update GraalVM files (Gluon).")
+    //boolean graalvm;
+
+    @Option(names={"-b", "--callbacks"}, description = "Update callbacks build files.")
+    boolean callbacks;
 
     @Option(names={"-m", "--meta"}, description = "Update meta.properties files.")
     boolean meta;
@@ -74,7 +77,8 @@ public final class Update extends CommonSubcommand implements Runnable {
         tasks.gwtXml = gwtXml;
         tasks.entryPoint = entryPoint;
         tasks.embedResource = embedResource;
-        tasks.graalvm = graalvm;
+        //tasks.graalvm = graalvm;
+        tasks.callbacks = callbacks;
         tasks.meta = meta;
         tasks.conf = conf;
         tasks.i18n = i18n;
@@ -124,9 +128,10 @@ public final class Update extends CommonSubcommand implements Runnable {
                         .addRow("index.html", tasks.indexHtmlCount, tasks.indexHtmlStopWatch)
                         .addRow("module.gwt.xml", tasks.gwtXmlCount, tasks.gwtXmlStopWatch)
                         .addRow("Web entry point", tasks.entryPointCount, tasks.entryPointStopWatch)
-                        .addRow("Web embed resource", tasks.embedResourceCount, tasks.embedResourceStopWatch)
-                        .addRow("Graalvm", tasks.graalvmCount, tasks.graalvmStopWatch)
-                        .addRow("Meta", tasks.metaCount, tasks.metaStopWatch)
+                        .addRow("Web embed resources", tasks.embedResourceCount, tasks.embedResourceStopWatch)
+                        //.addRow("Graalvm", tasks.graalvmCount, tasks.graalvmStopWatch)
+                        .addRow("Callbacks (GWT & GraalVM)", tasks.callbacksCount, tasks.callbacksStopWatch)
+                        .addRow("Meta file", tasks.metaCount, tasks.metaStopWatch)
                         .addRow("Merge preparation", -tasks.mergePrepStopWatch.getRunCount(), tasks.mergePrepStopWatch)
                         .addRow("Conf merge", tasks.confCount, tasks.confMergeStopWatch)
                         .addRow("i18n merge", tasks.i18nCount, tasks.i18nMergeStopWatch)
@@ -260,23 +265,23 @@ public final class Update extends CommonSubcommand implements Runnable {
                     });
         }
 
-        if (tasks.gwtXml || tasks.indexHtml || tasks.entryPoint || tasks.embedResource) {
-            // Generate files for executable GWT modules (module.gwt.xml, index.html, super sources, service loader, resource bundle)
+        // Generate files for executable GWT/J2CL modules (module.gwt.xml, index.html, super sources, service loader, resource bundle, callbacks)
+        if (tasks.gwtXml || tasks.indexHtml || tasks.entryPoint || tasks.embedResource || tasks.callbacks) {
             workingAndChildrenModulesInDepthCache
                     .filter(m -> m.isExecutable(Platform.GWT) || m.isExecutable(Platform.J2CL))
                     .forEach(m -> GwtJ2clFilesGenerator.generateGwtJ2clFiles(m, tasks));
         }
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
-        if (tasks.graalvm) {
+        if (tasks.callbacks) {
             workingAndChildrenModulesInDepthCache
                     .filter(m -> m.isExecutable(Platform.JRE))
                     .filter(m -> m.getTarget().hasTag(TargetTag.GLUON))
                     .forEach(m -> {
-                        tasks.graalvmStopWatch.on();
+                        tasks.callbacksStopWatch.on();
                         if (GluonFilesGenerator.generateGraalVmReflectionJson(m))
-                            tasks.graalvmCount++;
-                        tasks.graalvmStopWatch.off();
+                            tasks.callbacksCount++;
+                        tasks.callbacksStopWatch.off();
                     });
         }
     }

@@ -8,6 +8,9 @@ import dev.webfx.lib.reusablestream.ReusableStream;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import java.util.List;
 
 import static dev.webfx.cli.util.xml.XmlUtil.nodeListToNodeReusableStream;
 
@@ -157,9 +160,9 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
         return lookupNodeListTextContent("reflect[1]/array-new-instance[1]/class");
     }
 
-    default String getGraalVmReflectionJson() {
+    /*default String getGraalVmReflectionJson() {
         return lookupNodeTextContent("graalvm-reflection-json[1]");
-    }
+    }*/
 
     default ReusableStream<ServiceProvider> providedServiceProviders() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("providers[1]/provider"), node -> {
@@ -197,6 +200,35 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     default boolean skipJavaModuleInfoUpdate() {
         return !fileExists() || lookupNode("update-options[1]/skip-java-module-info[1]") != null;
     }
+
+    default ReusableStream<JavaCallbacks> getJavaCallbacks() {
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("java-callbacks[1]"), node -> {
+            JavaCallbacks javaCallbacks = new JavaCallbacks();
+            NodeList classes = XmlUtil.lookupNodeList(node, "callback-class");
+            for (int i = 0; i < classes.getLength(); i++) {
+                Node classNode = classes.item(i);
+                String className = XmlUtil.getAttributeValue(classNode, "name");
+                NodeList constructors = XmlUtil.lookupNodeList(classNode, "callback-constructor");
+                for (int j = 0; j < constructors.getLength(); j++) {
+                    Node constructorNode = constructors.item(j);
+                    NodeList arguments = XmlUtil.lookupNodeList(constructorNode, "callback-argument");
+                    List<String> argumentTypes = XmlUtil.nodeListToList(arguments, argument -> XmlUtil.getAttributeValue(argument, "class"));
+                    javaCallbacks.addConstructorCallback(className, argumentTypes.toArray(String[]::new));
+                }
+                NodeList methods = XmlUtil.lookupNodeList(classNode, "callback-method");
+                for (int j = 0; j < methods.getLength(); j++) {
+                    Node methodNode = methods.item(j);
+                    String methodName = XmlUtil.getAttributeValue(methodNode, "name");
+                    NodeList arguments = XmlUtil.lookupNodeList(methodNode, "callback-argument");
+                    List<String> argumentTypes = XmlUtil.nodeListToList(arguments, argument -> XmlUtil.getAttributeValue(argument, "class"));
+                    javaCallbacks.addMethodCallback(className, methodName, argumentTypes.toArray(String[]::new));
+                }
+            }
+            return javaCallbacks;
+        });
+    }
+
+    /* Export snapshot reading methods  */
 
     default boolean generatesExportSnapshot() {
         return lookupNode("update-options[1]/generate-export-snapshot[1]") != null;

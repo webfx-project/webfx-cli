@@ -47,6 +47,12 @@ public final class GwtJ2clFilesGenerator {
                     tasks.gwtXmlCount++;
                 tasks.gwtXmlStopWatch.off();
             }
+            if (tasks.callbacks) {
+                tasks.callbacksStopWatch.on();
+                if (GwtWebToJavaCallbacksGenerator.generateWebToJavaCallbacksSuperSource(module))
+                    tasks.callbacksCount++;
+                tasks.callbacksStopWatch.off();
+            }
         }
     }
 

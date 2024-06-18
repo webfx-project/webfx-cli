@@ -1,43 +1,51 @@
 package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
-import dev.webfx.cli.core.ProjectModule;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
+import dev.webfx.platform.ast.AST;
+import dev.webfx.platform.ast.AstArray;
+import dev.webfx.platform.ast.AstObject;
+import dev.webfx.platform.util.Arrays;
 
-import java.util.Objects;
+import java.nio.file.Path;
 
 /**
  * @author Bruno Salmon
  */
 public final class GluonFilesGenerator {
 
+    private static final String GENERATED_FILE = "main/graalvm_conf/reflection.json";
+
     public static boolean generateGraalVmReflectionJson(DevProjectModule gluonModule) {
-        StringBuilder sb = new StringBuilder();
-        ProjectModule.filterProjectModules(gluonModule.getMainJavaSourceRootAnalyzer().getTransitiveModules())
-                .map(module -> module.getWebFxModuleFile().getGraalVmReflectionJson())
-                .filter(Objects::nonNull)
-                .distinct()
-                .forEach(json -> { // Json String (expecting a Json array [ ... ])
-                    // Removing the possible first white spaces
-                    json = json.replaceAll("\\n\\s+\\n", "\n");
-                    // Removing the brackets, because all arrays are merged into 1
-                    int openBracketIndex = json.indexOf('[');
-                    int closeBracketIndex = json.lastIndexOf(']');
-                    if (openBracketIndex > 0 && closeBracketIndex > 0) {
-                        json = json.substring(openBracketIndex + 1, closeBracketIndex);
-                        // Also removing left indentation (extra indentation can come from webfx.xml export)
-                        json = json.replace("\n" + " ".repeat(openBracketIndex), "\n");
-                    }
-                    // Removing the possible last white spaces
-                    json = json.replaceAll("(?m)\\n\\s+$", "\n");
-                    if (!json.isEmpty()) {
-                        if (sb.length() > 0)
-                            sb.append(",");
-                        sb.append(json);
-                    }
-                });
-        TextFileReaderWriter.writeTextFileIfNewOrModified(sb.length() == 0 ? null : "[\n" + sb + "\n]", gluonModule.getHomeDirectory().resolve("src/main/graalvm_conf/reflection.json"));
-        return sb.length() > 0;
+        AstArray reflectionArray = AST.createArray();
+        gluonModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()
+                .filter(DevProjectModule.class::isInstance)
+                .map(DevProjectModule.class::cast)
+                .flatMap(pm -> pm.getWebFxModuleFile().getJavaCallbacks())
+                .forEach(javaCallbacks -> javaCallbacks.getMethodCallbacks().forEach((className, methods) -> {
+                    AstObject classObject = AST.createObject();
+                    classObject.set("name", className);
+                    AstArray methodsArray = AST.createArray();
+                    methods.forEach(method -> {
+                        AstObject methodObject = AST.createObject();
+                        String methodName = method.isConstructor() ? "<init>" : method.getMethodName();
+                        methodObject.set("name", methodName);
+                        AstArray parameterTypesArray = AST.createArray();
+                        Arrays.forEach(method.getParameterTypes(), parameterTypesArray::push);
+                        methodObject.set("parameterTypes", parameterTypesArray);
+                        methodsArray.push(methodObject);
+                    });
+                    classObject.set("methods", methodsArray);
+                    reflectionArray.push(classObject);
+                }));
+        if (reflectionArray.isEmpty())
+            return false;
+        TextFileReaderWriter.writeTextFileIfNewOrModified(AST.formatArray(reflectionArray, "json"), getGeneratedFilePath(gluonModule));
+        return true;
+    }
+
+    private static Path getGeneratedFilePath(DevProjectModule module) {
+        return module.getSourceDirectory().resolve(GENERATED_FILE);
     }
 
 }

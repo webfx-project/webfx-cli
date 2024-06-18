@@ -210,10 +210,10 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
         return getDelegate().getArrayNewInstanceClasses();
     }
 
-    @Override
+    /*@Override
     default String getGraalVmReflectionJson() {
         return getDelegate().getGraalVmReflectionJson();
-    }
+    }*/
 
     @Override
     default ReusableStream<ServiceProvider> providedServiceProviders() {
@@ -243,6 +243,11 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     @Override
     default boolean skipJavaModuleInfoUpdate() {
         return getDelegate().skipJavaModuleInfoUpdate();
+    }
+
+    @Override
+    default ReusableStream<JavaCallbacks> getJavaCallbacks() {
+        return getDelegate().getJavaCallbacks();
     }
 
     @Override

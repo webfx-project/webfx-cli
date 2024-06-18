@@ -306,13 +306,13 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         return arrayNewInstanceClasses;
     }
 
-    private String graalVmReflectionJson;
+    /*private String graalVmReflectionJson;
     @Override
     public String getGraalVmReflectionJson() {
         if (graalVmReflectionJson == null)
             graalVmReflectionJson = WebFxModuleFileDelegate.super.getGraalVmReflectionJson();
         return graalVmReflectionJson;
-    }
+    }*/
 
     private ReusableStream<ServiceProvider> providedServiceProviders;
     @Override
@@ -360,6 +360,14 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         if (skipJavaModuleInfoUpdate == null)
             skipJavaModuleInfoUpdate = WebFxModuleFileDelegate.super.skipJavaModuleInfoUpdate();
         return skipJavaModuleInfoUpdate;
+    }
+
+    private ReusableStream<JavaCallbacks> javaCallbacks;
+    @Override
+    public ReusableStream<JavaCallbacks> getJavaCallbacks() {
+        if (javaCallbacks == null)
+            javaCallbacks = WebFxModuleFileDelegate.super.getJavaCallbacks();
+        return javaCallbacks;
     }
 
     private Boolean generatesExportSnapshot;
