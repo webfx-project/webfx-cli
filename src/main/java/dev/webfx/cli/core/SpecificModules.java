@@ -118,6 +118,10 @@ public class SpecificModules {
         return moduleName.contains("-registry-") || moduleName.endsWith("-registry");
     }
 
+    public static boolean isPluginModule(String moduleName) {
+        return moduleName.contains("-plugin-") || moduleName.endsWith("-plugin");
+    }
+
     public static boolean isJsIntertopModule(String moduleName) {
         return moduleName.startsWith("jsinterop-");
     }
@@ -133,8 +137,8 @@ public class SpecificModules {
     public static boolean skipJavaModuleInfo(String moduleName) {
         // We don't generate module-info.java for webfx-kit-javafxweb-registry because this generates JavaDoc errors (due to 'requires webfx.kit.javafxweb.enginepeer.emul' <- and no module-info.java for emul modules)
         return moduleName.equals(WEBFX_KIT_JAVAFXWEB_REGISTRY)
-                // webfx-kit-javafxweb-enginepeer dependencies are emulation modules (with no module-info.java)
-                || moduleName.equals(WEBFX_KIT_JAVAFXWEB_ENGINEPEER);
+               // webfx-kit-javafxweb-enginepeer dependencies are emulation modules (with no module-info.java)
+               || moduleName.equals(WEBFX_KIT_JAVAFXWEB_ENGINEPEER);
     }
 
 }

@@ -278,7 +278,11 @@ public final class JavaSourceRootAnalyzer {
                                             getWebFxRootModule().getRequiredProvidersSearchScopeWithinWebFxLibraries()
                                     ))
                                     .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
-                                    .filter(m -> m.isCompatibleWithTargetModule(getProjectModule()))
+                                    // Excluding plugin modules from required providers search scope (it's still possible
+                                    // to have a required provider that is a plugin, but for this to happen it must be
+                                    // explicitly included in the project).
+                                    .filter(pm -> !SpecificModules.isPluginModule(pm.getName()))
+                                    .filter(pm -> pm.isCompatibleWithTargetModule(getProjectModule()))
                     )
                     .distinct()
                     .cache()
