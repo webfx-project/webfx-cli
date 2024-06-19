@@ -5,10 +5,9 @@ import dev.webfx.cli.modulefiles.ArtifactResolver;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.Node;
 
 import java.util.List;
 
@@ -105,11 +104,11 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     }
 
     default ReusableStream<ModuleProperty> getModuleProperties() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("properties[1]/*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("properties[1]/*"), node -> new ModuleProperty(node.getName(), node.getText()));
     }
 
     default ReusableStream<ModuleProperty> getConfigurationVariables() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("configuration-variables[1]/*"), node -> new ModuleProperty(node.getNodeName(), node.getTextContent()));
+        return XmlUtil.nodeListToReusableStream(lookupNodeList("configuration-variables[1]/*"), node -> new ModuleProperty(node.getName(), node.getText()));
     }
 
     default boolean areUsedBySourceModulesDependenciesAutomaticallyAdded() {
@@ -137,11 +136,11 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     }
 
     default ReusableStream<LibraryModule> getRequiredWebFxLibraryModules() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("required-libraries[1]//webfx-library"), LibraryModule::createWebFxLibraryModule);
+        return XmlUtil.nodeListToReusableStream(lookupElementList("required-libraries[1]//webfx-library"), LibraryModule::createWebFxLibraryModule);
     }
 
     default ReusableStream<LibraryModule> getRequiredThirdPartyLibraryModules() {
-        return XmlUtil.nodeListToReusableStream(lookupNodeList("required-libraries[1]//library"), LibraryModule::createThirdPartyLibraryModule);
+        return XmlUtil.nodeListToReusableStream(lookupElementList("required-libraries[1]//library"), LibraryModule::createThirdPartyLibraryModule);
     }
 
     default ReusableStream<String> getUsesPackagesAutoInjectionConditions() {
@@ -166,8 +165,8 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
 
     default ReusableStream<ServiceProvider> providedServiceProviders() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("providers[1]/provider"), node -> {
-            String spi = XmlUtil.getAttributeValue(node, "interface");
-            String provider = node.getTextContent();
+            String spi = XmlUtil.getAttributeValue((Element) node, "interface");
+            String provider = node.getText();
             if (spi == null)
                 throw new CliException("Missing interface attribute in " + getModule().getName() + " provider declaration: " + XmlUtil.formatXmlText(node));
             return new ServiceProvider(spi, provider);
@@ -176,21 +175,21 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
 
     default ReusableStream<MavenRepository> mavenRepositories() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("maven-repositories[1]/*"), node -> {
-            String id = XmlUtil.getAttributeValue(node, "id");
+            String id = XmlUtil.getAttributeValue((Element) node, "id");
             if (id == null)
                 throw new CliException("Missing id attribute in " + getModule().getName() + " Maven module declaration: " + XmlUtil.formatXmlText(node));
-            String url = node.getTextContent();
-            boolean snapshot = node.getNodeName().equals("snapshot-repository");
+            String url = node.getText();
+            boolean snapshot = node.getName().equals("snapshot-repository");
             return new MavenRepository(id, url, snapshot);
         });
     }
 
-    default ReusableStream<Node> getHtmlNodes() {
-        return nodeListToNodeReusableStream(lookupNodeList("html"));
+    default ReusableStream<Element> getHtmlNodes() {
+        return nodeListToNodeReusableStream(lookupElementList("html"));
     }
 
-    default Node getMavenManualNode() {
-        return lookupNode("maven-pom-manual[1]");
+    default Element getMavenManualNode() {
+        return lookupElement("maven-pom-manual[1]");
     }
 
     default boolean skipMavenPomUpdate() {
@@ -204,22 +203,19 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     default ReusableStream<JavaCallbacks> getJavaCallbacks() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("java-callbacks[1]"), node -> {
             JavaCallbacks javaCallbacks = new JavaCallbacks();
-            NodeList classes = XmlUtil.lookupNodeList(node, "callback-class");
-            for (int i = 0; i < classes.getLength(); i++) {
-                Node classNode = classes.item(i);
-                String className = XmlUtil.getAttributeValue(classNode, "name");
-                NodeList constructors = XmlUtil.lookupNodeList(classNode, "callback-constructor");
-                for (int j = 0; j < constructors.getLength(); j++) {
-                    Node constructorNode = constructors.item(j);
-                    NodeList arguments = XmlUtil.lookupNodeList(constructorNode, "callback-argument");
+            List<Element> classes = XmlUtil.lookupElementList(node, "callback-class");
+            for (Element classElement : classes) {
+                String className = XmlUtil.getAttributeValue(classElement, "name");
+                List<Element> constructors = XmlUtil.lookupElementList(classElement, "callback-constructor");
+                for (Element constructorElement : constructors) {
+                    List<Element> arguments = XmlUtil.lookupElementList(constructorElement, "callback-argument");
                     List<String> argumentTypes = XmlUtil.nodeListToList(arguments, argument -> XmlUtil.getAttributeValue(argument, "class"));
                     javaCallbacks.addConstructorCallback(className, argumentTypes.toArray(String[]::new));
                 }
-                NodeList methods = XmlUtil.lookupNodeList(classNode, "callback-method");
-                for (int j = 0; j < methods.getLength(); j++) {
-                    Node methodNode = methods.item(j);
+                List<Element> methods = XmlUtil.lookupElementList(classElement, "callback-method");
+                for (Element methodNode : methods) {
                     String methodName = XmlUtil.getAttributeValue(methodNode, "name");
-                    NodeList arguments = XmlUtil.lookupNodeList(methodNode, "callback-argument");
+                    List<Element> arguments = XmlUtil.lookupElementList(methodNode, "callback-argument");
                     List<String> argumentTypes = XmlUtil.nodeListToList(arguments, argument -> XmlUtil.getAttributeValue(argument, "class"));
                     javaCallbacks.addMethodCallback(className, methodName, argumentTypes.toArray(String[]::new));
                 }
@@ -230,7 +226,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
 
     default ReusableStream<TargetTag> ignoredTargetTags() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("target-tags[1]/ignore-tag"), node ->
-                TargetTag.fromTagName(node.getTextContent())
+                TargetTag.fromTagName(node.getText())
         );
     }
 
@@ -273,7 +269,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     }
 
     default ReusableStream<String> modulesUsingJavaPackageFromExportSnapshot(Node javaPackageUsageNode) {
-        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(javaPackageUsageNode, "module"));
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupElementList(javaPackageUsageNode, "module"));
     }
 
     default Node javaClassUsageNodeFromExportSnapshot(String javaClass) {
@@ -285,7 +281,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     }
 
     default ReusableStream<String> modulesUsingJavaClassFromExportSnapshot(Node javaClassUsageNode) {
-        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(javaClassUsageNode, "module"));
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupElementList(javaClassUsageNode, "module"));
     }
 
     private String getProjectAttributeValue(String attribute) {
@@ -308,15 +304,13 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
 
     default void setExecutable(boolean executable) {
         if (executable != isExecutable()) {
-            Attr attribute = getOrCreateDocument().createAttribute("executable");
-            attribute.setValue(String.valueOf(executable));
-            getModuleElement().getAttributes().setNamedItem(attribute);
+            getModuleElement().addAttribute("executable", String.valueOf(executable));
         }
     }
 
     default void addProvider(String spiClassName, String providerClassName) {
         if (lookupNode("providers[1]/provider[@interface='" + spiClassName + "'][text() = '" + providerClassName + "'][1]") == null)
-            appendElementWithTextContent("providers/provider", providerClassName, true).setAttribute("interface", spiClassName);
+            appendElementWithTextContent("providers/provider", providerClassName, true).addAttribute("interface", spiClassName);
     }
 
     default boolean updateDocument(Document document) {

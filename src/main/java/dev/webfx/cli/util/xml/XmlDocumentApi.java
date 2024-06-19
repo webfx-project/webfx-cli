@@ -1,7 +1,7 @@
 package dev.webfx.cli.util.xml;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
+import org.dom4j.Document;
+import org.dom4j.Element;
 
 public interface XmlDocumentApi extends XmlNodeApi {
 
@@ -25,9 +25,9 @@ public interface XmlDocumentApi extends XmlNodeApi {
         return XmlUtil.newDocument();
     }
 
-    default Node getOrCreateXmlNode() {
-        Node moduleElement = getXmlNode();
-        return moduleElement != null ? moduleElement : getOrCreateDocument().getDocumentElement();
+    default Element getOrCreateXmlNode() {
+        Element moduleElement = getXmlNode();
+        return moduleElement != null ? moduleElement : getOrCreateDocument().getRootElement();
     }
 
     default boolean updateDocument(Document document) {

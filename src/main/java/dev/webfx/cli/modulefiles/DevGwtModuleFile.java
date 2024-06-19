@@ -6,10 +6,7 @@ import dev.webfx.cli.modulefiles.abstr.DevXmlModuleFileImpl;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Comment;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
+import org.dom4j.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,9 +31,9 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
 
     @Override
     public boolean updateDocument(Document document) {
-        document.getDocumentElement().setAttribute("rename-to", getModule().getName().replaceAll("-", "_"));
+        document.getRootElement().addAttribute("rename-to", getModule().getName().replaceAll("-", "_"));
         Node moduleSourceCommentNode = lookupNode("/module//comment()[2]");
-        Node moduleSourceEndNode = moduleSourceCommentNode.getNextSibling();
+        Node moduleSourceEndNode = XmlUtil.getNextSibling(moduleSourceCommentNode);
         BuildInfo buildInfo = getProjectModule().getBuildInfo();
         try (BuildInfoThreadLocal closable = BuildInfoThreadLocal.open(buildInfo)) { // To pass this buildInfo to ArtifactResolver when sorting the dependencies via Module.compareTo()
             // In the GWT module file, we need to list all transitive dependencies (not only direct dependencies) so that GWT can find all the sources required by the application
@@ -50,12 +47,12 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                         // Excluding modules such as gwt-time, j2cl-time but not gwt-nio (inherits) and javabase-emul (raw super source)
                         if (gwtModuleName == null && module.isJavaBaseEmulationModule() && !module.getName().contains("javabase-emul"))
                             return;
-                        Node parentNode = moduleSourceEndNode.getParentNode();
+                        Element parentNode = moduleSourceEndNode.getParent();
                         // Creating a node appender that inserts a node with the after a new line and indentation
                         String newIndentedLine = "\n    ";
                         Consumer<Node> nodeAppender = node -> {
-                            parentNode.insertBefore(document.createTextNode(newIndentedLine), moduleSourceEndNode);
-                            parentNode.insertBefore(node, moduleSourceEndNode);
+                            XmlUtil.insertBefore(DocumentHelper.createText(newIndentedLine), parentNode, moduleSourceEndNode);
+                            XmlUtil.insertBefore(node, parentNode, moduleSourceEndNode);
                         };
 
                         // Creating a wrapper of the node appender that will drop all the unnecessary comments if there is
@@ -76,15 +73,15 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                             }
                             nodeAppender.accept(node);
                         };
-                        nodeAppenderIfNotOnlyComment.accept(document.createComment(createModuleSectionLine(moduleName)));
+                        nodeAppenderIfNotOnlyComment.accept(DocumentHelper.createComment(createModuleSectionLine(moduleName)));
                     /* Commented because this "Used by " section doesn't always generate the same content (ex: different result when executed on a single repository or on the contrib repository)
                     moduleGroup.getValue()
                             .stream().sorted(Comparator.comparing(ModuleDependency::getSourceModule)) // Sorting by source module name instead of default (destination module name)
                             .forEach(dep -> nodeAppenderIfNotOnlyComment.accept(document.createComment(" used by " + dep.getSourceModule() + " (" + dep.getType() + ") ")));
                     */
                         if (gwtModuleName != null) {
-                            Element inherits = document.createElement("inherits");
-                            inherits.setAttribute("name", gwtModuleName);
+                            Element inherits = DocumentHelper.createElement("inherits");
+                            inherits.addAttribute("name", gwtModuleName);
                             nodeAppenderIfNotOnlyComment.accept(inherits);
                         }
                         ReusableStream<String> sourcePackages = ReusableStream.empty(), resourcePackages = sourcePackages, systemProperties = sourcePackages;
@@ -110,21 +107,21 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                                     // are actually relocated to xxx.* packages in GWT super sources. So for such
                                     // packages, we add <super-source path="" includes="xxx/..."/> instead.
                                     boolean isEmulPackage = p.startsWith("emul.");
-                                    Element sourceElement = document.createElement(isEmulPackage ? "super-source" : "source");
+                                    Element sourceElement = DocumentHelper.createElement(isEmulPackage ? "super-source" : "source");
                                     if (isEmulPackage)
-                                        sourceElement.setAttribute("includes", p.substring(5).replaceAll("\\.", "/") + "/");
-                                    sourceElement.setAttribute("path", isEmulPackage ? "" : p.replaceAll("\\.", "/"));
+                                        sourceElement.addAttribute("includes", p.substring(5).replaceAll("\\.", "/") + "/");
+                                    sourceElement.addAttribute("path", isEmulPackage ? "" : p.replaceAll("\\.", "/"));
                                     nodeAppenderIfNotOnlyComment.accept(sourceElement);
                                 });
                         resourcePackages
                                 .sorted()
                                 .forEach(p -> {
-                                    Element resourceElement = document.createElement("resource");
-                                    resourceElement.setAttribute("path", p.replaceAll("\\.", "/"));
+                                    Element resourceElement = DocumentHelper.createElement("resource");
+                                    resourceElement.addAttribute("path", p.replaceAll("\\.", "/"));
                                     nodeAppenderIfNotOnlyComment.accept(resourceElement);
-                                    Element publicElement = document.createElement("public");
-                                    publicElement.setAttribute("path", "");
-                                    publicElement.setAttribute("includes", p.replaceAll("\\.", "/") + "/");
+                                    Element publicElement = DocumentHelper.createElement("public");
+                                    publicElement.addAttribute("path", "");
+                                    publicElement.addAttribute("includes", p.replaceAll("\\.", "/") + "/");
                                     nodeAppenderIfNotOnlyComment.accept(publicElement);
                                 });
                         // Declaring the system properties to ask GWT to replace the System.getProperty() calls with the
@@ -134,9 +131,9 @@ public final class DevGwtModuleFile extends DevXmlModuleFileImpl {
                         systemProperties
                                 .sorted()
                                 .forEach(p -> {
-                                    Element propertyElement = document.createElement("define-configuration-property");
-                                    propertyElement.setAttribute("name", p);
-                                    propertyElement.setAttribute("is_multi_valued", "false");
+                                    Element propertyElement = DocumentHelper.createElement("define-configuration-property");
+                                    propertyElement.addAttribute("name", p);
+                                    propertyElement.addAttribute("is_multi_valued", "false");
                                     nodeAppenderIfNotOnlyComment.accept(propertyElement);
                                 });
                     });

@@ -2,23 +2,16 @@ package dev.webfx.cli.util.xml;
 
 import dev.webfx.cli.util.stopwatch.StopWatch;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
-import org.w3c.dom.*;
-import org.xml.sax.InputSource;
 import dev.webfx.lib.reusablestream.ReusableStream;
+import org.dom4j.*;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.XMLWriter;
+import org.dom4j.xpath.DefaultXPath;
 
-import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.*;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -34,41 +27,23 @@ public final class XmlUtil {
 
 
     public static Document newDocument() {
-        try {
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            return dBuilder.newDocument();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return DocumentHelper.createDocument();
     }
 
     public static Document parseXmlFile(File xmlFile) {
-        //return parseXmlSource(new InputSource(xmlFile.toURI().toASCIIString()));
         return parseXmlString(TextFileReaderWriter.readInputTextFile(xmlFile.toPath()));
     }
 
     public static Document parseXmlString(String xmlString) {
         if (xmlString == null)
             return null;
-        InputSource is = new InputSource();
-        is.setCharacterStream(new StringReader(xmlString));
-        return parseXmlSource(is);
-    }
-
-    public static Document parseXmlSource(InputSource is) {
+        XML_PARSING_STOPWATCH.on();
+        xmlString = xmlString.replaceAll("xmlns\\s*=\\s*\"[^\"]*\"", "");
+        xmlString = xmlString.replaceAll("xmlns:xsi\\s*=\\s*\"[^\"]*\"", "");
+        xmlString = xmlString.replaceAll("xsi:schemaLocation\\s*=\\s*\"[^\"]*\"", "");
         try {
-            XML_PARSING_STOPWATCH.on();
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            try {
-                return dBuilder.parse(is);
-            } catch (FileNotFoundException ie) {
-                return null;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (Exception e) {
+            return DocumentHelper.parseText(xmlString);
+        } catch (DocumentException e) {
             throw new RuntimeException(e);
         } finally {
             XML_PARSING_STOPWATCH.off();
@@ -76,188 +51,170 @@ public final class XmlUtil {
     }
 
     public static String formatXmlText(Node node) {
-        return formatText(node, "xml");
+        XML_FORMATING_STOPWATCH.on();
+        String xmlText = node.asXML();
+        if (xmlText.contains("?>\n<!--")) // xml declaration followed by a comment
+            xmlText = xmlText.replace("--><", "-->\n<"); // Adding linefeed after the end of comment if missing
+        XML_FORMATING_STOPWATCH.off();
+        return xmlText;
+    }
+
+    private final static OutputFormat HTML_FORMAT = OutputFormat.createPrettyPrint();
+    static {
+        HTML_FORMAT.setExpandEmptyElements(true);
+        HTML_FORMAT.setIndent(false);
+        HTML_FORMAT.setNewlines(false);
+        HTML_FORMAT.setTrimText(false);
     }
 
     public static String formatHtmlText(Node node) {
-        return formatText(node, "html");
-    }
-
-    private static String formatText(Node node, String method) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            XML_FORMATING_STOPWATCH.on();
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            if (node instanceof Document)
-                ((Document) node).setXmlStandalone(true);
-            else
-                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-            transformer.setOutputProperty(OutputKeys.METHOD, method);
-            //transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-            //node.normalize();
-            DOMSource source = new DOMSource(node);
-            StringWriter sw = new StringWriter();
-            StreamResult result = new StreamResult(sw);
-            transformer.transform(source, result);
-            String xmlText = sw.toString()
-                    .replace("?><", "?>\n<") // Adding a linefeed if missing after xml declaration
-                    .replace("\" xmlns:xsi=\"", "\"\n         xmlns:xsi=\"") // Adding a linefeed before xmlns:xsi
-                    .replace("\" xsi:schemaLocation=\"", "\"\n         xsi:schemaLocation=\""); // Adding a linefeed before xsi:schemaLocation
-            if (xmlText.contains("?>\n<!--")) // xml declaration followed by a comment
-                xmlText = xmlText.replace("--><", "-->\n<"); // Adding linefeed after the end of comment if missing
-
-            return xmlText;
-        } catch (TransformerException e) {
-            e.printStackTrace();
-            return null;
-        } finally {
-            XML_FORMATING_STOPWATCH.off();
+            XMLWriter writer = new XMLWriter(baos, HTML_FORMAT) {
+                @Override
+                protected void writeNodeText(Node node) throws IOException {
+                    super.writeNodeText(node);
+                }
+            };
+            writer.write(node);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+        return baos.toString();
     }
 
-    public static NodeList lookupNodeList(Object item, String xpathExpression) {
-        return lookup(item, xpathExpression, XPathConstants.NODESET);
+    private static final Map<String, XPath> XPATH_CACHE = new HashMap<>();
+
+    public static List<Node> lookupNodeList(Node node, String xpathExpression) {
+        if (node == null)
+            return Collections.emptyList();
+        XPath xPath = getOrCreateXPath(xpathExpression);
+        return xPath.selectNodes(node);
     }
 
-    public static Node lookupNode(Object item, String xpathExpression) {
-        return lookup(item, xpathExpression, XPathConstants.NODE);
+    private static XPath getOrCreateXPath(String xpathExpression) {
+        XPath xPath = XPATH_CACHE.get(xpathExpression);
+        if (xPath == null)
+            XPATH_CACHE.put(xpathExpression, xPath = new DefaultXPath(xpathExpression));
+        return xPath;
     }
 
-    public static String lookupNodeTextContent(Object item, String xpathExpression) {
-        Node node = lookupNode(item, xpathExpression);
-        return node == null ? null : node.getTextContent();
+    public static List<Element> lookupElementList(Node node, String xpathExpression) {
+        return (List<Element>) (List) lookupNodeList(node, xpathExpression);
     }
 
-    public static Node lookupNodeWithTextContent(Object item, String xpath, String text) {
+    public static Node lookupNode(Element parent, String xpathExpression) {
+        if (parent == null)
+            return null;
+        XPath xPath = getOrCreateXPath(xpathExpression);
+        return xPath.selectSingleNode(parent);
+    }
+
+    public static Element lookupElement(Element parent, String xpathExpression) {
+        return (Element) lookupNode(parent, xpathExpression);
+    }
+
+    public static String lookupNodeTextContent(Element parent, String xpathExpression) {
+        Node node = lookupNode(parent, xpathExpression);
+        return node == null ? null : node.getText();
+    }
+
+    public static Node lookupNodeWithTextContent(Element parent, String xpath, String text) {
         if (text.indexOf('\'') == -1) // General case when the text doesn't contain single quotes
-            return lookupNode(item, xpath + "[text() = '" + text + "']");
+            return lookupNode(parent, xpath + "[text() = '" + text + "']");
         // When the text contains single quotes, we need to escape them
-        return lookupNode(item, xpath + "[text() = concat('" + text.replace("'", "',\"'\",'") + "', '')]");
+        return lookupNode(parent, xpath + "[text() = concat('" + text.replace("'", "',\"'\",'") + "', '')]");
     }
 
-    public static Element lookupElementWithAttributeValue(Object item, String xpath, String attribute, String value) {
-        return (Element) lookupNode(item, xpath + "[@" + attribute + "='" + value + "']");
+    public static Element lookupElementWithAttributeValue(Element parent, String xpath, String attribute, String value) {
+        return (Element) lookupNode(parent, xpath + "[@" + attribute + "='" + value + "']");
     }
 
-    private final static XPathFactory X_PATH_FACTORY = XPathFactory.newInstance();
-    private final static XPath X_PATH = X_PATH_FACTORY.newXPath();
-    private final static Map<String, XPathExpression> X_PATH_EXPRESSION_CACHE = new HashMap<>();
-
-    private static <T> T lookup(Object item, String xpathExpression, QName returnType) {
-        if (item == null)
-            return null;
-        try {
-            XPATH_EVALUATING_STOPWATCH.on();
-            XPathExpression expression = X_PATH_EXPRESSION_CACHE.get(xpathExpression);
-            if (expression == null) {
-                expression = X_PATH.compile(xpathExpression);
-                X_PATH_EXPRESSION_CACHE.put(xpathExpression, expression);
-            }
-            return (T) expression.evaluate(item, returnType);
-        } catch (XPathExpressionException e) {
-            throw new RuntimeException("Error while evaluating xpath expression: " + xpathExpression + "\n" + e.getMessage(), e);
-        } finally {
-            XPATH_EVALUATING_STOPWATCH.off();
-        }
-    }
-
-    public static ReusableStream<Node> nodeListToNodeReusableStream(NodeList nodeList) {
+    public static ReusableStream<Element> nodeListToNodeReusableStream(List<Element> nodeList) {
         return nodeListToReusableStream(nodeList, node -> node);
     }
 
-    public static ReusableStream<String> nodeListToTextContentReusableStream(NodeList nodeList) {
-        return nodeListToReusableStream(nodeList, Node::getTextContent);
+    public static ReusableStream<String> nodeListToTextContentReusableStream(List<Element> nodeList) {
+        return nodeListToReusableStream(nodeList, Node::getText);
     }
 
-    public static ReusableStream<String> nodeListToAttributeValueReusableStream(NodeList nodeList, String attribute) {
+    public static ReusableStream<String> nodeListToAttributeValueReusableStream(List<Element> nodeList, String attribute) {
         return nodeListToReusableStream(nodeList, n -> XmlUtil.getAttributeValue(n, attribute));
     }
 
-    public static <T> ReusableStream<T> nodeListToReusableStream(NodeList nodeList, Function<Node, ? extends T> transformer) {
+    public static <T, N extends Node> ReusableStream<T> nodeListToReusableStream(List<N> nodeList, Function<N, T> transformer) {
         if (nodeList == null)
             return ReusableStream.empty();
-        return ReusableStream.create(() -> new Spliterators.AbstractSpliterator<>(nodeList.getLength(), Spliterator.SIZED) {
-            private int index = 0;
-            @Override
-            public boolean tryAdvance(Consumer<? super T> action) {
-                if (index >= nodeList.getLength())
-                    return false;
-                Node moduleNode = nodeList.item(index++);
-                action.accept(transformer.apply(moduleNode));
-                return true;
-            }
-        });
+        List<T> tList = dev.webfx.platform.util.collection.Collections.map(nodeList, transformer::apply);
+        return ReusableStream.fromIterable(tList);
     }
 
-    public static List<String> nodeListToTextContentList(NodeList nodeList) {
-        return nodeListToList(nodeList, Node::getTextContent);
+    public static List<String> nodeListToTextContentList(List<Node> nodeList) {
+        return nodeListToList(nodeList, Node::getText);
     }
 
-    public static List<String> nodeListToAttributeValueList(NodeList nodeList, String attribute) {
+    public static List<String> nodeListToAttributeValueList(List<Element> nodeList, String attribute) {
         return nodeListToList(nodeList, n -> XmlUtil.getAttributeValue(n, attribute));
     }
 
-    public static <T> List<T> nodeListToList(NodeList nodeList, Function<Node, ? extends T> transformer) {
+    public static <T, N extends Node> List<T> nodeListToList(List<N> nodeList, Function<N, ? extends T> transformer) {
         if (nodeList == null)
             return Collections.emptyList();
-        int n = nodeList.getLength();
+        int n = nodeList.size();
         List<T> list = new ArrayList<>(n);
         for (int i = 0; i < n; i++)
-            list.add(transformer.apply(nodeList.item(i)));
+            list.add(transformer.apply(nodeList.get(i)));
         return list;
     }
 
-    public static String getAttributeValue(Node node, String name) {
-        NamedNodeMap attributes = node == null ? null : node.getAttributes();
-        Node namedItem = attributes == null ? null : attributes.getNamedItem(name);
-        return namedItem == null ? null : namedItem.getNodeValue();
+    public static String getAttributeValue(Element node, String name) {
+        if (node == null)
+            return null;
+        return node.attributeValue(name);
     }
 
-    public static boolean getBooleanAttributeValue(Node node, String name) {
+    public static boolean getBooleanAttributeValue(Element node, String name) {
         return "true".equalsIgnoreCase(getAttributeValue(node, name));
     }
 
-    public static String getNodeOrAttributeTagContent(Node node, String tagName) {
+    public static String getNodeOrAttributeTagContent(Element node, String tagName) {
         String tagContent = lookupNodeTextContent(node, tagName);
         if (tagContent == null)
             tagContent = getAttributeValue(node, tagName);
         return tagContent;
     }
 
-    public static Node lookupOrCreateNode(Node parent, String xpath) {
-        Node node = lookupNode(parent, xpath);
+    public static Element lookupOrCreateNode(Element parent, String xpath) {
+        Element node = (Element) lookupNode(parent, xpath);
         if (node == null)
-            node = createElement(parent, xpath);
+            node = createElement(xpath, parent);
         return node;
     }
 
-    public static Element createElement(Node parent, String tagName) {
-        return createElement(parent.getOwnerDocument(), tagName);
+    public static Element createElement(String tagName, Element parentNode) {
+        if (parentNode == null)
+            return DocumentHelper.createElement(tagName);
+        QName qName = QName.get(tagName, parentNode.getNamespace());
+        return DocumentHelper.createElement(qName);
     }
 
-    public static Element createElement(Document document, String tagName) {
-        return document.createElement(tagName);
-    }
-
-
-    public static Node lookupOrCreateAndAppendNode(Node parent, String xpath, boolean... lineFeeds) {
+    public static Element lookupOrCreateAndAppendNode(Element parent, String xpath, boolean... lineFeeds) {
         Node node = lookupNode(parent, xpath);
         if (node == null)
             node = createAndAppendElement(parent, xpath, lineFeeds);
-        return node;
+        return (Element) node;
     }
 
-    public static Element createAndAppendElement(Node parentElement, String xpath, boolean... lineFeeds) {
+    public static Element createAndAppendElement(Element parentElement, String xpath, boolean... lineFeeds) {
         return createAndAddElement(parentElement, xpath, true, lineFeeds);
     }
 
-    public static Element createAndAddElement(Node parentElement, String xpath, boolean append, boolean... lineFeeds) {
+    public static Element createAndAddElement(Element parentElement, String xpath, boolean append, boolean... lineFeeds) {
         int p = xpath.lastIndexOf('/');
-        Element element = createElement(parentElement, xpath.substring(p + 1));
-        Node parentNode = p <= 1 ? parentElement : lookupOrCreateAndAppendNode(parentElement, xpath.substring(0, p), lineFeeds);
+        Element element = createElement(xpath.substring(p + 1), parentElement);
+        Element parentNode = p <= 1 ? parentElement : lookupOrCreateAndAppendNode(parentElement, xpath.substring(0, p), lineFeeds);
         int lineFeedIndex = 0;
-        for (Node n = parentNode; n != null && n != parentElement; n = n.getParentNode())
+        for (Node n = parentNode; n != null && n != parentElement; n = n.getParent())
             lineFeedIndex++;
         boolean linefeed = lineFeedIndex < lineFeeds.length && lineFeeds[lineFeedIndex];
         if (append)
@@ -267,104 +224,122 @@ public final class XmlUtil {
         return element;
     }
 
-    public static Element appendElementWithTextContent(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+    public static Element appendElementWithTextContent(Element parentNode, String xpath, String text, boolean... lineFeeds) {
         Element element = createAndAppendElement(parentNode, xpath, lineFeeds);
-        element.setTextContent(text);
+        element.setText(text);
         return element;
     }
 
-    public static Element appendElementWithTextContentIfNotAlreadyExists(Node parentNode, String xpath, String text, boolean... linefeeds) {
+    public static Element appendElementWithTextContentIfNotAlreadyExists(Element parentNode, String xpath, String text, boolean... linefeeds) {
         Element element = (Element) lookupNodeWithTextContent(parentNode, xpath, text);
         if (element == null)
             element = appendElementWithTextContent(parentNode, xpath, text, linefeeds);
         return element;
     }
 
-    public static Element createAndAppendElementWithAttribute(Node parentNode, String xpath, String attribute, String value, boolean... lineFeeds) {
+    public static Element createAndAppendElementWithAttribute(Element parentNode, String xpath, String attribute, String value, boolean... lineFeeds) {
         Element element = createAndAppendElement(parentNode, xpath, lineFeeds);
-        element.setAttribute(attribute, value);
+        element.addAttribute(attribute, value);
         return element;
     }
 
-    public static Element appendElementWithAttributeIfNotAlreadyExists(Node parentNode, String xpath, String attribute, String value, boolean... lineFeeds) {
+    public static Element appendElementWithAttributeIfNotAlreadyExists(Element parentNode, String xpath, String attribute, String value, boolean... lineFeeds) {
         Element element = lookupElementWithAttributeValue(parentNode, xpath, attribute, value);
         if (element == null)
             element = createAndAppendElementWithAttribute(parentNode, xpath, attribute, value, lineFeeds);
         return element;
     }
 
-    public static Element prependElementWithTextContentIfNotAlreadyExists(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+    public static Element prependElementWithTextContentIfNotAlreadyExists(Element parentNode, String xpath, String text, boolean... lineFeeds) {
         Element element = (Element) lookupNodeWithTextContent(parentNode, xpath, text);
         if (element == null)
             element = prependElementWithTextContent(parentNode, xpath, text, lineFeeds);
         return element;
     }
 
-    public static Element createAndPrependElement(Node parentElement, String xpath, boolean... lineFeeds) {
+    public static Element createAndPrependElement(Element parentElement, String xpath, boolean... lineFeeds) {
         return createAndAddElement(parentElement, xpath, false, lineFeeds);
     }
 
-    public static Element prependElementWithTextContent(Node parentNode, String xpath, String text, boolean... lineFeeds) {
+    public static Element prependElementWithTextContent(Element parentNode, String xpath, String text, boolean... lineFeeds) {
         Element element = XmlUtil.createAndPrependElement(parentNode, xpath, lineFeeds);
-        element.setTextContent(text);
+        element.setText(text);
         return element;
     }
 
-    public static void prependNode(Node node, Node parentNode) {
-        Node firstChild = parentNode.getFirstChild();
-        if (firstChild == null)
-            parentNode.appendChild(node);
+    private static Node getFirstChild(Element parentNode) {
+        return dev.webfx.platform.util.collection.Collections.first(parentNode.content());
+    }
+
+    private static Node getLastChild(Element parentNode) {
+        return dev.webfx.platform.util.collection.Collections.last(parentNode.content());
+    }
+
+    public static void prependNode(Node node, Element parentNode) {
+        Node firstChild = getFirstChild(parentNode);
+        insertBefore(node, parentNode, firstChild);
+    }
+
+    public static void insertBefore(Node node, Element parentNode, Node before) {
+        if (before == null)
+            parentNode.add(node);
         else
-            parentNode.insertBefore(node, firstChild);
+            parentNode.content().add(parentNode.indexOf(before), node);
     }
 
     public static void removeNode(Node node) {
-        Node parentNode = node == null ? null : node.getParentNode();
+        Element parentNode = node == null ? null : node.getParent();
         if (parentNode != null)
-            parentNode.removeChild(node);
+            parentNode.remove(node);
     }
 
-    public static void removeChildren(Node node) {
-        while (node.hasChildNodes())
-            node.removeChild(node.getFirstChild());
+    public static void removeChildren(Branch node) {
+        node.clearContent();
     }
 
-    public static void appendChildren(Node parentSource, Node parentDestination) {
-        while (parentSource.hasChildNodes())
-            parentDestination.appendChild(parentSource.getFirstChild());
+    public static void appendChildren(Element parentSource, Element parentDestination) {
+        // Move each child element from the source parent to the destination parent
+        for (Element child : parentSource.elements()) {
+            // Detach the child element from the source parent
+            parentSource.remove(child);
+            // Add the detached child element to the destination parent
+            parentDestination.add(child);
+        }
     }
 
     private final static int INDENT_SPACES = 4; // 4 spaces indent per depth level
 
-    public static <T extends Node> T appendIndentNode(T node, Node parentNode, boolean linefeed) {
-        int existingLineFeedsBefore = countLineFeedsBefore(parentNode.getLastChild());
+    public static <T extends Node> T appendIndentNode(T node, Element parentNode, boolean linefeed) {
+        int existingLineFeedsBefore = countLineFeedsBefore(getLastChild(parentNode));
         int requiredLineFeedsBefore = linefeed ? 2 : 1;
-        Document document = parentNode.getOwnerDocument();
-        parentNode.appendChild(createIndentText(requiredLineFeedsBefore - existingLineFeedsBefore, document));
-        parentNode.appendChild(node);
-        parentNode.appendChild(createIndentText(requiredLineFeedsBefore, document));
+        //Document document = parentNode.getOwnerDocument();
+        if (requiredLineFeedsBefore > existingLineFeedsBefore)
+            parentNode.add(createIndentText(requiredLineFeedsBefore - existingLineFeedsBefore));
+        parentNode.add(node);
+        parentNode.add(createIndentText(requiredLineFeedsBefore));
         indentNode(parentNode, true);
         return node;
     }
 
-    public static void prependIndentNode(Node node, Node parentNode, boolean linefeed) {
-        int existingLineFeedsAfter = countLineFeedsAfter(parentNode.getFirstChild());
+    public static void prependIndentNode(Node node, Element parentNode, boolean linefeed) {
+        int existingLineFeedsAfter = countLineFeedsAfter(getFirstChild(parentNode));
         int requiredLineFeedsAfter = linefeed ? 2 : 1;
-        Document document = parentNode.getOwnerDocument();
-        prependNode(createIndentText(requiredLineFeedsAfter - existingLineFeedsAfter, document), parentNode);
+        //Document document = parentNode.getOwnerDocument();
+        if (requiredLineFeedsAfter > existingLineFeedsAfter)
+            prependNode(createIndentText(requiredLineFeedsAfter - existingLineFeedsAfter), parentNode);
         prependNode(node, parentNode);
-        prependNode(createIndentText(requiredLineFeedsAfter, document), parentNode);
+        prependNode(createIndentText(requiredLineFeedsAfter), parentNode);
         indentNode(parentNode, true);
     }
 
     public static int getNodeDepthLevel(Node node) {
-        int depthLevel = -1; // level 0 refers to the document element, -1 to the document
-        for (Node p = node.getParentNode(); p != null; p = p.getParentNode())
+        int depthLevel = 0; // level 0 refers to the document element, -1 to the document
+        for (Node p = node.getParent(); p != null; p = p.getParent())
             depthLevel++;
         return depthLevel;
     }
 
-    public static void indentNode(Node node, boolean recursively) {
+    public static void indentNode(Branch node, boolean recursively) {
         indentNode(node, getNodeDepthLevel(node), recursively);
     }
 
@@ -376,11 +351,12 @@ public final class XmlUtil {
         int deltaSpacesBefore = requiredSpacesBefore - existingSpacesBefore;
         if (deltaSpacesBefore != 0 || recursively) {
             addSpacesBefore(node, deltaSpacesBefore);
-            NodeList childNodes = node.getChildNodes();
-            int n = childNodes.getLength();
+            Element element = node instanceof Element ? (Element) node : null;
+            List<Node> childNodes = element != null ? element.content() : null;
+            int n = childNodes != null ? childNodes.size() : 0;
             if (n > 0) {
                 for (int i = 0; i < n; i++) {
-                    Node childNode = childNodes.item(i);
+                    Node childNode = childNodes.get(i);
                     if (!recursively)
                         addSpacesBefore(childNode, deltaSpacesBefore);
                     else if (!(childNode instanceof Text))
@@ -391,21 +367,21 @@ public final class XmlUtil {
                         // indent when generating index.html or reflection.json depending on if the info is taken from
                         // the local webfx.xml or the exported webfx.xml.
                         Text text = (Text) childNode;
-                        String textContent = text.getTextContent();
+                        String textContent = text.getText();
                         if (!textContent.isBlank()) {
                             textContent = textContent.replace("\n", "\n" + " ".repeat(deltaSpacesBefore));
-                            text.setTextContent(textContent);
+                            text.setText(textContent);
                         }
                     }
                 }
                 if (n > 1) {
-                    Node lastChild = node.getLastChild();
+                    Node lastChild = getLastChild(element);
                     if (lastChild instanceof Text) {
-                        String lastContent = lastChild.getTextContent();
+                        String lastContent = lastChild.getText();
                         if (!lastContent.contains("\n"))
-                            lastChild.setTextContent(lastContent + "\n");
+                            lastChild.setText(lastContent + "\n");
                     } else
-                        node.appendChild(lastChild = node.getOwnerDocument().createTextNode("\n"));
+                        element.add(lastChild = DocumentHelper.createText("\n"));
                     indentNode(lastChild, level, false);
                 }
             }
@@ -419,15 +395,15 @@ public final class XmlUtil {
             if (previousNode instanceof Text)
                 textToAddSpacesTo = (Text) previousNode;
             else
-                node.getParentNode().insertBefore(textToAddSpacesTo = node.getOwnerDocument().createTextNode(""), node);
-            String textContent = textToAddSpacesTo.getTextContent();
+                insertBefore(textToAddSpacesTo = DocumentHelper.createText(""), node.getParent(), node);
+            String textContent = textToAddSpacesTo.getText();
             if (spacesCount > 0) {
                 String extraSpaces = " ".repeat(spacesCount);
                 textContent = textToAddSpacesTo == node && !textContent.contains("\n") ? extraSpaces + textContent : textContent + extraSpaces;
             } else
                 while (spacesCount++ < 0 && textContent.endsWith(" "))
                     textContent = textContent.substring(0, textContent.length() - 2);
-            textToAddSpacesTo.setTextContent(textContent);
+            textToAddSpacesTo.setText(textContent);
         }
     }
 
@@ -444,21 +420,40 @@ public final class XmlUtil {
     }
 
     private static Node getPreviousSiblingIfNotText(Node node) {
-        if (node != null && !(node instanceof Text))
-            node = node.getPreviousSibling();
+        if (node != null && !(node instanceof Text)) {
+            node = getPreviousSibling(node);
+        }
         return node;
     }
 
+    public static Node getPreviousSibling(Node node) {
+        return getSibling(node, -1);
+    }
+
+    public static Node getNextSibling(Node node) {
+        return getSibling(node, +1);
+    }
+
+    private static Node getSibling(Node node, int delta) {
+        Element parent = node.getParent();
+        if (parent == null)
+            return null;
+        List<Node> siblings = parent.content();
+        // getting previous sibling
+        return dev.webfx.platform.util.collection.Collections.get(siblings, siblings.indexOf(node) + delta);
+    }
+
     private static Node getNextSiblingIfNotText(Node node) {
-        if (node != null && !(node instanceof Text))
-            node = node.getNextSibling();
+        if (node != null && !(node instanceof Text)) {
+            node = getNextSibling(node);
+        }
         return node;
     }
 
     private static int countTextWhitespaces(Node fromNode, boolean lineFeeds, boolean forward) {
         int count = 0;
         loop: while (fromNode instanceof Text) {
-            String textContent = fromNode.getTextContent();
+            String textContent = fromNode.getText();
             for (int j = textContent.length() - 1; j >= 0; j--) {
                 char c = textContent.charAt(j);
                 if (c == (lineFeeds ? '\n' : ' '))
@@ -472,17 +467,17 @@ public final class XmlUtil {
                         count = 0;
             }
             if (forward)
-                fromNode = fromNode.getNextSibling();
+                fromNode = getNextSibling(fromNode);
             else
-                fromNode = fromNode.getPreviousSibling();
+                fromNode = getPreviousSibling(fromNode);
         }
         return count;
     }
 
-    private static Text createIndentText(int linefeedBefore, Document document) {
+    private static Text createIndentText(int linefeedBefore) {
         StringBuilder sb = new StringBuilder();
         if (linefeedBefore > 0)
             sb.append("\n".repeat(linefeedBefore));
-        return document.createTextNode(sb.toString());
+        return DocumentHelper.createText(sb.toString());
     }
 }

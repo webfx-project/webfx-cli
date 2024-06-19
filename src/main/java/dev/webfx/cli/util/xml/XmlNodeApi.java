@@ -1,15 +1,16 @@
 package dev.webfx.cli.util.xml;
 
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.dom4j.Element;
+import org.dom4j.Node;
+
+import java.util.List;
 
 public interface XmlNodeApi {
 
-    Node getXmlNode();
+    Element getXmlNode();
 
-    default Node getOrCreateXmlNode() {
+    default Element getOrCreateXmlNode() {
         return getXmlNode();
     }
 
@@ -17,15 +18,23 @@ public interface XmlNodeApi {
         return XmlUtil.formatXmlText(getOrCreateXmlNode());
     }
 
-    default NodeList lookupNodeList(String xpathExpression) {
+    default List<Node> lookupNodeList(String xpathExpression) {
         return XmlUtil.lookupNodeList(getXmlNode(), xpathExpression);
+    }
+
+    default List<Element> lookupElementList(String xpathExpression) {
+        return (List<Element>) (List) XmlUtil.lookupNodeList(getXmlNode(), xpathExpression);
     }
 
     default Node lookupNode(String xpathExpression) {
         return XmlUtil.lookupNode(getXmlNode(), xpathExpression);
     }
 
-    default Node lookupOrCreateNode(String xpath) {
+    default Element lookupElement(String xpathExpression) {
+        return (Element) XmlUtil.lookupNode(getXmlNode(), xpathExpression);
+    }
+
+    default Element lookupOrCreateNode(String xpath) {
         return XmlUtil.lookupOrCreateNode(getOrCreateXmlNode(), xpath);
     }
 
@@ -74,7 +83,7 @@ public interface XmlNodeApi {
     }
 
     default ReusableStream<String> lookupNodeListTextContent(String xPathExpression) {
-        return XmlUtil.nodeListToTextContentReusableStream(lookupNodeList(xPathExpression));
+        return XmlUtil.nodeListToTextContentReusableStream(lookupElementList(xPathExpression));
     }
 
 }

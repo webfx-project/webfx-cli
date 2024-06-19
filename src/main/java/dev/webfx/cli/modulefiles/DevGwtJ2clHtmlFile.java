@@ -1,14 +1,14 @@
 package dev.webfx.cli.modulefiles;
 
-import dev.webfx.cli.core.Workaround;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.ProjectModule;
+import dev.webfx.cli.core.Workaround;
 import dev.webfx.cli.modulefiles.abstr.DevModuleFileImpl;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Node;
+import org.dom4j.Element;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,15 +37,16 @@ public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
         // Now the stream should be complete
         ReusableStream.concat(
                 transitiveProjectModules.flatMap(m -> m.getWebFxModuleFile().getHtmlNodes()),
-                ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><body order='0'><script type='text/javascript' src='" + getGeneratedJsFileName() + "' charset='utf-8'/></body></html>"), "/html[1]")),
-                isMainCssPresent ? ReusableStream.of(XmlUtil.lookupNode(XmlUtil.parseXmlString("<html><head><link rel='stylesheet' href='" + MAIN_CSS_RELATIVE_PATH + "'></link></head></html>"), "/html[1]")) : null
+                ReusableStream.of(XmlUtil.lookupElement(XmlUtil.parseXmlString("<html><body order='0'><script type='text/javascript' src='" + getGeneratedJsFileName() + "' charset='utf-8'/></body></html>").getRootElement(), "/html[1]")),
+                isMainCssPresent ? ReusableStream.of(XmlUtil.lookupElement(XmlUtil.parseXmlString("<html><head><link rel='stylesheet' href='" + MAIN_CSS_RELATIVE_PATH + "'></link></head></html>").getRootElement(), "/html[1]")) : null
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
-                .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.getChildNodes(), n -> n))
+                .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.content(), n -> n))
+                .filter(Element.class::isInstance).map(Element.class::cast)
                 .sorted(Comparator.comparingInt(DevGwtJ2clHtmlFile::getNodeOrder))
                 .filter(headOrBodyNode -> checkNodeConditions(headOrBodyNode, transitiveProjectModules))
                 .forEach(headOrBodyNode -> {
-                    String nodeName = headOrBodyNode.getNodeName();
+                    String nodeName = headOrBodyNode.getName();
                     StringBuilder sb = "head".equalsIgnoreCase(nodeName) ? headSb : "body".equalsIgnoreCase(nodeName) ? bodySb : null;
                     if (sb != null) {
                         String xmlText = XmlUtil.formatHtmlText(headOrBodyNode);
@@ -104,7 +105,7 @@ public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
         return getModule().getName().replaceAll("-", "_") + ".nocache.js";
     }
 
-    private static boolean checkNodeConditions(Node headOrBodyNode, ReusableStream<ProjectModule> transitiveProjectModules) {
+    private static boolean checkNodeConditions(Element headOrBodyNode, ReusableStream<ProjectModule> transitiveProjectModules) {
         String ifModulePropertyTrue = XmlUtil.getAttributeValue(headOrBodyNode, "if-module-property-true");
         if (ifModulePropertyTrue != null && transitiveProjectModules.noneMatch(m -> m.getWebFxModuleFile().getModuleProperties().anyMatch(p -> p.getPropertyName().equals(ifModulePropertyTrue) && "true".equalsIgnoreCase(p.getPropertyValue()))))
             return false;
@@ -117,7 +118,7 @@ public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
         return true;
     }
 
-    private static int getNodeOrder(Node node) {
+    private static int getNodeOrder(Element node) {
         String order = XmlUtil.getAttributeValue(node, "order");
         return order == null ? 1 : Integer.parseInt(order);
     }
