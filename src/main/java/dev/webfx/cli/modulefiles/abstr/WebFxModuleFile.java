@@ -203,22 +203,19 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     default ReusableStream<JavaCallbacks> getJavaCallbacks() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("java-callbacks[1]"), node -> {
             JavaCallbacks javaCallbacks = new JavaCallbacks();
-            NodeList classes = XmlUtil.lookupNodeList(node, "callback-class");
-            for (int i = 0; i < classes.getLength(); i++) {
-                Node classNode = classes.item(i);
-                String className = XmlUtil.getAttributeValue(classNode, "name");
-                NodeList constructors = XmlUtil.lookupNodeList(classNode, "callback-constructor");
-                for (int j = 0; j < constructors.getLength(); j++) {
-                    Node constructorNode = constructors.item(j);
-                    NodeList arguments = XmlUtil.lookupNodeList(constructorNode, "callback-argument");
+            List<Element> classes = XmlUtil.lookupElementList(node, "callback-class");
+            for (Element classElement : classes) {
+                String className = XmlUtil.getAttributeValue(classElement, "name");
+                List<Element> constructors = XmlUtil.lookupElementList(classElement, "callback-constructor");
+                for (Element constructorElement : constructors) {
+                    List<Element> arguments = XmlUtil.lookupElementList(constructorElement, "callback-argument");
                     List<String> argumentTypes = XmlUtil.nodeListToList(arguments, argument -> XmlUtil.getAttributeValue(argument, "class"));
                     javaCallbacks.addConstructorCallback(className, argumentTypes.toArray(String[]::new));
                 }
-                NodeList methods = XmlUtil.lookupNodeList(classNode, "callback-method");
-                for (int j = 0; j < methods.getLength(); j++) {
-                    Node methodNode = methods.item(j);
+                List<Element> methods = XmlUtil.lookupElementList(classElement, "callback-method");
+                for (Element methodNode : methods) {
                     String methodName = XmlUtil.getAttributeValue(methodNode, "name");
-                    NodeList arguments = XmlUtil.lookupNodeList(methodNode, "callback-argument");
+                    List<Element> arguments = XmlUtil.lookupElementList(methodNode, "callback-argument");
                     List<String> argumentTypes = XmlUtil.nodeListToList(arguments, argument -> XmlUtil.getAttributeValue(argument, "class"));
                     javaCallbacks.addMethodCallback(className, methodName, argumentTypes.toArray(String[]::new));
                 }
@@ -229,7 +226,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
 
     default ReusableStream<TargetTag> ignoredTargetTags() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("target-tags[1]/ignore-tag"), node ->
-                TargetTag.fromTagName(node.getTextContent())
+                TargetTag.fromTagName(node.getText())
         );
     }
 
