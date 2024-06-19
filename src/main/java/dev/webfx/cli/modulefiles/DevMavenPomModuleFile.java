@@ -8,9 +8,9 @@ import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.Node;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -125,10 +125,10 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             template = template.replace("${resourceArtifactItems}", artifactItems);
         }
         Document document = XmlUtil.parseXmlString(template);
-        Element documentElement = document.getDocumentElement();
-        Node webFxMavenPomProjectNode = projectModule.getWebFxModuleFile().getMavenManualNode();
+        Element documentElement = document.getRootElement();
+        Element webFxMavenPomProjectNode = projectModule.getWebFxModuleFile().getMavenManualNode();
         if (webFxMavenPomProjectNode != null) {
-            XmlUtil.appendChildren(document.importNode(webFxMavenPomProjectNode, true), documentElement);
+            XmlUtil.appendChildren(webFxMavenPomProjectNode, documentElement);
             XmlUtil.indentNode(documentElement, true);
         }
         return document;
@@ -181,7 +181,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         } else {
             if (!module.hasSourceDirectory()) // Ex: webfx-parent, webfx-stack-parent
                 return false;
-            Node dependenciesNode = lookupOrCreateNode("dependencies");
+            Element dependenciesNode = lookupOrCreateNode("dependencies");
             XmlUtil.removeChildren(dependenciesNode);
             Set<String> gas = new HashSet<>(); // set of groupId:artifactId listed so far in the pom dependencies - used for duplicate removal below
             // Always running the main java source root dependencies even if there is no main java source directory (ex: gwt modules)
@@ -189,14 +189,14 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             // Running the test java source root dependencies only if there is a test java source directory
             if (module.hasTestJavaSourceDirectory())
                 addSourceRootDependencies(module.getTestJavaSourceRootAnalyzer(), true, dependenciesNode, gas);
-            if (!gas.isEmpty() && dependenciesNode.getParentNode() == null)
+            if (!gas.isEmpty() && dependenciesNode.getParent() == null)
                 appendIndentNode(dependenciesNode, true);
         }
         ReusableStream<MavenRepository> mavenRepositories = module.mavenRepositories();
         if (mavenRepositories.count() > 0) { // For now, we keep the possible <repositories/> section in pom.xml for retro-compatibility
-            Node repositoriesNode = createOrEmptySectionNode("repositories");
+            Element repositoriesNode = createOrEmptySectionNode("repositories");
             String deployRepositoryId = module.getWebFxModuleFile().getDeployRepositoryId();
-            Node distributionManagementNode = deployRepositoryId == null ? null : createOrEmptySectionNode("distributionManagement");
+            Element distributionManagementNode = deployRepositoryId == null ? null : createOrEmptySectionNode("distributionManagement");
             mavenRepositories.forEach(mr -> {
                 if (deployRepositoryId == null || !deployRepositoryId.equals(mr.getId())) {
                     Element repositoryElement = XmlUtil.createAndAppendElement(repositoriesNode, "repository");
@@ -234,7 +234,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             prependElementWithTextContentIfNotAlreadyExists("groupId", groupId);
         // Adding the <parent/> section in pom.xml (when parentModule is not null)
         if (parentModule != null) {
-            Node parentNode = createOrEmptySectionNode("parent");
+            Element parentNode = createOrEmptySectionNode("parent");
             XmlUtil.appendElementWithTextContent(parentNode, "groupId", parentGroupId);
             XmlUtil.appendElementWithTextContent(parentNode, "artifactId", ArtifactResolver.getArtifactId(parentModule));
             XmlUtil.appendElementWithTextContent(parentNode, "version", parentVersion);
@@ -248,7 +248,15 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         return true;
     }
 
-    private void addSourceRootDependencies(JavaSourceRootAnalyzer javaSourceRootAnalyzer, boolean test, Node dependenciesNode, Set<String> gas) {
+    @Override
+    public String getXmlContent() {
+        String xmlContent = super.getXmlContent();
+        return xmlContent.replace("<project>", "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
+                                               "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                                               "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">");
+    }
+
+    private void addSourceRootDependencies(JavaSourceRootAnalyzer javaSourceRootAnalyzer, boolean test, Element dependenciesNode, Set<String> gas) {
         ProjectModuleImpl projectModule = javaSourceRootAnalyzer.getProjectModule();
         BuildInfo buildInfo = projectModule.getBuildInfo();
         try (BuildInfoThreadLocal closable = BuildInfoThreadLocal.open(buildInfo)) { // To pass this buildInfo to ArtifactResolver when sorting the dependencies via Module.compareTo()
@@ -297,7 +305,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                                 if ("aggregate".equals(scope))
                                     return;
                                 Node groupNode = XmlUtil.appendElementWithTextContent(dependenciesNode, "/dependency/groupId", groupId, true, false);
-                                Node dependencyNode = groupNode.getParentNode();
+                                Element dependencyNode = groupNode.getParent();
                                 XmlUtil.appendElementWithTextContent(dependencyNode, "/artifactId", artifactId);
                                 String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
                                 if (version != null)
@@ -324,8 +332,8 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         appendElementWithTextContentIfNotAlreadyExists("modules/module", mavenModuleName, true, false);
     }
 
-    private Node createOrEmptySectionNode(String xpath) {
-        Node sectionNode = lookupNode(xpath);
+    private Element createOrEmptySectionNode(String xpath) {
+        Element sectionNode = lookupElement(xpath);
         if (sectionNode == null)
             sectionNode = createAndPrependElement(xpath, true);
         else

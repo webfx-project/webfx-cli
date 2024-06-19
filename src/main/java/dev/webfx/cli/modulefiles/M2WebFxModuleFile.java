@@ -6,8 +6,8 @@ import dev.webfx.cli.core.M2ProjectModule;
 import dev.webfx.cli.modulefiles.abstr.PathBasedXmlModuleFileImpl;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
+import org.dom4j.Element;
+import org.dom4j.Node;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,19 +66,19 @@ public final class M2WebFxModuleFile extends PathBasedXmlModuleFileImpl implemen
     }
 
     public String lookupExportedSnapshotFirstProjectName() {
-        return XmlUtil.getAttributeValue(lookupNode("(/project/export-snapshot/project[@name])[1]"), "name");
+        return XmlUtil.getAttributeValue(lookupElement("(/project/export-snapshot/project[@name])[1]"), "name");
     }
 
     public ReusableStream<String> modulesUsingJavaPackageFromExportSnapshot(Node javaPackageUsageNode) {
-        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(javaPackageUsageNode, "module"));
+        return XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupElementList(javaPackageUsageNode, "module"));
     }
 
     public ReusableStream<String> javaPackagesFromExportSnapshotUsage() {
-        return XmlUtil.nodeListToAttributeValueReusableStream(lookupNodeList("/project/export-snapshot/usages/java-package"), "name");
+        return XmlUtil.nodeListToAttributeValueReusableStream(lookupElementList("/project/export-snapshot/usages/java-package"), "name");
     }
 
     public ReusableStream<String> javaClassesFromExportSnapshotUsage() {
-        return XmlUtil.nodeListToAttributeValueReusableStream(lookupNodeList("/project/export-snapshot/usages/java-class"), "name");
+        return XmlUtil.nodeListToAttributeValueReusableStream(lookupElementList("/project/export-snapshot/usages/java-class"), "name");
     }
 
     private static Path getWebFxModuleFilePathAndDownloadIfMissing(M2ProjectModule module) {

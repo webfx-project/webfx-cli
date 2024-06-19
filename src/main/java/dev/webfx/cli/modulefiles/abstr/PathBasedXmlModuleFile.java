@@ -2,7 +2,7 @@ package dev.webfx.cli.modulefiles.abstr;
 
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.cli.util.xml.XmlUtil;
-import org.w3c.dom.Document;
+import org.dom4j.Document;
 
 import java.io.File;
 import java.util.Map;

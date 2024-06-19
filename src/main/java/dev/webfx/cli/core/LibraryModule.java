@@ -4,20 +4,20 @@ import dev.webfx.cli.modulefiles.abstr.XmlGavApi;
 import dev.webfx.cli.modulefiles.abstr.XmlGavUtil;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import org.w3c.dom.Node;
+import org.dom4j.Element;
 
 /**
  * @author Bruno Salmon
  */
 public class LibraryModule extends ModuleImpl implements XmlGavApi {
 
-    private final Node moduleNode;
+    private final Element moduleNode;
     private final boolean webFx;
     private Module rootModule; // Non-null for libraries that are actually transitive libraries from a root one (ex: junit-jupiter for junit-jupiter-api, junit-jupiter-params, etc...)
     // This is this rootModule that will be listed in pom.xml and not the transitive libraries
     private final ReusableStream<String> exportedModules;
 
-    public LibraryModule(Node moduleNode, boolean webFx) {
+    public LibraryModule(Element moduleNode, boolean webFx) {
         super(XmlGavUtil.lookupName(moduleNode));
         this.moduleNode = moduleNode;
         groupId = lookupGroupId();
@@ -25,7 +25,7 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
         version = lookupVersion();
         type = lookupType();
         this.webFx = webFx;
-        exportedModules = XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupNodeList(moduleNode, "exported-packages//package"));
+        exportedModules = XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupElementList(moduleNode, "exported-packages//package"));
         if (exportedModules.anyMatch(p -> p.equals("java.time") || p.equals("java.nio"))) {
             setJavaBaseEmulationModule(true);
         }
@@ -52,7 +52,7 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
     }
 
     @Override
-    public Node getXmlNode() {
+    public Element getXmlNode() {
         return moduleNode;
     }
 
@@ -71,11 +71,11 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
                 getExportedPackages().isEmpty();
     }
 
-    public static LibraryModule createWebFxLibraryModule(Node moduleNode) {
+    public static LibraryModule createWebFxLibraryModule(Element moduleNode) {
         return new LibraryModule(moduleNode, true);
     }
 
-    public static LibraryModule createThirdPartyLibraryModule(Node moduleNode) {
+    public static LibraryModule createThirdPartyLibraryModule(Element moduleNode) {
         return new LibraryModule(moduleNode, false);
     }
 

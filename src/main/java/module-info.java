@@ -5,14 +5,15 @@ module webfx.cli {
     // Direct dependencies modules
     requires info.picocli;
     requires java.compiler;
-    requires java.xml;
     requires org.apache.commons.compress;
+    requires org.dom4j;
     requires webfx.lib.reusablestream;
     requires webfx.platform.ast;
     requires webfx.platform.ast.json.plugin;
     requires webfx.platform.conf;
     requires webfx.platform.meta;
     requires webfx.platform.util;
+    requires java.xml;
 
     // Exported packages
     exports dev.webfx.cli;
