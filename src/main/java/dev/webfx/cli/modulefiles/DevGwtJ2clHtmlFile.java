@@ -37,7 +37,7 @@ public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
         // Now the stream should be complete
         ReusableStream.concat(
                 transitiveProjectModules.flatMap(m -> m.getWebFxModuleFile().getHtmlNodes()),
-                ReusableStream.of(XmlUtil.lookupElement(XmlUtil.parseXmlString("<html><body order='0'><script type='text/javascript' src='" + getGeneratedJsFileName() + "' charset='utf-8'/></body></html>").getRootElement(), "/html[1]")),
+                ReusableStream.of(XmlUtil.lookupElement(XmlUtil.parseXmlString("<html><body order='0'><script type='text/javascript' charset='utf-8' src='" + getGeneratedJsFileName() + "'/></body></html>").getRootElement(), "/html[1]")),
                 isMainCssPresent ? ReusableStream.of(XmlUtil.lookupElement(XmlUtil.parseXmlString("<html><head><link rel='stylesheet' href='" + MAIN_CSS_RELATIVE_PATH + "'></link></head></html>").getRootElement(), "/html[1]")) : null
         )
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
