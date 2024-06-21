@@ -304,7 +304,12 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
 
     default void setExecutable(boolean executable) {
         if (executable != isExecutable()) {
-            getModuleElement().addAttribute("executable", String.valueOf(executable));
+            Element moduleElement = getModuleElement();
+            if (moduleElement == null) {
+                getOrCreateDocument();
+                moduleElement = getModuleElement();
+            }
+            moduleElement.addAttribute("executable", String.valueOf(executable));
         }
     }
 
