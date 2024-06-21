@@ -480,4 +480,33 @@ public final class XmlUtil {
             sb.append("\n".repeat(linefeedBefore));
         return DocumentHelper.createText(sb.toString());
     }
+
+    public static Element copyElement(Element sourceElement, Document targetDocument) {
+        return (Element) copyNode(sourceElement, targetDocument.getRootElement());
+    }
+
+    private static Node copyNode(Node sourceNode, Element targetElement) {
+        if (sourceNode instanceof Element) {
+            Element sourceElement = (Element) sourceNode;
+            Element copiedElement = XmlUtil.createElement(sourceElement.getName(), targetElement);
+            // Copy attributes
+            sourceElement.attributes().forEach(attribute ->
+                    copiedElement.addAttribute(attribute.getQName(), attribute.getValue())
+            );
+            // Copy child nodes recursively
+            sourceElement.content().forEach(sourceChild ->
+                    copiedElement.add(copyNode(sourceChild, copiedElement))
+            );
+            return copiedElement;
+        } else if (sourceNode instanceof Text) {
+            return DocumentHelper.createText(sourceNode.getText());
+        } else if (sourceNode instanceof Comment) {
+            return DocumentHelper.createComment(sourceNode.getText());
+        } else if (sourceNode instanceof CDATA) {
+            return DocumentHelper.createCDATA(sourceNode.getText());
+        }
+        // Handle other node types if necessary
+        throw new IllegalArgumentException("Unsupported node type in copyNode(): " + sourceNode);
+    }
+
 }

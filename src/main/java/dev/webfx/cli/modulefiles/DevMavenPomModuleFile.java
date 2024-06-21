@@ -305,22 +305,30 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                                 if ("aggregate".equals(scope))
                                     return;
                                 Node groupNode = XmlUtil.appendElementWithTextContent(dependenciesNode, "/dependency/groupId", groupId, true, false);
-                                Element dependencyNode = groupNode.getParent();
-                                XmlUtil.appendElementWithTextContent(dependencyNode, "/artifactId", artifactId);
+                                Element dependencyElement = groupNode.getParent();
+                                XmlUtil.appendElementWithTextContent(dependencyElement, "/artifactId", artifactId);
                                 String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
                                 if (version != null)
-                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/version", version);
+                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/version", version);
                                 String type = ArtifactResolver.getType(destinationModule);
                                 if (type != null)
-                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/type", type);
+                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/type", type);
                                 String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
                                 // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
                                 if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))
-                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/scope", scope);
+                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/scope", scope);
                                 if (classifier != null)
-                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/classifier", classifier);
+                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/classifier", classifier);
                                 if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
-                                    XmlUtil.appendElementWithTextContent(dependencyNode, "/optional", "true");
+                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/optional", "true");
+                                // If the module is a library with an <exclusions> element, we copy that element in the pom
+                                if (destinationModule instanceof LibraryModule) {
+                                    LibraryModule libraryModule = (LibraryModule) destinationModule;
+                                    Element exclusionsNode = XmlUtil.lookupElement(libraryModule.getXmlNode(), "exclusions[1]");
+                                    if (exclusionsNode != null) {
+                                        dependencyElement.add(XmlUtil.copyElement(exclusionsNode, getDocument()));
+                                    }
+                                }
                             }
                         }
                     });
