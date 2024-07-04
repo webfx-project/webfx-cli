@@ -1,6 +1,7 @@
 package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
+import dev.webfx.cli.core.ProjectModule;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.platform.ast.AST;
 import dev.webfx.platform.ast.AstArray;
@@ -19,8 +20,8 @@ public final class GluonFilesGenerator {
     public static boolean generateGraalVmReflectionJson(DevProjectModule gluonModule) {
         AstArray reflectionArray = AST.createArray();
         gluonModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()
-                .filter(DevProjectModule.class::isInstance)
-                .map(DevProjectModule.class::cast)
+                .filter(ProjectModule.class::isInstance)
+                .map(ProjectModule.class::cast)
                 .flatMap(pm -> pm.getWebFxModuleFile().getJavaCallbacks())
                 .forEach(javaCallbacks -> javaCallbacks.getMethodCallbacks().forEach((className, methods) -> {
                     AstObject classObject = AST.createObject();
