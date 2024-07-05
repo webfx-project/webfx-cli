@@ -71,10 +71,17 @@ public final class XmlUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             XMLWriter writer = new XMLWriter(baos, HTML_FORMAT) {
+
                 @Override
-                protected void writeNodeText(Node node) throws IOException {
-                    super.writeNodeText(node);
+                protected void writeCDATA(String text) throws IOException { // We remove the CDATA tag when exporting to html
+                    //writer.write("<![CDATA[");
+                    if (text != null) {
+                        writer.write(text);
+                    }
+                    //writer.write("]]>");
+                    lastOutputNodeType = Node.CDATA_SECTION_NODE;
                 }
+
             };
             writer.write(node);
         } catch (IOException e) {
