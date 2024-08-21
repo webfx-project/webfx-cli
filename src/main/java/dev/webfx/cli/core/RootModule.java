@@ -49,7 +49,16 @@ public interface RootModule extends ProjectModule {
         if (keepBestOnly && modules.count() > 1) {
             // We collect the modules into a list to ease manipulation, and we will search for the best module in that list
             List<? extends ProjectModule> modulesList = modules.collect(Collectors.toList());
-            // 1) First criterion = the platform target. If one fits better than others for this criterion, we keep it
+            // 1) First criterion = if explicitly listed as plugin-module in the target module or application module,
+            // this is the main point of control for the developer to force a specific service implementation
+            ReusableStream<Module> directPluginModules = targetModule.getWebFxModuleFile().getPluginModuleDependencies().map(ModuleDependency::getDestinationModule);
+            ReusableStream<Module> directApplicationPluginModules = targetModule.getApplicationModule().getWebFxModuleFile().getPluginModuleDependencies().map(ModuleDependency::getDestinationModule);
+            for (ProjectModule module : modulesList) {
+                if (directPluginModules.anyMatch(m -> m.equals(module)) || directApplicationPluginModules.anyMatch(m -> m.equals(module))) {
+                    return ReusableStream.of(module);
+                }
+            }
+            // 2) Second criterion = the platform target. If one fits better than others for this criterion, we keep it
             int bestGrade = -1;
             boolean allSameGrade = true;
             ProjectModule bestGradeModule = null;
@@ -64,7 +73,7 @@ public interface RootModule extends ProjectModule {
             }
             if (!allSameGrade)
                 return ReusableStream.of(bestGradeModule);
-            // 2) Second criterion = dev modules. Modules implemented by developers are preferred over non-dev modules (such as webfx libraries)
+            // 3) Third criterion = dev modules. Modules implemented by developers are preferred over non-dev modules (such as webfx libraries)
             List<DevProjectModule> devModulesList = modulesList.stream()
                     .filter(m -> m instanceof DevProjectModule)
                     .map(DevProjectModule.class::cast)
@@ -75,7 +84,7 @@ public interface RootModule extends ProjectModule {
             // If there are several dev modules, we continue, but we get rid of possible other non-dev modules.
             if (!devModulesList.isEmpty())
                 modulesList = devModulesList;
-            // 3) Third criterion = the modules position in dependencies (we keep the one closest to the target module)
+            // 4) Fourth criterion = the modules position in dependencies (we keep the one closest to the target module)
             // Creating the dependency graph of the transitive modules starting from the target module (probably executable module)
             Map<ProjectModule, List<ProjectModule>> dependencyGraph =
                             // Note: calling get getTransitiveDependencies() at this point seems to freeze its transitive

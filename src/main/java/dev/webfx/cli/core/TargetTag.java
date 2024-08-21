@@ -22,7 +22,7 @@ public enum TargetTag {
     ARCH_PARTITION  (),
     SHARED          ("shared", ARCH_PARTITION),
     SERVER          ("server", SHARED), // => JRE
-    CLIENT          ("client", SHARED),
+    CLIENT          ("client", SHARED), // TODO: automatically assign CLIENT when code is using javafx.graphics, etc... Ex: kbs-magiclink-application
     BACKOFFICE      ("backoffice", CLIENT),
     FRONTOFFICE     ("frontoffice", CLIENT),
 
