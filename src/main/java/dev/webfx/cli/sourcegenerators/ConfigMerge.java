@@ -104,7 +104,7 @@ public final class ConfigMerge {
     public static void logDuplicatedKeysWarnings() {
         KEYS_MODULES.forEach((sKey, modules) -> {
             if (modules.size() > 1) {
-                Logger.warning("Duplicated key " + sKey + " used by " + Collections.toString(modules));
+                Logger.warning("Duplicated key " + sKey + " used by " + Collections.toString(modules, false, false));
             }
         });
     }
