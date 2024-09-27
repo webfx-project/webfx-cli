@@ -315,6 +315,14 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         return graalVmReflectionJson;
     }*/
 
+    private String i18nJavaKeysClass;
+    @Override
+    public String getI18nJavaKeysClass() {
+        if (i18nJavaKeysClass == null)
+            i18nJavaKeysClass = WebFxModuleFileDelegate.super.getI18nJavaKeysClass();
+        return i18nJavaKeysClass;
+    }
+
     private ReusableStream<ServiceProvider> providedServiceProviders;
     @Override
     public ReusableStream<ServiceProvider> providedServiceProviders() {

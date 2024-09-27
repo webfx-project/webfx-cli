@@ -9,53 +9,55 @@ import dev.webfx.cli.util.stopwatch.StopWatchGroup;
 public final class UpdateTasks {
 
     public boolean
-            pom,
-            moduleInfo,
-            metaInfServices,
-            indexHtml,
-            gwtXml,
-            entryPoint,
-            embedResource,
-            graalvm,
-            callbacks,
-            meta,
-            conf,
-            i18n,
-            css;
+        pom,
+        moduleInfo,
+        metaInfServices,
+        indexHtml,
+        gwtXml,
+        entryPoint,
+        embedResource,
+        //graalvm,
+        callbacks,
+        meta,
+        conf,
+        i18n,
+        css;
 
     public final StopWatch
-            pomStopWatch = StopWatch.createSystemNanoStopWatch(),
-            moduleInfoStopWatch = StopWatch.createSystemNanoStopWatch(),
-            metaInfServicesStopWatch = StopWatch.createSystemNanoStopWatch(),
-            indexHtmlStopWatch = StopWatch.createSystemNanoStopWatch(),
-            gwtXmlStopWatch = StopWatch.createSystemNanoStopWatch(),
-            entryPointStopWatch = StopWatch.createSystemNanoStopWatch(),
-            embedResourceStopWatch = StopWatch.createSystemNanoStopWatch(),
-            //graalvmStopWatch = StopWatch.createSystemNanoStopWatch(),
-            callbacksStopWatch = StopWatch.createSystemNanoStopWatch(),
-            metaStopWatch = StopWatch.createSystemNanoStopWatch(),
-            mergePrepStopWatch = StopWatch.createSystemNanoStopWatch(),
-            confMergeStopWatch = StopWatch.createSystemNanoStopWatch(),
-            i18nMergeStopWatch = StopWatch.createSystemNanoStopWatch(),
-            cssMergeStopWatch = StopWatch.createSystemNanoStopWatch();
+        pomStopWatch = StopWatch.createSystemNanoStopWatch(),
+        moduleInfoStopWatch = StopWatch.createSystemNanoStopWatch(),
+        metaInfServicesStopWatch = StopWatch.createSystemNanoStopWatch(),
+        indexHtmlStopWatch = StopWatch.createSystemNanoStopWatch(),
+        gwtXmlStopWatch = StopWatch.createSystemNanoStopWatch(),
+        entryPointStopWatch = StopWatch.createSystemNanoStopWatch(),
+        embedResourceStopWatch = StopWatch.createSystemNanoStopWatch(),
+        //graalvmStopWatch = StopWatch.createSystemNanoStopWatch(),
+        callbacksStopWatch = StopWatch.createSystemNanoStopWatch(),
+        metaStopWatch = StopWatch.createSystemNanoStopWatch(),
+        mergePrepStopWatch = StopWatch.createSystemNanoStopWatch(),
+        confMergeStopWatch = StopWatch.createSystemNanoStopWatch(),
+        i18nMergeStopWatch = StopWatch.createSystemNanoStopWatch(),
+        i18nJavaStopWatch = StopWatch.createSystemNanoStopWatch(),
+        cssMergeStopWatch = StopWatch.createSystemNanoStopWatch();
 
     // Creating a group for merging stopwatches, so that mergePrepStopWatch will automatically pause others while running
     private final StopWatchGroup mergeGroup = new StopWatchGroup(mergePrepStopWatch, confMergeStopWatch, i18nMergeStopWatch, cssMergeStopWatch);
 
     public int
-            pomCount,
-            moduleInfoCount,
-            metaInfServicesCount,
-            indexHtmlCount,
-            gwtXmlCount,
-            entryPointCount,
-            embedResourceCount,
-            //graalvmCount,
-            callbacksCount,
-            metaCount,
-            confCount,
-            i18nCount,
-            cssCount;
+        pomCount,
+        moduleInfoCount,
+        metaInfServicesCount,
+        indexHtmlCount,
+        gwtXmlCount,
+        entryPointCount,
+        embedResourceCount,
+        //graalvmCount,
+        callbacksCount,
+        metaCount,
+        confCount,
+        i18nCount,
+        i18nJavaCount,
+        cssCount;
 
     private boolean areAllTasksSetToValue(boolean value) {
         return pom == value &&
@@ -71,7 +73,6 @@ public final class UpdateTasks {
                conf == value &&
                i18n == value &&
                css == value;
-
     }
 
     void enableAllTasksIfUnset() {

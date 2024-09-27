@@ -21,49 +21,49 @@ import java.nio.file.Path;
 @Command(name = "update", description = "Update the build chain from webfx.xml files. If no specific Update option is specified, run them all.")
 public final class Update extends CommonSubcommand implements Runnable {
 
-    @Option(names={"-c", "--clean-snapshots"}, description = "Clean m2 snapshots related to this project first.")
+    @Option(names = {"-c", "--clean-snapshots"}, description = "Clean m2 snapshots related to this project first.")
     boolean cleanSnapshots;
 
-    @Option(names={"-p", "--pom"}, description = "Update pom.xml files.")
+    @Option(names = {"-p", "--pom"}, description = "Update pom.xml files.")
     boolean pom;
 
-    @Option(names={"-o", "--module-info"}, description = "Update module-info.java files.")
+    @Option(names = {"-o", "--module-info"}, description = "Update module-info.java files.")
     boolean moduleInfo;
 
-    @Option(names={"-t", "--meta-inf"}, description = "Update META-INF/services files.")
+    @Option(names = {"-t", "--meta-inf"}, description = "Update META-INF/services files.")
     boolean metaInfServices;
 
-    @Option(names={"-h", "--html"}, description = "Update index.html files.")
+    @Option(names = {"-h", "--html"}, description = "Update index.html files.")
     boolean indexHtml;
 
-    @Option(names={"-x", "--gwt-xml"}, description = "Update module.gwt.xml files.")
+    @Option(names = {"-x", "--gwt-xml"}, description = "Update module.gwt.xml files.")
     boolean gwtXml;
 
-    @Option(names={"-y", "--entry"}, description = "Update GWT/J2CL entry point source files.")
+    @Option(names = {"-y", "--entry"}, description = "Update GWT/J2CL entry point source files.")
     boolean entryPoint;
 
-    @Option(names={"-e", "--embed"}, description = "Update GWT/J2CL embed resource files.")
+    @Option(names = {"-e", "--embed"}, description = "Update GWT/J2CL embed resource files.")
     boolean embedResource;
 
     //@Option(names={"-a", "--graalvm"}, description = "Update GraalVM files (Gluon).")
     //boolean graalvm;
 
-    @Option(names={"-b", "--callbacks"}, description = "Update callbacks build files.")
+    @Option(names = {"-b", "--callbacks"}, description = "Update callbacks build files.")
     boolean callbacks;
 
-    @Option(names={"-m", "--meta"}, description = "Update meta.properties files.")
+    @Option(names = {"-m", "--meta"}, description = "Update meta.properties files.")
     boolean meta;
 
-    @Option(names={"-f", "--conf"}, description = "Update WebFX configuration files.")
+    @Option(names = {"-f", "--conf"}, description = "Update WebFX configuration files.")
     boolean conf;
 
-    @Option(names={"-i", "--i18n"}, description = "Update WebFX i18n files.")
+    @Option(names = {"-i", "--i18n"}, description = "Update WebFX i18n files.")
     boolean i18n;
 
-    @Option(names={"-s", "--css"}, description = "Update WebFX CSS files.")
+    @Option(names = {"-s", "--css"}, description = "Update WebFX CSS files.")
     boolean css;
 
-    @Option(names={"-T", "--times"}, description = "Print an execution times report.")
+    @Option(names = {"-T", "--times"}, description = "Print an execution times report.")
     boolean times;
 
     @Override
@@ -108,37 +108,38 @@ public final class Update extends CommonSubcommand implements Runnable {
                 long totalTime = updateStopWatch.getStopWatchElapsedTime();
 
                 log(new ExecutionTimesReport("Technical operations breakdown", totalTime)
-                        .addRow("Files read", TextFileReaderWriter.FILE_READING_STOPWATCH)
-                        .addRow("Files written", TextFileReaderWriter.FILE_WRITING_STOPWATCH)
-                        .addRow("Files deleted", TextFileReaderWriter.FILE_DELETING_STOPWATCH)
-                        .addRow("Files tree walk", SplitFiles.FILE_TREE_WALKING_STOPWATCH)
-                        .addRow("Maven invocation", MavenUtil.MAVEN_INVOCATION_STOPWATCH)
-                        .addRow("XML parsed", XmlUtil.XML_PARSING_STOPWATCH)
-                        .addRow("XML formatted", XmlUtil.XML_FORMATING_STOPWATCH)
-                        .addRow("XML searches (XPath)", XmlUtil.XPATH_EVALUATING_STOPWATCH)
-                        .addRow("Java files (packages detection)", JavaCode.filesCount, JavaCodePatternFinder.JAVA_PARSING_STOPWATCH)
-                        .addComplementRow("Core operations (webfx update)")
-                        .addTotalRow()
-                        .generateReport());
+                    .addRow("Files read", TextFileReaderWriter.FILE_READING_STOPWATCH)
+                    .addRow("Files written", TextFileReaderWriter.FILE_WRITING_STOPWATCH)
+                    .addRow("Files deleted", TextFileReaderWriter.FILE_DELETING_STOPWATCH)
+                    .addRow("Files tree walk", SplitFiles.FILE_TREE_WALKING_STOPWATCH)
+                    .addRow("Maven invocation", MavenUtil.MAVEN_INVOCATION_STOPWATCH)
+                    .addRow("XML parsed", XmlUtil.XML_PARSING_STOPWATCH)
+                    .addRow("XML formatted", XmlUtil.XML_FORMATING_STOPWATCH)
+                    .addRow("XML searches (XPath)", XmlUtil.XPATH_EVALUATING_STOPWATCH)
+                    .addRow("Java files (packages detection)", JavaCode.filesCount, JavaCodePatternFinder.JAVA_PARSING_STOPWATCH)
+                    .addComplementRow("Core operations (webfx update)")
+                    .addTotalRow()
+                    .generateReport());
 
                 log(new ExecutionTimesReport("Generated build files breakdown", totalTime)
-                        .addRow("pom.xml", tasks.pomCount, tasks.pomStopWatch)
-                        .addRow("module-info.java", tasks.moduleInfoCount, tasks.moduleInfoStopWatch)
-                        .addRow("META-INF/services", tasks.metaInfServicesCount, tasks.metaInfServicesStopWatch)
-                        .addRow("index.html", tasks.indexHtmlCount, tasks.indexHtmlStopWatch)
-                        .addRow("module.gwt.xml", tasks.gwtXmlCount, tasks.gwtXmlStopWatch)
-                        .addRow("Web entry point", tasks.entryPointCount, tasks.entryPointStopWatch)
-                        .addRow("Web embed resources", tasks.embedResourceCount, tasks.embedResourceStopWatch)
-                        //.addRow("Graalvm", tasks.graalvmCount, tasks.graalvmStopWatch)
-                        .addRow("Callbacks (GWT & GraalVM)", tasks.callbacksCount, tasks.callbacksStopWatch)
-                        .addRow("Meta file", tasks.metaCount, tasks.metaStopWatch)
-                        .addRow("Merge preparation", -tasks.mergePrepStopWatch.getRunCount(), tasks.mergePrepStopWatch)
-                        .addRow("Conf merge", tasks.confCount, tasks.confMergeStopWatch)
-                        .addRow("i18n merge", tasks.i18nCount, tasks.i18nMergeStopWatch)
-                        .addRow("css merge", tasks.cssCount, tasks.cssMergeStopWatch)
-                        .addComplementRow("Dependencies computing, etc...")
-                        .addTotalRow()
-                        .generateReport());
+                    .addRow("pom.xml", tasks.pomCount, tasks.pomStopWatch)
+                    .addRow("module-info.java", tasks.moduleInfoCount, tasks.moduleInfoStopWatch)
+                    .addRow("META-INF/services", tasks.metaInfServicesCount, tasks.metaInfServicesStopWatch)
+                    .addRow("index.html", tasks.indexHtmlCount, tasks.indexHtmlStopWatch)
+                    .addRow("module.gwt.xml", tasks.gwtXmlCount, tasks.gwtXmlStopWatch)
+                    .addRow("Web entry point", tasks.entryPointCount, tasks.entryPointStopWatch)
+                    .addRow("Web embed resources", tasks.embedResourceCount, tasks.embedResourceStopWatch)
+                    //.addRow("Graalvm", tasks.graalvmCount, tasks.graalvmStopWatch)
+                    .addRow("Callbacks (GWT & GraalVM)", tasks.callbacksCount, tasks.callbacksStopWatch)
+                    .addRow("Meta file", tasks.metaCount, tasks.metaStopWatch)
+                    .addRow("Merge preparation", -tasks.mergePrepStopWatch.getRunCount(), tasks.mergePrepStopWatch)
+                    .addRow("Conf merge", tasks.confCount, tasks.confMergeStopWatch)
+                    .addRow("css merge", tasks.cssCount, tasks.cssMergeStopWatch)
+                    .addRow("i18n merge", tasks.i18nCount, tasks.i18nMergeStopWatch)
+                    .addRow("i18n Java keys", tasks.i18nJavaCount, tasks.i18nJavaStopWatch)
+                    .addComplementRow("Dependencies computing, etc...")
+                    .addTotalRow()
+                    .generateReport());
             }
 
             //log(transaction.outputFilesCount + " build files checked (required reading " + transaction.readInputFilesCount + " input files)");
@@ -167,130 +168,143 @@ public final class Update extends CommonSubcommand implements Runnable {
 
         // For most tasks we will iterate the working module and its children in depth, so we cache this stream.
         ReusableStream<DevProjectModule> workingAndChildrenModulesInDepthCache =
-                getWorkingAndChildrenModulesInDepth(workingModule).cache();
+            getWorkingAndChildrenModulesInDepth(workingModule).cache();
 
         // When we execute all update tasks, we first virtually delete the folders before regenerating their content.
         // This is how the CLI will detect and garbage collect all files that are not regenerated to keep everything clean.
         if (allTasksEnabled) {
             workingAndChildrenModulesInDepthCache
-                    .forEach(m -> {
-                        Path mainResourcesDirectory = m.getMainResourcesDirectory();
-                        // Cleaning all generated resources from executable modules
-                        if (m.isExecutable()) {
-                            // resources under dev/webfx (meta, conf, i18n & css resources)
-                            TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("dev/webfx"));
-                            if (m.isExecutable(Platform.GWT)) {
-                                // resources under public/dev/webfx (containing merges css file for gwt executables)
-                                TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("public/dev/webfx"));
-                                // resources under super (containing super sources for gwt executables)
-                                TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("super"));
-                            }
-                            if (m.isExecutable(Platform.JRE) && m.getTarget().hasTag(TargetTag.GLUON)) {
-                                // Cleaning GraalVM conf
-                                TextFileReaderWriter.deleteFolder(m.getHomeDirectory().resolve("src/main/graalvm_conf"));
-                            }
+                .forEach(m -> {
+                    Path mainResourcesDirectory = m.getMainResourcesDirectory();
+                    // Cleaning all generated resources from executable modules
+                    if (m.isExecutable()) {
+                        // resources under dev/webfx (meta, conf, i18n & css resources)
+                        TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("dev/webfx"));
+                        if (m.isExecutable(Platform.GWT)) {
+                            // resources under public/dev/webfx (containing merges css file for gwt executables)
+                            TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("public/dev/webfx"));
+                            // resources under super (containing super sources for gwt executables)
+                            TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("super"));
                         }
-                        // Cleaning META-INF/services
-                        TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("META-INF/services"));
-                    });
+                        if (m.isExecutable(Platform.JRE) && m.getTarget().hasTag(TargetTag.GLUON)) {
+                            // Cleaning GraalVM conf
+                            TextFileReaderWriter.deleteFolder(m.getHomeDirectory().resolve("src/main/graalvm_conf"));
+                        }
+                    }
+                    // Cleaning META-INF/services
+                    TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("META-INF/services"));
+                });
         }
 
         // Generate meta file for executable modules (dev.webfx.platform.meta.exe/exe.properties) <- always present
         // and config file for executable modules (dev.webfx.platform.conf/src-root.properties) <- present only when using modules with config
         if (tasks.meta || tasks.conf || tasks.i18n || tasks.css) {
             workingAndChildrenModulesInDepthCache
-                    .filter(ProjectModule::isExecutable)
-                    .forEach(module -> {
-                        if (tasks.meta) {
-                            tasks.metaStopWatch.on();
-                            if (MetaFileGenerator.generateExecutableModuleMetaResourceFile(module))
-                                tasks.metaCount++;
-                            tasks.metaStopWatch.off();
-                        }
-                        // Merging tasks (conf, i18n & css)
-                        boolean canUseCache = !tasks.pom;
-                        if (tasks.conf) {
-                            tasks.confMergeStopWatch.on();
-                            if (RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module, canUseCache, tasks.mergePrepStopWatch))
-                                tasks.confCount++;
-                            tasks.confMergeStopWatch.off();
-                        }
-                        if (tasks.i18n) {
-                            tasks.i18nMergeStopWatch.on();
-                            tasks.i18nCount += I18nFilesGenerator.generateExecutableModuleI18nResourceFiles(module, canUseCache, tasks.mergePrepStopWatch);
-                            tasks.i18nMergeStopWatch.off();
-                        }
-                        if (tasks.css) {
-                            tasks.cssMergeStopWatch.on();
-                            tasks.cssCount += CssFilesGenerator.generateExecutableModuleCssResourceFiles(module, canUseCache, tasks.mergePrepStopWatch);
-                            tasks.cssMergeStopWatch.off();
-                        }
-                    });
+                .filter(ProjectModule::isExecutable)
+                .forEach(module -> {
+                    if (tasks.meta) {
+                        tasks.metaStopWatch.on();
+                        if (MetaFileGenerator.generateExecutableModuleMetaResourceFile(module))
+                            tasks.metaCount++;
+                        tasks.metaStopWatch.off();
+                    }
+                    // Merging tasks (conf, i18n & css)
+                    boolean canUseCache = !tasks.pom;
+                    if (tasks.conf) {
+                        tasks.confMergeStopWatch.on();
+                        if (RootConfigFileGenerator.generateExecutableModuleConfigurationResourceFile(module, canUseCache, tasks.mergePrepStopWatch))
+                            tasks.confCount++;
+                        tasks.confMergeStopWatch.off();
+                    }
+                    if (tasks.i18n) {
+                        tasks.i18nMergeStopWatch.on();
+                        tasks.i18nCount += I18nFilesGenerator.generateExecutableModuleI18nResourceFiles(module, canUseCache, tasks.mergePrepStopWatch);
+                        tasks.i18nMergeStopWatch.off();
+                    }
+                    if (tasks.css) {
+                        tasks.cssMergeStopWatch.on();
+                        tasks.cssCount += CssFilesGenerator.generateExecutableModuleCssResourceFiles(module, canUseCache, tasks.mergePrepStopWatch);
+                        tasks.cssMergeStopWatch.off();
+                    }
+                });
+        }
+
+        if (tasks.i18n) { // Java i18n keys generation
+            workingAndChildrenModulesInDepthCache
+                .filter(ProjectModule::hasMainWebFxSourceDirectory)
+                .forEach(module -> {
+                    tasks.i18nJavaStopWatch.on();
+                    if (I18nFilesGenerator.generateI18nModuleJavaKeys(module)) {
+                        tasks.i18nJavaCount++;
+                    }
+                    tasks.i18nJavaStopWatch.off();
+                });
+            ConfigMerge.logDuplicatedKeysWarnings();
         }
 
         // Generating or updating Maven module files (pom.xml)
         if (tasks.pom) {
             workingAndChildrenModulesInDepthCache
-                    .forEach(m -> {
-                        tasks.pomStopWatch.on();
-                        if (m.getMavenModuleFile().updateAndWrite())
-                            tasks.pomCount++;
-                        tasks.pomStopWatch.off();
-                    });
+                .forEach(m -> {
+                    tasks.pomStopWatch.on();
+                    if (m.getMavenModuleFile().updateAndWrite())
+                        tasks.pomCount++;
+                    tasks.pomStopWatch.off();
+                });
         }
 
         // Generating files for Java modules (module-info.java and META-INF/services)
         if (tasks.moduleInfo || tasks.metaInfServices) {
             workingAndChildrenModulesInDepthCache
-                    .filter(DevProjectModule::hasMainJavaSourceDirectory)
-                    // Skipping module-info.java for some special cases
-                    .filter(m -> !SpecificModules.skipJavaModuleInfo(m.getName()))
-                    .forEach(m -> {
-                        boolean jre = m.getTarget().isAnyPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
-                        boolean gwt = m.getTarget().hasTag(TargetTag.GWT);
-                        boolean j2cl = m.getTarget().hasTag(TargetTag.J2CL);
-                        boolean teavm = m.getTarget().isAnyPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM
-                        boolean web = gwt || j2cl || m.getTarget().hasTag(TargetTag.EMUL);
-                        if (tasks.moduleInfo && jre && !web) { // Not for TeaVM because the TeaVM modules in module-info.java are not recognised by JPMS
-                            tasks.moduleInfoStopWatch.on();
-                            if (JavaFilesGenerator.generateModuleInfoJavaFile(m))
-                                tasks.moduleInfoCount++;
-                            tasks.moduleInfoStopWatch.off();
-                        }
-                        if (tasks.metaInfServices && (jre /* for GraalVM */ || teavm)) {
-                            tasks.metaInfServicesStopWatch.on();
-                            tasks.metaInfServicesCount += JavaFilesGenerator.generateMetaInfServicesFiles(m);
-                            tasks.metaInfServicesStopWatch.off();
-                        }
-                    });
+                .filter(DevProjectModule::hasMainJavaSourceDirectory)
+                // Skipping module-info.java for some special cases
+                .filter(m -> !SpecificModules.skipJavaModuleInfo(m.getName()))
+                .forEach(m -> {
+                    boolean jre = m.getTarget().isAnyPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
+                    boolean gwt = m.getTarget().hasTag(TargetTag.GWT);
+                    boolean j2cl = m.getTarget().hasTag(TargetTag.J2CL);
+                    boolean teavm = m.getTarget().isAnyPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM
+                    boolean web = gwt || j2cl || m.getTarget().hasTag(TargetTag.EMUL);
+                    if (tasks.moduleInfo && jre && !web) { // Not for TeaVM because the TeaVM modules in module-info.java are not recognised by JPMS
+                        tasks.moduleInfoStopWatch.on();
+                        if (JavaFilesGenerator.generateModuleInfoJavaFile(m))
+                            tasks.moduleInfoCount++;
+                        tasks.moduleInfoStopWatch.off();
+                    }
+                    if (tasks.metaInfServices && (jre /* for GraalVM */ || teavm)) {
+                        tasks.metaInfServicesStopWatch.on();
+                        tasks.metaInfServicesCount += JavaFilesGenerator.generateMetaInfServicesFiles(m);
+                        tasks.metaInfServicesStopWatch.off();
+                    }
+                });
         }
 
         // Generate files for executable GWT/J2CL modules (module.gwt.xml, index.html, super sources, service loader, resource bundle, callbacks)
         if (tasks.gwtXml || tasks.indexHtml || tasks.entryPoint || tasks.embedResource || tasks.callbacks) {
             workingAndChildrenModulesInDepthCache
-                    .filter(m -> m.isExecutable(Platform.GWT) || m.isExecutable(Platform.J2CL))
-                    .forEach(m -> GwtJ2clFilesGenerator.generateGwtJ2clFiles(m, tasks));
+                .filter(m -> m.isExecutable(Platform.GWT) || m.isExecutable(Platform.J2CL))
+                .forEach(m -> GwtJ2clFilesGenerator.generateGwtJ2clFiles(m, tasks));
         }
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)
         if (tasks.callbacks) {
             workingAndChildrenModulesInDepthCache
-                    .filter(m -> m.isExecutable(Platform.JRE))
-                    .filter(m -> m.getTarget().hasTag(TargetTag.GLUON))
-                    .forEach(m -> {
-                        tasks.callbacksStopWatch.on();
-                        if (GluonFilesGenerator.generateGraalVmReflectionJson(m))
-                            tasks.callbacksCount++;
-                        tasks.callbacksStopWatch.off();
-                    });
+                .filter(m -> m.isExecutable(Platform.JRE))
+                .filter(m -> m.getTarget().hasTag(TargetTag.GLUON))
+                .forEach(m -> {
+                    tasks.callbacksStopWatch.on();
+                    if (GluonFilesGenerator.generateGraalVmReflectionJson(m))
+                        tasks.callbacksCount++;
+                    tasks.callbacksStopWatch.off();
+                });
         }
     }
 
     private static ReusableStream<DevProjectModule> getWorkingAndChildrenModulesInDepth(DevProjectModule workingModule) {
         return workingModule
-                .getThisAndChildrenModulesInDepth()
-                .filter(DevProjectModule.class::isInstance)
-                .map(DevProjectModule.class::cast);
+            .getThisAndChildrenModulesInDepth()
+            .filter(DevProjectModule.class::isInstance)
+            .map(DevProjectModule.class::cast);
     }
 
 }

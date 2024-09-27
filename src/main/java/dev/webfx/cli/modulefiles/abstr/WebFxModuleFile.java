@@ -163,6 +163,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
         return lookupNodeTextContent("graalvm-reflection-json[1]");
     }*/
 
+    default String getI18nJavaKeysClass() {
+        return XmlUtil.getAttributeValue(lookupElement("i18n[1]"), "javaKeysClass");
+    }
+
     default ReusableStream<ServiceProvider> providedServiceProviders() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("providers[1]/provider"), node -> {
             String spi = XmlUtil.getAttributeValue((Element) node, "interface");

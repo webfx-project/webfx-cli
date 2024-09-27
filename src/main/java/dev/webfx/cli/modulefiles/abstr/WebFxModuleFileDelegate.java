@@ -217,6 +217,11 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }*/
 
     @Override
+    default String getI18nJavaKeysClass() {
+        return getDelegate().getI18nJavaKeysClass();
+    }
+
+    @Override
     default ReusableStream<ServiceProvider> providedServiceProviders() {
         return getDelegate().providedServiceProviders();
     }

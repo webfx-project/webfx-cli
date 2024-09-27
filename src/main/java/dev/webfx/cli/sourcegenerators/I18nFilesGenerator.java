@@ -1,8 +1,10 @@
 package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
+import dev.webfx.cli.util.hashlist.HashList;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.stopwatch.StopWatch;
+import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.platform.ast.ReadOnlyAstArray;
@@ -10,6 +12,7 @@ import dev.webfx.platform.conf.Config;
 import dev.webfx.platform.conf.ConfigParser;
 import dev.webfx.platform.util.tuples.Pair;
 
+import javax.lang.model.SourceVersion;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -36,32 +39,7 @@ public final class I18nFilesGenerator {
 
         Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, false, mergePrepStopWatch);
 
-        moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
-            // I8n collection
-            Path webfxI18nDirectory = webfxPath.resolve("i18n/");
-            if (Files.isDirectory(webfxI18nDirectory)) {
-                ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxI18nDirectory))
-                        .filter(AstUtil.AST_FILE_MATCHER::matches)
-                        .forEach(path -> {
-                            Config i18nObject = I18N_CACHE.get(path);
-                            if (i18nObject == null) {
-                                String fileContent = TextFileReaderWriter.readInputTextFile(path);
-                                i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
-                                I18N_CACHE.put(path, i18nObject);
-                            }
-                            ReadOnlyAstArray languages = i18nObject.keys();
-                            for (int i = 0; i < languages.size(); i++) {
-                                String language = languages.getString(i);
-                                ConfigMerge languageMerge = i18nMerges.get(language);
-                                if (languageMerge == null)
-                                    i18nMerges.put(language, languageMerge = new ConfigMerge());
-                                Config dictionaryConfig = i18nObject.childConfigAt(language);
-                                languageMerge.moduleConfigs.add(new Pair<>(moduleName, dictionaryConfig));
-                                languageMerge.moduleConfigsContainsArrays |= AstUtil.hasArray(dictionaryConfig);
-                            }
-                        });
-            }
-        });
+        moduleWebFxPaths.forEach((moduleName, webfxPath) -> collectI18nDictionaries(moduleName, webfxPath, i18nMerges));
 
         int[] filesCount = { 0 };
         // I18n merge
@@ -74,5 +52,68 @@ public final class I18nFilesGenerator {
         return filesCount[0];
     }
 
+    public static boolean generateI18nModuleJavaKeys(DevProjectModule module) {
+        String javaKeysClass = module.getWebFxModuleFile().getI18nJavaKeysClass();
+        if (javaKeysClass == null || !module.hasMainWebFxSourceDirectory())
+            return false;
+
+        // I18n Initialisation
+        Map<String, ConfigMerge> i18nMerges = new HashMap<>();
+
+        collectI18nDictionaries(module.getName(), module.getMainWebFxSourceDirectory(), i18nMerges);
+
+        HashList<String> keys = new HashList<>();
+        i18nMerges.forEach((language, languageMerge) -> {
+            languageMerge.moduleConfigs.forEach(pair -> pair.get2().keys().forEach(key -> keys.add(key.toString())));
+        });
+
+        if (keys.isEmpty())
+            return false;
+
+        StringBuilder sb = new StringBuilder();
+        keys.forEach(key -> {
+            if (sb.length() > 0)
+                sb.append("\n");
+            if (!SourceVersion.isName(key)) // Commenting keys that are not valid java names
+                sb.append("//");
+            sb.append("    String ").append(key).append(" = \"").append(key).append("\";");
+        });
+
+        Path javaFilePath = module.getMainJavaSourceDirectory().resolve(javaKeysClass.replace('.', '/') + ".java");
+        int lastDotIndex = javaKeysClass.lastIndexOf('.');
+        String content = ResourceTextFileReader.readTemplate("I18nKeys.javat")
+                .replace("${package}", javaKeysClass.substring(0, lastDotIndex))
+                .replace("${class}", javaKeysClass.substring(lastDotIndex + 1))
+                .replace("${i18nKeysDeclaration}", sb);
+        TextFileReaderWriter.writeTextFileIfNewOrModified(content, javaFilePath);
+
+        return true;
+    }
+
+    private static void collectI18nDictionaries(String moduleName, Path webfxPath, Map<String, ConfigMerge> i18nMerges) {
+        Path webfxI18nDirectory = webfxPath.resolve("i18n/");
+        if (Files.isDirectory(webfxI18nDirectory)) {
+            ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxI18nDirectory))
+                .filter(AstUtil.AST_FILE_MATCHER::matches)
+                .forEach(path -> {
+                    Config i18nObject = I18N_CACHE.get(path);
+                    if (i18nObject == null) {
+                        String fileContent = TextFileReaderWriter.readInputTextFile(path);
+                        i18nObject = ConfigParser.parseConfigFile(fileContent, path.getFileName().toString());
+                        I18N_CACHE.put(path, i18nObject);
+                    }
+                    ReadOnlyAstArray languages = i18nObject.keys();
+                    for (int i = 0; i < languages.size(); i++) {
+                        String language = languages.getString(i);
+                        ConfigMerge languageMerge = i18nMerges.get(language);
+                        if (languageMerge == null)
+                            i18nMerges.put(language, languageMerge = new ConfigMerge());
+                        Config dictionaryConfig = i18nObject.childConfigAt(language);
+                        languageMerge.moduleConfigs.add(new Pair<>(moduleName, dictionaryConfig));
+                        languageMerge.moduleConfigsContainsArrays |= AstUtil.hasArray(dictionaryConfig);
+                    }
+                });
+        }
+    }
 
 }

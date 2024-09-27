@@ -1,0 +1,8 @@
+// File managed by WebFX (DO NOT EDIT MANUALLY)
+package ${package};
+
+public interface ${class} {
+
+${i18nKeysDeclaration}
+
+}
