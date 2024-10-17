@@ -3,11 +3,11 @@ package dev.webfx.cli.commands;
 import dev.webfx.cli.core.CliException;
 import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.core.WebFXHiddenFolder;
+import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.os.OsFamily;
 import dev.webfx.cli.util.process.ProcessCall;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.lib.reusablestream.ReusableStream;
-import dev.webfx.cli.util.os.OperatingSystem;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.utils.IOUtils;
@@ -18,7 +18,6 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.*;
 import java.util.Comparator;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -38,10 +37,16 @@ import java.util.zip.GZIPInputStream;
         })
 public final class Install extends CommonSubcommand {
 
+    private static final boolean LATEST_VERSION = false; // Can't make the latest version work at the moment
+
     @Command(name = "graalvm", description = "Install or upgrade GraalVM.")
     static class GraalVm extends CommonSubcommand implements Runnable {
 
-        private final static String GITHUB_GRAAL_RELEASE_PAGE_URL = "https://github.com/gluonhq/graal/releases/latest";
+        // To see all releases: https://api.github.com/repos/gluonhq/graal/releases
+
+        private final static String GITHUB_GRAAL_RELEASE_PAGE_URL = LATEST_VERSION ?
+            "https://api.github.com/repos/gluonhq/graal/releases/latest" :
+            "https://api.github.com/repos/gluonhq/graal/releases/68947997"; // This is gluon-22.1.0.1-Final
 
         @Override
         public void run() {
@@ -51,15 +56,14 @@ public final class Install extends CommonSubcommand {
                 case MAC_OS: osToken = "darwin"; break;
                 case LINUX: osToken = "linux"; break;
             }
+            String archToken = "aarch64".equalsIgnoreCase(System.getProperty("os.arch")) ? "aarch64" : "amd64";
             Logger.log("Checking for update on " + GITHUB_GRAAL_RELEASE_PAGE_URL);
-            //String pageContent = downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL);
-            String pageContent;
-            try (InputStream stream = getClass().getResourceAsStream("/dev/webfx/cli/graalvm/github_release_snapshot.html")) {
-                pageContent = new String(Objects.requireNonNull(stream).readAllBytes());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            Pattern pattern = Pattern.compile("href=\"(.*/gluonhq/graal/releases/download/.*-java17-" + osToken + "-\\S*)\"", 1);
+            String pageContent = downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL);
+            Pattern pattern = Pattern.compile(
+                LATEST_VERSION ?
+                    "\"browser_download_url\":\"([^\"]*/gluonhq/graal/releases/download/[^\"]*-java[^\"]*-" + osToken + "-" + archToken + "[^\"]*)\"" :
+                    "\"browser_download_url\":\"([^\"]*/gluonhq/graal/releases/download/[^\"]*-java17[^\"]*-" + osToken + "[^\"]*)\""
+                , 1);
             Matcher matcher = pattern.matcher(pageContent);
             if (!matcher.find()) {
                 Logger.log("No GraalVM found for your system!");
