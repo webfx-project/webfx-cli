@@ -105,7 +105,7 @@ public final class Run extends CommonSubcommand implements Runnable {
                 if (OperatingSystem.isWindows())
                     ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath));
                 else
-                    ProcessCall.executeCommandTokens("open", pathName);
+                    ProcessCall.executeCommandTokens("xdg-open", pathName);
             else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
                 boolean android = fileName.endsWith(".apk");
                 Path gluonModulePath = executableFilePath.getParent();
@@ -123,7 +123,7 @@ public final class Run extends CommonSubcommand implements Runnable {
             } else { // Everything else should be an executable file that we can call directly
                 int exitCode;
                 if (usesOpen && !OperatingSystem.isWindows())
-                    exitCode = ProcessCall.executeCommandTokens("open", pathName);
+                    exitCode = ProcessCall.executeCommandTokens("xdg-open", pathName);
                 else
                     exitCode = ProcessCall.executeCommandTokens(pathName);
                 if (exitCode != 0 && fileName.endsWith(".AppImage"))
