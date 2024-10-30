@@ -104,6 +104,8 @@ public final class Run extends CommonSubcommand implements Runnable {
             else if (fileName.endsWith(".html"))
                 if (OperatingSystem.isWindows())
                     ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath));
+                else if(OperatingSystem.isLinux())
+                    ProcessCall.executeCommandTokens("xdg-open", pathName);
                 else
                     ProcessCall.executeCommandTokens("open", pathName);
             else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
@@ -122,7 +124,9 @@ public final class Run extends CommonSubcommand implements Runnable {
                 }
             } else { // Everything else should be an executable file that we can call directly
                 int exitCode;
-                if (usesOpen && !OperatingSystem.isWindows())
+                if (usesOpen && OperatingSystem.isLinux())
+                    exitCode = ProcessCall.executeCommandTokens("xdg-open", pathName);
+                else if(usesOpen && !OperatingSystem.isWindows())
                     exitCode = ProcessCall.executeCommandTokens("open", pathName);
                 else
                     exitCode = ProcessCall.executeCommandTokens(pathName);
