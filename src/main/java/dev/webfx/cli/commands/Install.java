@@ -37,10 +37,10 @@ import java.util.zip.GZIPInputStream;
         })
 public final class Install extends CommonSubcommand {
 
-    private static final boolean LATEST_VERSION = false; // Can't make the latest version work at the moment
-
     @Command(name = "graalvm", description = "Install or upgrade GraalVM.")
     static class GraalVm extends CommonSubcommand implements Runnable {
+
+        private static final boolean LATEST_VERSION = false; // Can't make the latest version work at the moment
 
         // To see all releases: https://api.github.com/repos/gluonhq/graal/releases
 

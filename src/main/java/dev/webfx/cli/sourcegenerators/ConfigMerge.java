@@ -10,6 +10,7 @@ import dev.webfx.platform.conf.Config;
 import dev.webfx.platform.conf.impl.ConfigMerger;
 import dev.webfx.platform.util.collection.Collections;
 import dev.webfx.platform.util.collection.HashList;
+import dev.webfx.platform.util.collection.ToStringOptions;
 import dev.webfx.platform.util.tuples.Pair;
 
 import java.nio.file.Path;
@@ -104,7 +105,7 @@ public final class ConfigMerge {
     public static void logDuplicatedKeysWarnings() {
         KEYS_MODULES.forEach((sKey, modules) -> {
             if (modules.size() > 1) {
-                Logger.warning("Duplicated key " + sKey + " used by " + Collections.toString(modules, false, false));
+                Logger.warning("Duplicated key " + sKey + " used by " + Collections.toString(modules, ToStringOptions.COMMA_SEPARATED_TO_STRING_OPTIONS));
             }
         });
     }

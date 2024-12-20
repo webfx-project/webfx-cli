@@ -13,7 +13,6 @@ module webfx.cli {
     requires webfx.platform.conf;
     requires webfx.platform.meta;
     requires webfx.platform.util;
-    requires java.xml;
 
     // Exported packages
     exports dev.webfx.cli;
