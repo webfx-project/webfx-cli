@@ -9,6 +9,7 @@ import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
+import java.awt.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -101,14 +102,15 @@ public final class Run extends CommonSubcommand implements Runnable {
                 Logger.log("Can't execute nonexistent file " + ProcessCall.toShellLogCommandToken(executableFilePath));
             else if (fileName.endsWith(".jar"))
                 ProcessCall.executeCommandTokens("java", "-jar", pathName);
-            else if (fileName.endsWith(".html"))
-                if (OperatingSystem.isWindows())
+            else if (fileName.endsWith(".html")) {
+                Desktop.getDesktop().open(executableFilePath.toFile()); // Works cross-platform
+                /*if (OperatingSystem.isWindows())
                     ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath));
-                else if(OperatingSystem.isLinux())
+                else if (OperatingSystem.isLinux())
                     ProcessCall.executeCommandTokens("xdg-open", pathName);
                 else
-                    ProcessCall.executeCommandTokens("open", pathName);
-            else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
+                    ProcessCall.executeCommandTokens("open", pathName);*/
+            } else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
                 boolean android = fileName.endsWith(".apk");
                 Path gluonModulePath = executableFilePath.getParent();
                 while (gluonModulePath != null && !Files.exists(gluonModulePath.resolve("pom.xml")))
