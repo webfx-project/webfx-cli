@@ -91,12 +91,16 @@ public final class ConfigMerge {
                     sb.append('#');
                 }
                 sb.append(propertiesKey).append(" = ");
-                String propertiesValue = o.toString().replace("\n", "\\n");
-                if (!propertiesValue.startsWith(" ") && !propertiesValue.endsWith(" ")) {
-                    sb.append(propertiesValue);
-                } else {
-                    sb.append(propertiesValue.replace(" ", "\\u0020"));
-                }
+                String propertiesValue = o == null ? null : o.toString().replace("\n", "\\n");
+                if (propertiesValue == null) {
+                    Logger.warning("Null value for key " + propertiesKey + " in module " + moduleName);
+                    sb.append("null");
+                } else
+                    if (!propertiesValue.startsWith(" ") && !propertiesValue.endsWith(" ")) {
+                        sb.append(propertiesValue);
+                    } else {
+                        sb.append(propertiesValue.replace(" ", "\\u0020"));
+                    }
                 sb.append(('\n'));
             }
         }
