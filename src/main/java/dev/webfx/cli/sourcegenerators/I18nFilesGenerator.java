@@ -1,6 +1,7 @@
 package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
+import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.util.hashlist.HashList;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.stopwatch.StopWatch;
@@ -8,14 +9,17 @@ import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.platform.ast.ReadOnlyAstArray;
+import dev.webfx.platform.ast.ReadOnlyAstObject;
 import dev.webfx.platform.conf.Config;
 import dev.webfx.platform.conf.ConfigParser;
+import dev.webfx.platform.util.collection.Collections;
 import dev.webfx.platform.util.tuples.Pair;
 
 import javax.lang.model.SourceVersion;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -87,6 +91,22 @@ public final class I18nFilesGenerator {
                 .replace("${i18nKeysDeclaration}", sb);
         TextFileReaderWriter.writeTextFileIfNewOrModified(content, javaFilePath);
 
+        // Generating a warning if some keys are not translated
+        i18nMerges.forEach((language, languageMerge) -> {
+            List<String> untranslatedKeys = Collections.filter(keys, key -> Collections.noneMatch(languageMerge.moduleConfigs, pair -> {
+                Object value = pair.get2().get(key);
+                if (value instanceof String)
+                    return true;
+                if (value instanceof ReadOnlyAstObject) {
+                    ReadOnlyAstObject object = (ReadOnlyAstObject) value;
+                    return object.has("text");
+                }
+                return false;
+            }));
+            if (!untranslatedKeys.isEmpty()) {
+                Logger.warning("The following keys are not translated in the '" + language + "' dictionary for module " + module.getName() + ": " + untranslatedKeys);
+            }
+        });
         return true;
     }
 
