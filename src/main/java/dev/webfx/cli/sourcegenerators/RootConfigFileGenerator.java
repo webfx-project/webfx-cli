@@ -47,9 +47,10 @@ public final class RootConfigFileGenerator {
                                 if (config == null) {
                                     String fileContent = TextFileReaderWriter.readInputTextFile(path);
                                     config = ConfigParser.parseConfigFile(fileContent, path.toAbsolutePath().toString());
+                                    // Note: config might be null in some case (ex: empty yaml file or with comments only)
                                     CONFIG_CACHE.put(path, config);
                                 }
-                                if (!config.isEmpty()) {
+                                if (config != null && !config.isEmpty()) {
                                     confMerge.moduleConfigs.add(new Pair<>(moduleName, config));
                                     confMerge.moduleConfigsContainsArrays |= AstUtil.hasArray(config);
                                 }
