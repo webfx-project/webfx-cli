@@ -18,7 +18,7 @@
 
         <webfx-library artifact="dev.webfx:webfx-lib-reusablestream:0.1.0-SNAPSHOT"/>
         <webfx-library artifact="dev.webfx:webfx-platform:0.1.0-SNAPSHOT"/> <!-- for webfx-platform-meta -->
-        <library artifact="info.picocli:picocli:4.7.6" name="info.picocli"/>
+        <library artifact="info.picocli:picocli:4.7.7" name="info.picocli"/>
         <library artifact="org.apache.commons:commons-compress:1.21" name="org.apache.commons.compress"/>
         <library artifact="org.dom4j:dom4j:2.1.4" name="org.dom4j"/>
         <library artifact="jaxen:jaxen:1.1.6" name="jaxen"/>
