@@ -71,6 +71,10 @@ public final class MavenUtil {
     private static void addNotFoundArtifact(String artifact) {
         NOT_FOUND_ARTIFACTS.add(artifact);
         try {
+            if (NOT_FOUND_ARTIFACTS_CONTENT == null) {
+                Files.createDirectories(NOT_FOUND_ARTIFACTS_PATH.getParent()); // Creating all necessary parent directories
+                NOT_FOUND_ARTIFACTS_CONTENT = "";
+            }
             NOT_FOUND_ARTIFACTS_CONTENT += artifact + "\n";
             TextFileReaderWriter.writeTextFileNow(NOT_FOUND_ARTIFACTS_CONTENT, NOT_FOUND_ARTIFACTS_PATH);
             Logger.warning(artifact + " was not found in Maven repositories, and is now blacklisted in " + NOT_FOUND_ARTIFACTS_PATH);
