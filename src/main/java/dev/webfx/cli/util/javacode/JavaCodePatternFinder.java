@@ -69,6 +69,7 @@ public class JavaCodePatternFinder implements Iterable<String> {
         private static final int STATE_BLOCK_COMMENT = 1;
         private static final int STATE_INLINE_COMMENT = 2;
         private static final int STATE_STRING = 3;
+        private static final int STATE_TEXT_BLOCK = 4;
 
         // State tracking
         private int currentState = STATE_CODE;
@@ -93,7 +94,8 @@ public class JavaCodePatternFinder implements Iterable<String> {
             // Return true if we're inside a string or comment
             return currentState == STATE_BLOCK_COMMENT || 
                    currentState == STATE_INLINE_COMMENT || 
-                   currentState == STATE_STRING;
+                   currentState == STATE_STRING ||
+                   currentState == STATE_TEXT_BLOCK;
         }
 
         private void scanToPosition(int targetPosition) {
@@ -115,6 +117,14 @@ public class JavaCodePatternFinder implements Iterable<String> {
                                 currentPosition += 2;
                                 continue;
                             }
+                        }
+                        // Check for text block start (""")
+                        if (c == '"' && currentPosition + 2 < textCode.length() && 
+                            textCode.charAt(currentPosition + 1) == '"' && 
+                            textCode.charAt(currentPosition + 2) == '"') {
+                            currentState = STATE_TEXT_BLOCK;
+                            currentPosition += 3;
+                            continue;
                         }
                         // Check for string start
                         if (c == '"') {
@@ -153,6 +163,24 @@ public class JavaCodePatternFinder implements Iterable<String> {
                         // End of string
                         if (c == '"') {
                             currentState = STATE_CODE;
+                        }
+                        currentPosition++;
+                        break;
+
+                    case STATE_TEXT_BLOCK:
+                        // Handle escaped quotes
+                        if (c == '\\' && currentPosition + 1 < textCode.length() && 
+                            textCode.charAt(currentPosition + 1) == '"') {
+                            currentPosition += 2;
+                            continue;
+                        }
+                        // Check for text block end (""")
+                        if (c == '"' && currentPosition + 2 < textCode.length() && 
+                            textCode.charAt(currentPosition + 1) == '"' && 
+                            textCode.charAt(currentPosition + 2) == '"') {
+                            currentState = STATE_CODE;
+                            currentPosition += 3;
+                            continue;
                         }
                         currentPosition++;
                         break;
