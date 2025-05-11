@@ -30,8 +30,8 @@ public final class ConfigMerge {
     private static final Map<String, List<String>> KEYS_MODULES = new HashMap<>();
 
     boolean mergeConfigs(Path propertiesPath, Path jsonPath) {
-        //  Configuration values will be considered only once in the merge, i.e. the first time they will appear in that
-        //  order, and the consequent occurrences will be commented in the merged configuration file.
+        //  Configuration values will be considered only once in the merge, i.e., the first time they will appear in
+        //  that order, and the consequent occurrences will be commented in the merged configuration file.
         boolean generatedFiles = false;
         Path selectedPath = null;
         if (!moduleConfigs.isEmpty()) {
@@ -48,7 +48,7 @@ public final class ConfigMerge {
                 sb.append(Json.formatNode(config));
             }
             if (sb.length() == 0)
-                selectedPath = null; // In order to delete the conf files (see below)
+                selectedPath = null; // To delete the conf files (see below)
             else {
                 TextFileReaderWriter.writeTextFileIfNewOrModified(sb.toString(), selectedPath);
                 generatedFiles = true;

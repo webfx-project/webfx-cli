@@ -40,7 +40,7 @@ public final class UpdateTasks {
         i18nJavaStopWatch = StopWatch.createSystemNanoStopWatch(),
         cssMergeStopWatch = StopWatch.createSystemNanoStopWatch();
 
-    // Creating a group for merging stopwatches, so that mergePrepStopWatch will automatically pause others while running
+    // Creating a group for merging stopwatches so that mergePrepStopWatch will automatically pause others while running
     private final StopWatchGroup mergeGroup = new StopWatchGroup(mergePrepStopWatch, confMergeStopWatch, i18nMergeStopWatch, cssMergeStopWatch);
 
     public int

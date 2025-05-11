@@ -27,16 +27,16 @@ import java.util.Map;
  */
 public final class I18nFilesGenerator {
 
-    private final static Map<Path, Config> I18N_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
+    private final static Map<Path, Config> I18N_CACHE = new HashMap<>(); // We assume the CLI exits after the update command, so no need to clear that cache
 
     public static int generateExecutableModuleI18nResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch) {
         if (!module.isExecutable())
             return 0;
         // We will collect here all configurations from all transitive modules and merge them into a single
-        // configuration file. The order is important when doing that merge, because configuration values can be
+        // configuration file. The order is important when doing that merge because configuration values can be
         // overridden. In that case, the actual final value to consider among the different modules defining that
-        // same configuration value is the one defined in the top-most module in the dependency graph (the executable
-        // module being at the very top of that graph).
+        // same configuration value is the one defined in the top-most module of the dependency graph. The executable
+        // module is indeed at the very top of that graph.
 
         // I18n Initialisation
         Map<String, ConfigMerge> i18nMerges = new HashMap<>();
