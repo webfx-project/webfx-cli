@@ -319,7 +319,7 @@ final public class ModuleRegistry {
         if (lm == null) // First time we declare this package
             packagesModulesNameMap.put(packageName, lm = new ArrayList<>(1));
         else if (lm.contains(module)) // Already declared and with the same module (shouldn't arrive)
-            return; // We just skip (but why this double declaration with same package and same module?)
+            return; // We just skip (but why this double declaration with the same package and same module?)
         else {
             Module m = lm.get(0);
             String message = module + " and " + m + " share the same package " + packageName;
@@ -356,7 +356,7 @@ final public class ModuleRegistry {
                 .findFirst()
                 .orElse(null);
         if (module == null) { // Module isn't found :-(
-            // Last chance: the package was actually in the source package! (ex: webfx-kit-javafxcontrols-registry-spi)
+            // Last chance: the package was actually in the source package! (ex: webfx-extras-controls-registry-spi)
             if (sourceModule.getMainJavaSourceRootAnalyzer().getSourcePackages().anyMatch(p -> p.equals(packageName)))
                 module = sourceModule;
             else if (!canReturnNull) { // Otherwise, raising an exception (unless returning null is permitted)
@@ -381,6 +381,9 @@ final public class ModuleRegistry {
         if (!(m instanceof ProjectModule))
             return null;
         ProjectModule pm = (ProjectModule) m;
+        if (pm.isDeprecated()) {
+            return "this module is deprecated";
+        }
         // A preview module cannot be used unless the source module is also a preview module
         if (pm.isPreview() && !sourceModule.isPreview()) {
             return "this module is a preview";

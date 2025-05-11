@@ -82,6 +82,11 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
+    default boolean isDeprecated() {
+        return getDelegate().isDeprecated();
+    }
+
+    @Override
     default String getDeployRepositoryId() {
         return getDelegate().getDeployRepositoryId();
     }

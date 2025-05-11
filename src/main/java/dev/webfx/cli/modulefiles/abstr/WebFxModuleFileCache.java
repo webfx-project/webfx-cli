@@ -99,6 +99,14 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         return isPreview;
     }
 
+    private Boolean isDeprecated;
+    @Override
+    public boolean isDeprecated() {
+        if (isDeprecated == null)
+            isDeprecated = WebFxModuleFileDelegate.super.isDeprecated();
+        return isDeprecated;
+    }
+
     private String deployRepositoryId;
     @Override
     public String getDeployRepositoryId() {

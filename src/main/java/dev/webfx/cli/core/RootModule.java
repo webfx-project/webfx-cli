@@ -43,7 +43,8 @@ public interface RootModule extends ProjectModule {
         // Searching modules within the scope that are compatible with the requested target and that implement the service
         Target requestedTarget = targetModule.getTarget();
         ReusableStream<ProjectModule> modules = implementationScope
-            .filter(m -> !m.isPreview())
+            .filter(m -> !m.isDeprecated())
+            .filter(m -> !m.isPreview()) // TODO: add preview mode allowing preview modules
             .filter(m -> m.isCompatibleWithTarget(requestedTarget))
             .filter(m -> m.providesJavaService(javaService));
         // If we have several modules and need to keep the best only (ex: required service),

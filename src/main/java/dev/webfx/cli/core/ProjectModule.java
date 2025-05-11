@@ -207,6 +207,10 @@ public interface ProjectModule extends Module {
         return getWebFxModuleFile().isPreview();
     }
 
+    default boolean isDeprecated() {
+        return getWebFxModuleFile().isDeprecated();
+    }
+
     default boolean hasAutoInjectionConditions() {
         return getWebFxModuleFile().hasAutoInjectionConditions();
     }
