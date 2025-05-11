@@ -50,6 +50,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
         return getBooleanProjectAttributeValue("interface");
     }
 
+    default boolean isPreview() {
+        return getBooleanProjectAttributeValue("preview");
+    }
+
     default String getDeployRepositoryId() {
         return getProjectAttributeValue("deployRepositoryId");
     }

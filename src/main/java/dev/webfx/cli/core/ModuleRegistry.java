@@ -355,8 +355,8 @@ final public class ModuleRegistry {
                 .filter(m -> isSuitableModule(m, sourceModule))
                 .findFirst()
                 .orElse(null);
-        if (module == null) { // Module not found :-(
-            // Last chance: the package was actually in the source package! (ex: webfx-kit-extracontrols-registry-spi)
+        if (module == null) { // Module isn't found :-(
+            // Last chance: the package was actually in the source package! (ex: webfx-kit-javafxcontrols-registry-spi)
             if (sourceModule.getMainJavaSourceRootAnalyzer().getSourcePackages().anyMatch(p -> p.equals(packageName)))
                 module = sourceModule;
             else if (!canReturnNull) { // Otherwise, raising an exception (unless returning null is permitted)
@@ -381,12 +381,15 @@ final public class ModuleRegistry {
         if (!(m instanceof ProjectModule))
             return null;
         ProjectModule pm = (ProjectModule) m;
+        // A preview module cannot be used unless the source module is also a preview module
+        if (pm.isPreview() && !sourceModule.isPreview()) {
+            return "this module is a preview";
+        }
         // First case: only executable source modules should include implementing interface modules (others should include the interface module instead)
         if (pm.isImplementingInterface() && !sourceModule.isExecutable()) {
-            // Exception is however made for non-executable source modules that implement a provider.
+            // Exception is, however, made for non-executable source modules that implement a provider.
             // Ex: webfx-extras-controls-registry-openjfx can include webfx-extras-controls-registry-spi (which implements webfx-extras-controls-registry)
-            boolean exception = sourceModule.getProvidedJavaServices()
-                    .isEmpty() == false;
+            boolean exception = !sourceModule.getProvidedJavaServices().isEmpty();
             //.anyMatch(service -> pm.getJavaSourceFiles().anyMatch(c -> c.getClassName().equals(service)));
             if (!exception)
                 return "it implements an interface module (" + pm.implementedInterfaces().findFirst().orElse(null) + "), and only executable modules should use it (" + sourceModule.getName() + " is not an executable module)";
@@ -455,7 +458,7 @@ final public class ModuleRegistry {
                     .filter(m2 -> m2.getName().equals(m2.getM2WebFxModuleFile().lookupExportedSnapshotFirstProjectName()))
                     // Registering the export snapshot usages on the fly while pulling this stream
                     .map(this::registerExportSnapshotUsages)
-                    // This stream is for an on the fly registration, so no need to repeat and process the same modules again
+                    // This stream is for an on-the-fly registration, so no need to repeat and process the same modules
                     .resumable();
 
     private final Map<String /* package or class name */, List<SnapshotUsages>> registeredSnapshotUsages = new HashMap<>();
@@ -481,7 +484,7 @@ final public class ModuleRegistry {
         if (packageOrClassSnapshotUsages == null) {
             m2ProjectModulesWithExportSnapshotsResume.takeWhile(m2 -> registeredSnapshotUsages.get(packageOrClass) == null).count();
             // If after pulling the whole stream we still haven't any, this means that no export snapshots mention that
-            // usage, therefore we return null to say that we don't know if the modules uses this package or class from
+            // usage, therefore, we return null to say that we don't know if the modules use this package or class from
             // the export snapshots.
             packageOrClassSnapshotUsages = registeredSnapshotUsages.get(packageOrClass);
             if (packageOrClassSnapshotUsages == null)

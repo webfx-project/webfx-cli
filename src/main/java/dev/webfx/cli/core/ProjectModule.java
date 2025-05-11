@@ -203,6 +203,10 @@ public interface ProjectModule extends Module {
         return getWebFxModuleFile().isInterface();
     }
 
+    default boolean isPreview() {
+        return getWebFxModuleFile().isPreview();
+    }
+
     default boolean hasAutoInjectionConditions() {
         return getWebFxModuleFile().hasAutoInjectionConditions();
     }

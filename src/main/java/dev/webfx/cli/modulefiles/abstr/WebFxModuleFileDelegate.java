@@ -77,6 +77,11 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
+    default boolean isPreview() {
+        return getDelegate().isPreview();
+    }
+
+    @Override
     default String getDeployRepositoryId() {
         return getDelegate().getDeployRepositoryId();
     }

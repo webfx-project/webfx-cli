@@ -43,8 +43,9 @@ public interface RootModule extends ProjectModule {
         // Searching modules within the scope that are compatible with the requested target and that implement the service
         Target requestedTarget = targetModule.getTarget();
         ReusableStream<ProjectModule> modules = implementationScope
-                .filter(m -> m.isCompatibleWithTarget(requestedTarget))
-                .filter(m -> m.providesJavaService(javaService));
+            .filter(m -> !m.isPreview())
+            .filter(m -> m.isCompatibleWithTarget(requestedTarget))
+            .filter(m -> m.providesJavaService(javaService));
         // If we have several modules and need to keep the best only (ex: required service),
         if (keepBestOnly && modules.count() > 1) {
             // We collect the modules into a list to ease manipulation, and we will search for the best module in that list
@@ -75,9 +76,9 @@ public interface RootModule extends ProjectModule {
                 return ReusableStream.of(bestGradeModule);
             // 3) Third criterion = dev modules. Modules implemented by developers are preferred over non-dev modules (such as webfx libraries)
             List<DevProjectModule> devModulesList = modulesList.stream()
-                    .filter(m -> m instanceof DevProjectModule)
-                    .map(DevProjectModule.class::cast)
-                    .collect(Collectors.toList());
+                .filter(m -> m instanceof DevProjectModule)
+                .map(DevProjectModule.class::cast)
+                .collect(Collectors.toList());
             // If there is only one dev module, he is the preferred one and we return it
             if (devModulesList.size() == 1)
                 return ReusableStream.of(devModulesList.get(0));
@@ -87,11 +88,11 @@ public interface RootModule extends ProjectModule {
             // 4) Fourth criterion = the modules position in dependencies (we keep the one closest to the target module)
             // Creating the dependency graph of the transitive modules starting from the target module (probably executable module)
             Map<ProjectModule, List<ProjectModule>> dependencyGraph =
-                            // Note: calling get getTransitiveDependencies() at this point seems to freeze its transitive
-                            // dependencies before their final computation completion (so they remain incomplete and this
-                            // has big consequences afterward). Calling getTransitiveDependenciesWithoutImplicitProviders()
-                            // instead is working fine so far without creating subsequent problems.
-                            targetModule.getProjectModulesDependencyGraph(false);
+                // Note: calling get getTransitiveDependencies() at this point seems to freeze its transitive
+                // dependencies before their final computation completion (so they remain incomplete and this
+                // has big consequences afterward). Calling getTransitiveDependenciesWithoutImplicitProviders()
+                // instead is working fine so far without creating subsequent problems.
+                targetModule.getProjectModulesDependencyGraph(false);
             // Now we do a topological sort of all modules in the dependency graph
             List<ProjectModule> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
             // Going back to our modules list, we sort it following the same order as the topological sort

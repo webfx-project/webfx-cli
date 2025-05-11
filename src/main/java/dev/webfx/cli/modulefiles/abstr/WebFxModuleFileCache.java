@@ -91,6 +91,14 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         return isInterface;
     }
 
+    private Boolean isPreview;
+    @Override
+    public boolean isPreview() {
+        if (isPreview == null)
+            isPreview = WebFxModuleFileDelegate.super.isPreview();
+        return isPreview;
+    }
+
     private String deployRepositoryId;
     @Override
     public String getDeployRepositoryId() {
