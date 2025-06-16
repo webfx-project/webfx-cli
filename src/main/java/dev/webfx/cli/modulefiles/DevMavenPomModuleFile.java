@@ -297,6 +297,11 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                         // When ArtifactResolver returns null, it means that the module doesn't need to be listed
                         if (artifactId != null) {
                             String groupId = ArtifactResolver.getGroupId(destinationModule, buildInfo);
+                            // Same with null groupId (ex: scram-client declared as a library in webfx.xml but with no
+                            // GAV => `requires com.ongres.scram.client;` can be added in module-info.java but without
+                            // the need to include that library in pom.xml - as Vert.x already includes it by default).
+                            if (groupId == null)
+                                return;
                             // Destination modules are already unique but maybe some are actually resolved to the same groupId:artifactId
                             String ga = groupId + ":" + artifactId;
                             if (!gas.contains(ga)) { // Checking uniqueness to avoid malformed pom
