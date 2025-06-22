@@ -12,5 +12,11 @@ public class WebToJavaCallbacks {
 ${bindCallbackMethodsBody}
     }
 
+    private static void registerClearFn(JsPropertyMap<Object> pm, String name, Object fn) {
+        if (!pm.has(name)) { // Skipping when not obfuscated (ex: draft compile pretty) to prevent infinite loop
+            pm.set(name, fn);
+        }
+    }
+
 ${JsFunctionsDeclaration}
 }

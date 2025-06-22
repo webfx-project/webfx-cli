@@ -39,7 +39,7 @@ final class GwtWebToJavaCallbacksGenerator {
                         String methodName = method.getMethodName();
                         int parameterCount = method.getParameterTypes().length;
                         parameterCounts.add(parameterCount);
-                        body.append("            pm.set(\"").append(methodName).append("\", (JsVoidFn").append(parameterCount).append("Arg");
+                        body.append("            registerClearFn(pm, \"").append(methodName).append("\", (JsVoidFn").append(parameterCount).append("Arg");
                         for (int i = 1; i <= parameterCount; i++) {
                             if (i == 1)
                                 body.append('<');
