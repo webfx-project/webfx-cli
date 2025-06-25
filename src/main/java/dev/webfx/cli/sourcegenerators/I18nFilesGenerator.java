@@ -78,7 +78,7 @@ public final class I18nFilesGenerator {
         keys.forEach(key -> {
             if (sb.length() > 0)
                 sb.append("\n");
-            if (!SourceVersion.isName(key)) // Commenting keys that are not valid java names
+            if (!SourceVersion.isName(key) || key.contains(".")) // Commenting keys that are not valid java names
                 sb.append("//");
             sb.append("    String ").append(key).append(" = \"").append(key).append("\";");
         });
