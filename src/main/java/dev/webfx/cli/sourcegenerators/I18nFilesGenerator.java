@@ -27,6 +27,8 @@ import java.util.Map;
  */
 public final class I18nFilesGenerator {
 
+    private static final String JAVA_KEYS_CONTAINER_TYPE = "interface"; // possible values are: "interface", "enum", "class", or "final class"
+
     private final static Map<Path, Config> I18N_CACHE = new HashMap<>(); // We assume the CLI exits after the update command, so no need to clear that cache
 
     public static int generateExecutableModuleI18nResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch) {
@@ -45,7 +47,7 @@ public final class I18nFilesGenerator {
 
         moduleWebFxPaths.forEach((moduleName, webfxPath) -> collectI18nDictionaries(moduleName, webfxPath, i18nMerges));
 
-        int[] filesCount = { 0 };
+        int[] filesCount = {0};
         // I18n merge
         i18nMerges.forEach((language, languageMerge) -> {
             Path i18nPropertiesPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".properties");
@@ -75,20 +77,27 @@ public final class I18nFilesGenerator {
             return false;
 
         StringBuilder sb = new StringBuilder();
+        boolean isEnum = "enum".equals(JAVA_KEYS_CONTAINER_TYPE);
+        boolean isInterface = "interface".equals(JAVA_KEYS_CONTAINER_TYPE);
         keys.forEach(key -> {
             if (sb.length() > 0)
-                sb.append("\n");
+                sb.append(isEnum ? ",\n" : "\n");
             if (!SourceVersion.isName(key) || key.contains(".")) // Commenting keys that are not valid java names
                 sb.append("//");
-            sb.append("    String ").append(key).append(" = \"").append(key).append("\";");
+            if (isEnum)
+                sb.append("    ").append(key);
+            else {
+                sb.append("    ").append(isInterface ? "" : "public static final ").append("Object ").append(key).append(" = \"").append(key).append("\";");
+            }
         });
 
         Path javaFilePath = module.getMainJavaSourceDirectory().resolve(javaKeysClass.replace('.', '/') + ".java");
         int lastDotIndex = javaKeysClass.lastIndexOf('.');
         String content = ResourceTextFileReader.readTemplate("I18nKeys.javat")
-                .replace("${package}", javaKeysClass.substring(0, lastDotIndex))
-                .replace("${class}", javaKeysClass.substring(lastDotIndex + 1))
-                .replace("${i18nKeysDeclaration}", sb);
+            .replace("${package}", javaKeysClass.substring(0, lastDotIndex))
+            .replace("${type}", JAVA_KEYS_CONTAINER_TYPE)
+            .replace("${name}", javaKeysClass.substring(lastDotIndex + 1))
+            .replace("${i18nKeysDeclaration}", sb);
         TextFileReaderWriter.writeTextFileIfNewOrModified(content, javaFilePath);
 
         // Generating a warning if some keys are not translated
