@@ -15,9 +15,10 @@
     <artifactId>webfx-cli</artifactId>
 
     <repositories>
+        <!-- For WebFX snapshots download (including webfx-parent) -->
         <repository>
             <id>webfx-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -29,8 +30,6 @@
 
 
     <properties>
-        <!-- Java 13 is required because of the use of FileSystems.newFileSystem() in the code -->
-        <java.version>13</java.version>
         <webfx.mainClass>dev.webfx.cli.WebFxCLI</webfx.mainClass>
         <!-- disabling classes and sources dependencies unpack to avoid including them again in the jar -->
         <plugin.dependency.param.unpack-classes.phase>none</plugin.dependency.param.unpack-classes.phase>
@@ -90,7 +89,7 @@
             <scope>runtime</scope>
         </dependency>
 
-       <dependency>
+        <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.7.7</version>
