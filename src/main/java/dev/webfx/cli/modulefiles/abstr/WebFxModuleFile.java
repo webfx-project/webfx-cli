@@ -2,9 +2,11 @@ package dev.webfx.cli.modulefiles.abstr;
 
 import dev.webfx.cli.core.*;
 import dev.webfx.cli.modulefiles.ArtifactResolver;
+import dev.webfx.cli.modulefiles.WebFxMavenRepository;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
+import dev.webfx.platform.util.Strings;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
@@ -187,11 +189,18 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
 
     default ReusableStream<MavenRepository> mavenRepositories() {
         return XmlUtil.nodeListToReusableStream(lookupNodeList("maven-repositories[1]/*"), node -> {
+            boolean webfxMavenRepository = "webfx-repository".equals(node.getName());
+            boolean snapshot = webfxMavenRepository && WebFxMavenRepository.SNAPSHOT || "snapshot-repository".equals(node.getName());
             String id = XmlUtil.getAttributeValue((Element) node, "id");
-            if (id == null)
-                throw new CliException("Missing id attribute in " + getModule().getName() + " Maven module declaration: " + XmlUtil.formatXmlText(node));
+            if (id == null) {
+                if (webfxMavenRepository)
+                    id = WebFxMavenRepository.ID;
+                else
+                    throw new CliException("Missing id attribute in " + getModule().getName() + " Maven module declaration: " + XmlUtil.formatXmlText(node));
+            }
             String url = node.getText();
-            boolean snapshot = node.getName().equals("snapshot-repository");
+            if (Strings.isEmpty(url) && webfxMavenRepository)
+                url = WebFxMavenRepository.URL;
             return new MavenRepository(id, url, snapshot);
         });
     }

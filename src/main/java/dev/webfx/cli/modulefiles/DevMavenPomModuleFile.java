@@ -51,42 +51,47 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         boolean isMavenRootModule = projectModule instanceof RootModule || projectModule.getParentModule() != projectModule.getParentDirectoryModule();
         BuildInfo buildInfo = projectModule.getBuildInfo();
         String templateFileName =
-                isMavenRootModule ? "pom_root.xml" // (((RootModule) projectModule).isInlineWebFxParent() ? "pom_root_inline.xml" : "pom_root.xml")
-                        : projectModule.isAggregate() ? "pom_aggregate.xml"
-                        : !buildInfo.isExecutable ? "pom_not_executable.xml"
-                        : buildInfo.isForGwt ? "pom_gwt_executable.xml"
-                        : buildInfo.isForJ2cl ? "pom_j2cl_executable.xml"
-                        : buildInfo.isForTeaVm ? "pom_teavm_executable.xml"
-                        : buildInfo.isForGluon ? "pom_gluon_executable.xml"
-                        : buildInfo.isForVertx ? "pom_vertx_executable.xml"
-                        : "pom_openjfx_executable.xml";
+            isMavenRootModule ? "pom_root.xml" // (((RootModule) projectModule).isInlineWebFxParent() ? "pom_root_inline.xml" : "pom_root.xml")
+                : projectModule.isAggregate() ? "pom_aggregate.xml"
+                : !buildInfo.isExecutable ? "pom_not_executable.xml"
+                : buildInfo.isForGwt ? "pom_gwt_executable.xml"
+                : buildInfo.isForJ2cl ? "pom_j2cl_executable.xml"
+                : buildInfo.isForTeaVm ? "pom_teavm_executable.xml"
+                : buildInfo.isForGluon ? "pom_gluon_executable.xml"
+                : buildInfo.isForVertx ? "pom_vertx_executable.xml"
+                : "pom_openjfx_executable.xml";
         String template = ResourceTextFileReader.readTemplate(templateFileName)
-                .replace("${groupId}", ArtifactResolver.getGroupId(projectModule))
-                .replace("${artifactId}", getArtifactId(projectModule))
-                .replace("${version}", getVersion(projectModule))
-                .replace("${application.name}", getApplicationName(projectModule))
-                .replace("${application.displayName}", getApplicationDisplayName(projectModule));
+            .replace("${groupId}", ArtifactResolver.getGroupId(projectModule))
+            .replace("${artifactId}", getArtifactId(projectModule))
+            .replace("${version}", getVersion(projectModule))
+            .replace("${application.name}", getApplicationName(projectModule))
+            .replace("${application.displayName}", getApplicationDisplayName(projectModule))
+            .replace("${webfx-repository-id}", WebFxMavenRepository.ID)
+            .replace("${webfx-repository-url}", WebFxMavenRepository.URL)
+            .replace("${webfx-repository-snapshot}", String.valueOf(WebFxMavenRepository.SNAPSHOT))
+            .replace("${webfx-repository-release}", String.valueOf(WebFxMavenRepository.RELEASE))
+            ;
         // For the executable Gluon pom, we need to add some extra configuration required by the GluonFX plugin:
         if (template.contains("${plugin.gluonfx.configuration}")) {
             // 1) <attachList> => lists all the Gluon attach modules used by the application:
             String gluonConfig = "<attachList>\n" +
-                    projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
-                            .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
-                            .map(GavApi::getArtifactId)
-                            .distinct()
-                            .stream().sorted()
-                            .map(a -> "<list>" + a + "</list>")
-                            .collect(Collectors.joining("\n"))
-                    + "</attachList>";
+                                 projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
+                                     .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
+                                     .map(GavApi::getArtifactId)
+                                     .distinct()
+                                     .stream().sorted()
+                                     .map(a -> "<list>" + a + "</list>")
+                                     .collect(Collectors.joining("\n"))
+                                 + "</attachList>";
             // 2) <resourcesList> => lists all resource files potentially used by the application
             gluonConfig += "\n<resourcesList>\n"
-                   + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
-                           .flatMap(ProjectModule::getResourcePackages)
-                           .distinct()
-                           .stream().sorted()
-                           .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
-                           .collect(Collectors.joining("\n"))
-                   + "</resourcesList>";
+                           + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
+                               .flatMap(ProjectModule::getResourcePackages)
+                               .distinct()
+                               .stream().sorted()
+                               .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
+                               .collect(Collectors.joining("\n"))
+                           + "</resourcesList>";
             // 3) application identifier
             String applicationId = projectModule.getApplicationId();
             if (applicationId != null)
@@ -95,29 +100,29 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             String applicationLabel = projectModule.getApplicationLabel();
             if (applicationLabel != null)
                 gluonConfig += "\n<releaseConfiguration>\n"
-                        + "<!-- macOS/iOS -->\n"
-                        + "<bundleName>" + applicationLabel + "</bundleName>\n"
-                        + "<!-- Android -->\n"
-                        + "<appLabel>" + applicationLabel + "</appLabel>\n"
-                        + "</releaseConfiguration>";
+                               + "<!-- macOS/iOS -->\n"
+                               + "<bundleName>" + applicationLabel + "</bundleName>\n"
+                               + "<!-- Android -->\n"
+                               + "<appLabel>" + applicationLabel + "</appLabel>\n"
+                               + "</releaseConfiguration>";
             template = template.replace("${plugin.gluonfx.configuration}", gluonConfig);
         }
         // J2CL resources
         if (template.contains("${resourceArtifactItems}")) {
             String artifactItems = ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
-                    .map(pm -> {
-                        ReusableStream<String> resourcePackages = pm.getNonEmbedResourcePackages();
-                        if (resourcePackages.isEmpty())
-                            return null;
-                        return "<artifactItem>\n" +
-                               "<groupId>" + ArtifactResolver.getGroupId(pm) + "</groupId>\n" +
-                               "<artifactId>" + ArtifactResolver.getArtifactId(pm) + "</artifactId>\n" +
-                               "<version>" + ArtifactResolver.getVersion(pm) + "</version>\n" +
-                               "<includes>" + resourcePackages.map(p -> p.replace('.', '/') + "/").collect(Collectors.joining(" , ")) + "</includes>\n" +
-                               "</artifactItem>";
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.joining("\n"));
+                .map(pm -> {
+                    ReusableStream<String> resourcePackages = pm.getNonEmbedResourcePackages();
+                    if (resourcePackages.isEmpty())
+                        return null;
+                    return "<artifactItem>\n" +
+                           "<groupId>" + ArtifactResolver.getGroupId(pm) + "</groupId>\n" +
+                           "<artifactId>" + ArtifactResolver.getArtifactId(pm) + "</artifactId>\n" +
+                           "<version>" + ArtifactResolver.getVersion(pm) + "</version>\n" +
+                           "<includes>" + resourcePackages.map(p -> p.replace('.', '/') + "/").collect(Collectors.joining(" , ")) + "</includes>\n" +
+                           "</artifactItem>";
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining("\n"));
             if (artifactItems.isEmpty())
                 artifactItems = "<skip>true</skip>"; // We skip the resource plugin, otherwise it will fail if no artifact items are provided
             else
@@ -205,7 +210,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                     XmlUtil.appendElementWithTextContent(repositoryElement, "releases/enabled", String.valueOf(!mr.isSnapshot()));
                     XmlUtil.appendElementWithTextContent(repositoryElement, "snapshots/enabled", String.valueOf(mr.isSnapshot()));
                 } else {
-                    Element repositoryElement = XmlUtil.createAndAppendElement(distributionManagementNode,  mr.isSnapshot() ? "snapshotRepository" : "repository");
+                    Element repositoryElement = XmlUtil.createAndAppendElement(distributionManagementNode, mr.isSnapshot() ? "snapshotRepository" : "repository");
                     XmlUtil.appendElementWithTextContent(repositoryElement, "id", mr.getId());
                     XmlUtil.appendElementWithTextContent(repositoryElement, "url", mr.getUrl());
                 }
@@ -224,7 +229,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         String version = ArtifactResolver.getVersion(module);
         // Getting the GAV for the parent module
         Module parentModule = module instanceof DevRootModule && !module.getMavenModuleFile().fileExists() ? null // This happens on first pom.xml creation with "webfx init" => no parent yet
-                : module.getParentModule(); // Otherwise, we fetch the parent module (this may invoke mvn)
+            : module.getParentModule(); // Otherwise, we fetch the parent module (this may invoke mvn)
         String parentGroupId = parentModule == null ? null : ArtifactResolver.getGroupId(parentModule);
         String parentVersion = parentModule == null ? null : ArtifactResolver.getVersion(parentModule);
         if (version != null && !version.equals(parentVersion))
@@ -262,81 +267,81 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         try (BuildInfoThreadLocal closable = BuildInfoThreadLocal.open(buildInfo)) { // To pass this buildInfo to ArtifactResolver when sorting the dependencies via Module.compareTo()
             // We need to get all dependencies of the module, to populate <dependencies> in the pom.xml
             ReusableStream<ModuleDependency> dependencies =
-                    // For a GWT executable module, we need to list all transitive dependencies (to pull all the source code to compile by GWT)
-                    buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies() :
+                // For a GWT executable module, we need to list all transitive dependencies (to pull all the source code to compile by GWT)
+                buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies() :
                     // For other modules, we just need the direct dependencies, but also the implicit providers
                     ReusableStream.concat(
                             javaSourceRootAnalyzer.getDirectDependencies(),
                             javaSourceRootAnalyzer.getTransitiveDependencies()
-                                    .filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER),
+                                .filter(dep -> dep.getType() == ModuleDependency.Type.IMPLICIT_PROVIDER),
                             // Also adding optional runtime dependency to java base/time j2cl (if used) to make J2CL compilation successful with Vertispan plugin
                             // (ignoring executable modules as this case is managed by JavaSourceRootAnalyzer.collectExecutableEmulationModules())
                             !buildInfo.isExecutable && javaSourceRootAnalyzer.requiresJavaBaseJ2clEmulation() ? ReusableStream.of(ModuleDependency.createVertispanJ2clEmulationDependency(projectModule, projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_J2CL), projectModule.getTarget().hasTag(TargetTag.J2CL))) : null,
                             !buildInfo.isExecutable && javaSourceRootAnalyzer.requiresJavaTimeJ2clEmulation() ? ReusableStream.of(ModuleDependency.createVertispanJ2clEmulationDependency(projectModule, projectModule.getRootModule().searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVATIME_EMUL_J2CL), projectModule.getTarget().hasTag(TargetTag.J2CL))) : null
-                    )
-                            .filter(Objects::nonNull)
-                            .distinct();
+                        )
+                        .filter(Objects::nonNull)
+                        .distinct();
             // Once we have these dependencies, we proceed them to populate the <dependencies> node
             dependencies
-                    // The <dependencies> node actually lists the destination modules, which are the most important
-                    // objects to extract here, but to know if each module is optional or not (<optional>true</optional>),
-                    // we need to check if any dependency is optional. To prepare this job, we group the dependencies by
-                    // destination module. As a result we will get a map: key = destination module (most important) ->
-                    // value = list of all dependencies having that module as destination module (used for optional).
-                    .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
-                    // We sort the modules, so they don't appear in a random order in the pom (sorted mainly by artifactId - see Module.compareTo() for more info)
-                    .stream().sorted(Map.Entry.comparingByKey()) // Module.compareTo() calls ArtifactResolver.getArtifactId() which will find the buildInfo via BuildInfoThreadLocal
-                    .forEach(moduleGroup -> { // Map.Entry
-                        Module destinationModule = moduleGroup.getKey();
-                        if (destinationModule instanceof M2RootModule) {
-                            Module bomModule = ((M2RootModule) destinationModule).getLibraryModule().getRootModule();
-                            if (bomModule != null)
-                                destinationModule = bomModule;
-                        }
-                        String artifactId = ArtifactResolver.getArtifactId(destinationModule, buildInfo);
-                        // When ArtifactResolver returns null, it means that the module doesn't need to be listed
-                        if (artifactId != null) {
-                            String groupId = ArtifactResolver.getGroupId(destinationModule, buildInfo);
-                            // Same with null groupId (ex: scram-client declared as a library in webfx.xml but with no
-                            // GAV => `requires com.ongres.scram.client;` can be added in module-info.java but without
-                            // the need to include that library in pom.xml - as Vert.x already includes it by default).
-                            if (groupId == null)
+                // The <dependencies> node actually lists the destination modules, which are the most important
+                // objects to extract here, but to know if each module is optional or not (<optional>true</optional>),
+                // we need to check if any dependency is optional. To prepare this job, we group the dependencies by
+                // destination module. As a result we will get a map: key = destination module (most important) ->
+                // value = list of all dependencies having that module as destination module (used for optional).
+                .collect(Collectors.groupingBy(ModuleDependency::getDestinationModule)).entrySet()
+                // We sort the modules, so they don't appear in a random order in the pom (sorted mainly by artifactId - see Module.compareTo() for more info)
+                .stream().sorted(Map.Entry.comparingByKey()) // Module.compareTo() calls ArtifactResolver.getArtifactId() which will find the buildInfo via BuildInfoThreadLocal
+                .forEach(moduleGroup -> { // Map.Entry
+                    Module destinationModule = moduleGroup.getKey();
+                    if (destinationModule instanceof M2RootModule) {
+                        Module bomModule = ((M2RootModule) destinationModule).getLibraryModule().getRootModule();
+                        if (bomModule != null)
+                            destinationModule = bomModule;
+                    }
+                    String artifactId = ArtifactResolver.getArtifactId(destinationModule, buildInfo);
+                    // When ArtifactResolver returns null, it means that the module doesn't need to be listed
+                    if (artifactId != null) {
+                        String groupId = ArtifactResolver.getGroupId(destinationModule, buildInfo);
+                        // Same with null groupId (ex: scram-client declared as a library in webfx.xml but with no
+                        // GAV => `requires com.ongres.scram.client;` can be added in module-info.java but without
+                        // the need to include that library in pom.xml - as Vert.x already includes it by default).
+                        if (groupId == null)
+                            return;
+                        // Destination modules are already unique but maybe some are actually resolved to the same groupId:artifactId
+                        String ga = groupId + ":" + artifactId;
+                        if (!gas.contains(ga)) { // Checking uniqueness to avoid malformed pom
+                            gas.add(ga);
+                            String scope = test ? "test" : ArtifactResolver.getScope(moduleGroup, buildInfo);
+                            if ("aggregate".equals(scope))
                                 return;
-                            // Destination modules are already unique but maybe some are actually resolved to the same groupId:artifactId
-                            String ga = groupId + ":" + artifactId;
-                            if (!gas.contains(ga)) { // Checking uniqueness to avoid malformed pom
-                                gas.add(ga);
-                                String scope = test ? "test" : ArtifactResolver.getScope(moduleGroup, buildInfo);
-                                if ("aggregate".equals(scope))
-                                    return;
-                                Node groupNode = XmlUtil.appendElementWithTextContent(dependenciesNode, "/dependency/groupId", groupId, true, false);
-                                Element dependencyElement = groupNode.getParent();
-                                XmlUtil.appendElementWithTextContent(dependencyElement, "/artifactId", artifactId);
-                                String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
-                                if (version != null)
-                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/version", version);
-                                String type = ArtifactResolver.getType(destinationModule);
-                                if (type != null)
-                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/type", type);
-                                String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
-                                // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
-                                if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))
-                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/scope", scope);
-                                if (classifier != null)
-                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/classifier", classifier);
-                                if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
-                                    XmlUtil.appendElementWithTextContent(dependencyElement, "/optional", "true");
-                                // If the module is a library with an <exclusions> element, we copy that element in the pom
-                                if (destinationModule instanceof LibraryModule) {
-                                    LibraryModule libraryModule = (LibraryModule) destinationModule;
-                                    Element exclusionsNode = XmlUtil.lookupElement(libraryModule.getXmlNode(), "exclusions[1]");
-                                    if (exclusionsNode != null) {
-                                        dependencyElement.add(XmlUtil.copyElement(exclusionsNode, getDocument()));
-                                    }
+                            Node groupNode = XmlUtil.appendElementWithTextContent(dependenciesNode, "/dependency/groupId", groupId, true, false);
+                            Element dependencyElement = groupNode.getParent();
+                            XmlUtil.appendElementWithTextContent(dependencyElement, "/artifactId", artifactId);
+                            String version = ArtifactResolver.getVersion(destinationModule, buildInfo);
+                            if (version != null)
+                                XmlUtil.appendElementWithTextContent(dependencyElement, "/version", version);
+                            String type = ArtifactResolver.getType(destinationModule);
+                            if (type != null)
+                                XmlUtil.appendElementWithTextContent(dependencyElement, "/type", type);
+                            String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
+                            // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
+                            if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))
+                                XmlUtil.appendElementWithTextContent(dependencyElement, "/scope", scope);
+                            if (classifier != null)
+                                XmlUtil.appendElementWithTextContent(dependencyElement, "/classifier", classifier);
+                            if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
+                                XmlUtil.appendElementWithTextContent(dependencyElement, "/optional", "true");
+                            // If the module is a library with an <exclusions> element, we copy that element in the pom
+                            if (destinationModule instanceof LibraryModule) {
+                                LibraryModule libraryModule = (LibraryModule) destinationModule;
+                                Element exclusionsNode = XmlUtil.lookupElement(libraryModule.getXmlNode(), "exclusions[1]");
+                                if (exclusionsNode != null) {
+                                    dependencyElement.add(XmlUtil.copyElement(exclusionsNode, getDocument()));
                                 }
                             }
                         }
-                    });
+                    }
+                });
         }
     }
 

@@ -6,13 +6,13 @@
 
         <!-- For WebFX snapshots download (including webfx-parent) -->
         <repository>
-            <id>webfx-snapshots</id>
-            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <id>${webfx-repository-id}</id>
+            <url>${webfx-repository-url}</url>
             <releases>
-                <enabled>false</enabled>
+                <enabled>${webfx-repository-release}</enabled>
             </releases>
             <snapshots>
-                <enabled>true</enabled>
+                <enabled>${webfx-repository-snapshot}</enabled>
             </snapshots>
         </repository>
 
