@@ -50,8 +50,8 @@ public final class I18nFilesGenerator {
         int[] filesCount = {0};
         // I18n merge
         i18nMerges.forEach((language, languageMerge) -> {
-            Path i18nPropertiesPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".properties");
-            Path i18nJsonPath = module.getMainResourcesDirectory().resolve("dev/webfx/stack/i18n/" + language + ".json");
+            Path i18nPropertiesPath = module.getMainResourcesDirectory().resolve("dev/webfx/extras/i18n/" + language + ".properties");
+            Path i18nJsonPath = module.getMainResourcesDirectory().resolve("dev/webfx/extras/i18n/" + language + ".json");
             if (languageMerge.mergeConfigs(i18nPropertiesPath, i18nJsonPath))
                 filesCount[0]++;
         });

@@ -139,7 +139,7 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getSourcesRootConfigResourcePackage() {
-        if (!isExecutable())  // Also important optimisation to avoid downloading the sources artifact
+        if (!isExecutable())  // Also important optimization to avoid downloading the sources artifact
             return ReusableStream.empty();
         // May cause the download of the sources artifact
         Path srcRootConfFolderPath = getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FOLDER);
@@ -148,11 +148,11 @@ public interface ProjectModule extends Module {
         return ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE);
     }
 
-    String I18N_RESOURCE_FOLDER = "dev/webfx/stack/i18n";
+    String I18N_RESOURCE_FOLDER = "dev/webfx/extras/i18n";
     String I18N_PACKAGE = I18N_RESOURCE_FOLDER.replace('/', '.');
 
     default ReusableStream<String> getI18nResourcePackage() {
-        if (!isExecutable()) // Also important optimisation to avoid downloading the sources artifact
+        if (!isExecutable()) // Also important optimization to avoid downloading the sources artifact
             return ReusableStream.empty();
         // May cause the download of the sources artifact
         Path i18nFolderPath = getMainResourcesDirectory().resolve(I18N_RESOURCE_FOLDER);
@@ -162,7 +162,7 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getI18nResources() {
-        if (!isExecutable()) // Also important optimisation to avoid downloading the sources artifact
+        if (!isExecutable()) // Also important optimization to avoid downloading the sources artifact
             return ReusableStream.empty();
         // May cause the download of the sources artifact
         Path mainResourcesDirectory = getMainResourcesDirectory();
