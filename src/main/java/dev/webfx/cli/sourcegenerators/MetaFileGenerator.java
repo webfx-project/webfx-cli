@@ -21,6 +21,18 @@ public final class MetaFileGenerator {
                             .replace("${executableModuleVersion}", module.getVersion())
                             .replace("${applicationModuleName}", applicationModuleName)
                     , module.getMainResourcesDirectory().resolve(Meta.META_EXE_RESOURCE_FILE_PATH));
+            /* Note that the file template also contains ${maven.build.timestamp} and ${webfx.meta.environment} which we
+               keep as is, but Maven will replace it while copying it to the target folder due to this webfx-parent
+               pom.xml section:
+               <resource> <!-- filtering (maven variable replacements) for index.html and exe.properties -->
+                   <directory>src/main/resources</directory>
+                   <filtering>true</filtering>
+                   <includes>
+                       <include>public/index.html</include> <!-- because of main.css?v=${maven.build.timestamp} to force CSS to reload on each new build -->
+                       <include>dev/webfx/platform/meta/exe/exe.properties</include> <!-- because of mavenBuildTimestamp=${maven.build.timestamp} and environment=${webfx.meta.environment} -->
+                   </includes>
+               </resource>
+            */
             return true;
         }
         return false;
