@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="webfx-cli">
 
+    <parent name="webfx-parent"/>
+
     <exported-packages>
         <source-packages/>
         <resource-package>dev.webfx.cli.commands</resource-package>
