@@ -184,8 +184,11 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             else // means that it's just a pom.xml without webfx.xml
                 return false;
         } else {
+            /* Commented to make it work with webfx-cli-fat (which has no source directory, but we still want to generate
+               the pom.xml). Regarding webfx-parent and webfx-stack-parent, they have a <skip-maven-pom/> option anyway.
             if (!module.hasSourceDirectory()) // Ex: webfx-parent, webfx-stack-parent
                 return false;
+            */
             Element dependenciesNode = lookupOrCreateNode("dependencies");
             XmlUtil.removeChildren(dependenciesNode);
             Set<String> gas = new HashSet<>(); // set of groupId:artifactId listed so far in the pom dependencies - used for duplicate removal below
