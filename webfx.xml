@@ -34,8 +34,6 @@
 
     <maven-pom-manual>
         <properties>
-            <!-- Java 13 is required because of the use of FileSystems.newFileSystem() in the code -->
-            <java.version>13</java.version>
             <webfx.mainClass>dev.webfx.cli.WebFxCLI</webfx.mainClass>
             <!-- disabling classes and sources dependencies unpack to avoid including them again in the jar -->
             <plugin.dependency.param.unpack-classes.phase>none</plugin.dependency.param.unpack-classes.phase>
@@ -66,7 +64,7 @@
                         <resource>
                             <directory>src/main/resources/dev/webfx/cli/version/template</directory>
                             <filtering>true</filtering>
-                            <!-- A bit hacky but for now the development version is stored in a resource file under git source control -->
+                            <!-- A bit hacky, but for now the development version is stored in a resource file under git source control -->
                             <targetPath>../../src/main/resources/dev/webfx/cli/version/dev</targetPath>
                         </resource>
                     </resources>
