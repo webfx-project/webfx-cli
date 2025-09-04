@@ -24,6 +24,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
         return getBooleanProjectAttributeValue("executable");
     }
 
+    default boolean isPwa() {
+        return getBooleanProjectAttributeValue("pwa");
+    }
+
     default boolean requiresTimeZoneData() {
         return getBooleanProjectAttributeValue("requiresTimezoneData");
     }

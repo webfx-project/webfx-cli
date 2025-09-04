@@ -16,11 +16,12 @@ public final class MetaFileGenerator {
             ProjectModule applicationModule = module.getApplicationModule();
             String applicationModuleName = applicationModule != null ? applicationModule.getName() : "";
             TextFileReaderWriter.writeTextFileIfNewOrModified(
-                    ResourceTextFileReader.readTemplate(Meta.META_EXE_RESOURCE_FILE_NAME) // Should be exe.properties
-                            .replace("${executableModuleName}", module.getName())
-                            .replace("${executableModuleVersion}", module.getVersion())
-                            .replace("${applicationModuleName}", applicationModuleName)
-                    , module.getMainResourcesDirectory().resolve(Meta.META_EXE_RESOURCE_FILE_PATH));
+                ResourceTextFileReader.readTemplate(Meta.META_EXE_RESOURCE_FILE_NAME) // Should be exe.properties
+                    .replace("${executableModuleName}", module.getName())
+                    .replace("${executableModuleVersion}", module.getVersion())
+                    .replace("${applicationModuleName}", applicationModuleName)
+                    .replace("${pwa}", String.valueOf(module.isPwa()))
+                , module.getMainResourcesDirectory().resolve(Meta.META_EXE_RESOURCE_FILE_PATH));
             /* Note that the file template also contains ${maven.build.timestamp} and ${webfx.meta.environment} which we
                keep as is, but Maven will replace it while copying it to the target folder due to this webfx-parent
                pom.xml section:

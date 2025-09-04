@@ -42,6 +42,11 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
+    default boolean isPwa() {
+        return getDelegate().isPwa();
+    }
+
+    @Override
     default boolean requiresTimeZoneData() {
         return getDelegate().requiresTimeZoneData();
     }

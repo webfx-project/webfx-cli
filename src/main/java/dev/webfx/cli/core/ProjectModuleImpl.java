@@ -150,6 +150,17 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         return applicationModule;
     }
 
+    @Override
+    public boolean isPwa() {
+        boolean pwa = ProjectModule.super.isPwa();
+        if (!pwa && getBuildInfo().isForWeb) {
+            ProjectModule applicationModule = getApplicationModule();
+            if (applicationModule != null)
+                pwa = applicationModule.isPwa();
+        }
+        return pwa;
+    }
+
     public Target getTarget() {
         if (target == null)
             target = new Target(this);

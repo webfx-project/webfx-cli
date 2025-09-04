@@ -183,6 +183,10 @@ public interface ProjectModule extends Module {
         return getWebFxModuleFile().isExecutable();
     }
 
+    default boolean isPwa() {
+        return getWebFxModuleFile().isPwa();
+    }
+
     default boolean requiresTimeZoneData() {
         return getWebFxModuleFile().requiresTimeZoneData();
     }

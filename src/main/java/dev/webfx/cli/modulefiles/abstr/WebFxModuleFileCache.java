@@ -31,8 +31,17 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
     @Override
     public boolean isExecutable() {
         if (executable == null)
-             executable = WebFxModuleFileDelegate.super.isExecutable();
+            executable = WebFxModuleFileDelegate.super.isExecutable();
         return executable;
+    }
+
+    private Boolean pwa;
+
+    @Override
+    public boolean isPwa() {
+        if (pwa == null)
+            pwa = WebFxModuleFileDelegate.super.isPwa();
+        return pwa;
     }
 
     private Boolean requiresTimeZoneData;
