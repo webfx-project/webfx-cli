@@ -35,5 +35,7 @@ module webfx.cli {
 
     // Resources packages
     opens dev.webfx.cli.commands;
+    exports dev.webfx.cli.specific;
+    exports dev.webfx.cli.exceptions;
 
 }

@@ -4,6 +4,7 @@ import dev.webfx.cli.modulefiles.M2MavenPomModuleFile;
 import dev.webfx.cli.modulefiles.M2WebFxModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFileCache;
+import dev.webfx.cli.specific.SpecificFolders;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.io.IOException;
@@ -186,7 +187,7 @@ public class M2ProjectModule extends ProjectModuleImpl {
     @Override
     public Path getMainWebFxSourceDirectory() {
         // The webfx source directory has been copied to META-INF/webfx in the -sources.jar artifact.
-        return getSourceDirectory().resolve("META-INF/webfx");
+        return getSourceDirectory().resolve(SpecificFolders.META_INF_WEBFX);
     }
 
     @Override

@@ -2,6 +2,7 @@ package dev.webfx.cli.core;
 
 import dev.webfx.cli.modulefiles.abstr.XmlGavApi;
 import dev.webfx.cli.modulefiles.abstr.XmlGavUtil;
+import dev.webfx.cli.specific.SpecificPackages;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import org.dom4j.Element;
@@ -26,7 +27,7 @@ public class LibraryModule extends ModuleImpl implements XmlGavApi {
         type = lookupType();
         this.webFx = webFx;
         exportedModules = XmlUtil.nodeListToTextContentReusableStream(XmlUtil.lookupElementList(moduleNode, "exported-packages//package"));
-        if (exportedModules.anyMatch(p -> p.equals("java.time") || p.equals("java.nio"))) {
+        if (exportedModules.anyMatch(p -> p.equals(SpecificPackages.JAVA_TIME) || p.equals(SpecificPackages.JAVA_NIO))) {
             setJavaBaseEmulationModule(true);
         }
     }

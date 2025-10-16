@@ -11,7 +11,7 @@ public final class GwtJ2clFilesGenerator {
     public static void generateGwtJ2clFiles(DevProjectModule module, UpdateTasks tasks) {
         if (tasks.indexHtml) { // Common to GWT & J2CL
             tasks.indexHtmlStopWatch.on();
-            if (module.getGwtJ2clHtmlFile().writeFile())
+            if (module.getWebHtmlFile().writeFile())
                 tasks.indexHtmlCount++;
             tasks.indexHtmlStopWatch.off();
         }

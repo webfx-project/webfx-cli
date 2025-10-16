@@ -31,7 +31,7 @@ final class GwtEmbedResourcesBundleSourceGenerator {
                             .append("    @Source(\"").append(r).append("\")\n")
                             .append("    TextResource ").append(resourceMethodName).append("();\n\n");
                     resourceRegistration
-                            .append("            registerResource(\"").append(r).append("\", R.").append(resourceMethodName).append("());\n");
+                            .append("            registerResource(\"").append(r).append("\", () -> R.").append(resourceMethodName).append("().getText());\n");
                 });
         String source = resourceNumber.get() == 0 ? null // if no resource, setting the source to null so writeTextFile() will actually delete the file if exists
                 : ResourceTextFileReader.readTemplate("GwtEmbedResourcesBundle.javat")

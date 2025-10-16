@@ -1,5 +1,6 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.specific.SpecificFolders;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
@@ -12,7 +13,7 @@ import java.util.Spliterators;
  */
 public final class WebFXHiddenFolder {
 
-    private static final Path WEBFX_HIDDEN_FOLDER = Path.of(System.getProperty("user.home"), ".webfx");
+    private static final Path WEBFX_HIDDEN_FOLDER = Path.of(System.getProperty("user.home"), SpecificFolders.USER_WEBFX);
 
     public static Path getCliFolder() {
         return WEBFX_HIDDEN_FOLDER.resolve("cli");

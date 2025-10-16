@@ -1,6 +1,10 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.exceptions.ArtifactNotFoundException;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.modulefiles.abstr.GavApi;
+import dev.webfx.cli.specific.SpecificFiles;
+import dev.webfx.cli.specific.SpecificFolders;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 import dev.webfx.cli.util.stopwatch.StopWatch;
@@ -30,8 +34,8 @@ public final class MavenUtil {
             // Maven invocation (advantage: returns the correct path 100% sure / disadvantage: takes a few seconds to execute)
             Path.of(new ProcessCall("mvn", "-N", "help:evaluate", "-Dexpression=settings.localRepository", "-q", "-DforceStdout").getLastResultLine())
             // Otherwise, getting the standard path  (advantage: immediate / disadvantage: not 100% sure (the developer may have changed the default Maven settings)
-            : Path.of(System.getProperty("user.home"), ".m2", "repository");
-    //private static Invoker MAVEN_INVOKER; // Will be initialised later if needed
+            : Path.of(System.getProperty("user.home"), SpecificFolders.USER_M2_REPOSITORY);
+    //private static Invoker MAVEN_INVOKER; // Will be initialized later if needed
 
     private static boolean CLEAN_M2_SNAPSHOTS;
 
@@ -58,7 +62,7 @@ public final class MavenUtil {
         }
     }
 
-    private static final Path NOT_FOUND_ARTIFACTS_PATH = WebFXHiddenFolder.getMavenWorkspace().resolve("NOT_FOUND_ARTIFACTS.txt");
+    private static final Path NOT_FOUND_ARTIFACTS_PATH = WebFXHiddenFolder.getMavenWorkspace().resolve(SpecificFiles.WS_NOT_FOUND_ARTIFACTS_TEXT);
     private static String NOT_FOUND_ARTIFACTS_CONTENT;
     private static final Set<String> NOT_FOUND_ARTIFACTS = new HashSet<>();
 
@@ -182,7 +186,7 @@ public final class MavenUtil {
         Path mavenWorkspace = getMavenModuleWorkspace(module);
         mavenWorkspace.toFile().mkdirs();
         try {
-            Files.copy(module.getMavenModuleFile().getModuleFilePath(), mavenWorkspace.resolve("pom.xml"), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(module.getMavenModuleFile().getModuleFilePath(), mavenWorkspace.resolve(SpecificFiles.POM_XML), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new CliException(e.getMessage());
         }

@@ -1,6 +1,6 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.core.CliException;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.core.WebFXHiddenFolder;
 import dev.webfx.cli.util.os.OperatingSystem;

@@ -1,11 +1,13 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.core.CliException;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.DevRootModule;
 import dev.webfx.cli.core.TargetTag;
 import dev.webfx.cli.modulefiles.DevMavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
+import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
+import dev.webfx.cli.sourcegenerators.TeaVMEmbedResourcesBundleSourceGenerator;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import picocli.CommandLine.Command;
@@ -61,6 +63,7 @@ public final class Create extends CommonSubcommand {
             Files.createDirectories(sourcePath);
             Files.createDirectories(resourcesPath);
             Files.createDirectories(testPath);
+            WebFxModuleFile webFxModuleFile = module.getWebFxModuleFile();
             if (templateFileName != null && fullClassName != null) {
                 int p = fullClassName.lastIndexOf('.');
                 String packageName = fullClassName.substring(0, p);
@@ -73,10 +76,14 @@ public final class Create extends CommonSubcommand {
                 if (!Files.exists(javaFilePath))
                     TextFileReaderWriter.writeTextFile(template, javaFilePath);
                 if (template.contains("javafx.application.Application"))
-                    module.getWebFxModuleFile().addProvider("javafx.application.Application", fullClassName);
+                    webFxModuleFile.addProvider("javafx.application.Application", fullClassName);
             }
-            module.getWebFxModuleFile().setExecutable(executable);
-            module.getWebFxModuleFile().writeFile();
+            webFxModuleFile.setExecutable(executable);
+            if (executable && module.getBuildInfo().isForTeaVm) {
+                webFxModuleFile.addProvider("org.teavm.classlib.ResourceSupplier", TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName());
+                webFxModuleFile.addProvider("dev.webfx.platform.resource.spi.impl.web.WebResourceBundle", TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName());
+            }
+            webFxModuleFile.writeFile();
             return module;
         }
     }

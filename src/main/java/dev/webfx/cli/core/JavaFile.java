@@ -19,17 +19,17 @@ public final class JavaFile implements Comparable<JavaFile> {
     private String packageName;
     private String className;
     private final ReusableStream<String> usedJavaPackagesCache =
-            ReusableStream.fromIterable(new JavaCodePackagesFinder(javaCode))
-                    .distinct()
-                    .cache();
+        ReusableStream.fromIterable(new JavaCodePackagesFinder(javaCode))
+            .distinct()
+            .cache();
     private final ReusableStream<String> usedRequiredJavaServicesCache =
-            ReusableStream.fromIterable(new RequiredJavaServicesFinder(javaCode))
-                    .distinct()
-                    .cache();
+        ReusableStream.fromIterable(new RequiredJavaServicesFinder(javaCode))
+            .distinct()
+            .cache();
     private final ReusableStream<String> usedOptionalJavaServicesCache =
-            ReusableStream.fromIterable(new OptionalJavaServicesFinder(javaCode))
-                    .distinct()
-                    .cache();
+        ReusableStream.fromIterable(new OptionalJavaServicesFinder(javaCode))
+            .distinct()
+            .cache();
 
     /***********************
      ***** Constructor *****

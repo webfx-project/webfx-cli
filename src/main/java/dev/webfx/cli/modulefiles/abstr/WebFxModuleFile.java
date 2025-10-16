@@ -1,6 +1,7 @@
 package dev.webfx.cli.modulefiles.abstr;
 
 import dev.webfx.cli.core.*;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.modulefiles.ArtifactResolver;
 import dev.webfx.cli.modulefiles.WebFxMavenRepository;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;

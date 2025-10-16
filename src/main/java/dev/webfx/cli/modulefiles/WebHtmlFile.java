@@ -1,5 +1,6 @@
 package dev.webfx.cli.modulefiles;
 
+import dev.webfx.cli.core.BuildInfo;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.ProjectModule;
 import dev.webfx.cli.core.Workaround;
@@ -18,10 +19,11 @@ import java.util.Scanner;
 /**
  * @author Bruno Salmon
  */
-public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
+public class WebHtmlFile extends DevModuleFileImpl {
 
     private static final String MAIN_CSS_RELATIVE_PATH = "dev/webfx/kit/css/main.css";
-    public DevGwtJ2clHtmlFile(DevProjectModule module) {
+
+    public WebHtmlFile(DevProjectModule module) {
         super(module, module.getMainResourcesDirectory().resolve("public/index.html"));
     }
 
@@ -49,7 +51,7 @@ public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
                 .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.content(), n -> n))
                 .filter(Element.class::isInstance).map(Element.class::cast)
-                .sorted(Comparator.comparingInt(DevGwtJ2clHtmlFile::getNodeOrder))
+                .sorted(Comparator.comparingInt(WebHtmlFile::getNodeOrder))
                 .filter(headOrBodyNode -> checkNodeConditions(headOrBodyNode, transitiveProjectModules))
                 .forEach(headOrBodyNode -> {
                     String nodeName = headOrBodyNode.getName();
@@ -93,19 +95,24 @@ public class DevGwtJ2clHtmlFile extends DevModuleFileImpl {
                         }
                     }
                 });
-        String text = ResourceTextFileReader.readTemplate("index.html")
+        if (getModule().getBuildInfo().isForTeaVm)
+            bodySb.append("        <script>main()</script>");
+        String html = ResourceTextFileReader.readTemplate("index.html")
                 .replace("${generatedHeadContent}", headSb)
                 .replace("${generatedBodyContent}", bodySb);
-        TextFileReaderWriter.writeTextFileIfNewOrModified(text, getModuleFilePath());
+        TextFileReaderWriter.writeTextFileIfNewOrModified(html, getModuleFilePath());
         // Also updating index.html in target if exists (so the user doesn't have to recompile the app for just a style change)
         Path targetIndexHtmlPath = getProjectModule().getGwtExecutableFilePath();
         if (Files.exists(targetIndexHtmlPath))
-            TextFileReaderWriter.writeTextFileIfNewOrModified(text, targetIndexHtmlPath);
+            TextFileReaderWriter.writeTextFileIfNewOrModified(html, targetIndexHtmlPath);
         return true;
     }
 
     private String getGeneratedJsFileName() {
-        if (getModule().getBuildInfo().isForJ2cl)
+        BuildInfo buildInfo = getModule().getBuildInfo();
+        if (buildInfo.isForTeaVm)
+            return "classes.js";
+        if (buildInfo.isForJ2cl)
             return getModule().getName() + ".js";
         // GWT
         return getModule().getName().replaceAll("-", "_") + ".nocache.js";

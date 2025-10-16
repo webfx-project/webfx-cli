@@ -73,9 +73,7 @@ class ModuleImpl implements Module {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ModuleImpl)) return false;
-
-        ModuleImpl module = (ModuleImpl) o;
+        if (!(o instanceof ModuleImpl module)) return false;
 
         return name.equals(module.name);
     }

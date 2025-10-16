@@ -72,7 +72,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                 commitOperation(operation); // executed now
             else { // Or just transferring it to the previous transaction
                 previousTransaction.addOperation(operation); // will be executed on transaction commit
-                // Also transferring already deleted paths (probably empty because the operation was not yet executed)
+                // Also, transferring already deleted paths (probably empty because the operation was not yet executed)
                 previousTransaction.deletedPaths.addAll(deletedPaths);
             }
         });
@@ -94,7 +94,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
         try {
             Path path = op.path;
             if (op.content != null) { // Write operation
-                if (toWritePaths.contains(path)) { // Checking if the file is still to write (no subsequent delete operation occurs)
+                if (toWritePaths.contains(path)) { // Checking if the file is still to write (no later delete operation occurs)
                     if (!op.silent)
                         outputFilesCount++;
                     boolean exists = Files.exists(path);
@@ -116,7 +116,7 @@ public final class TextFileThreadTransaction implements AutoCloseable {
                     }
                 }
             } else { // Delete operation
-                if (toDeletePaths.contains(path)) { // Checking if the file is still to delete (no subsequent write operation occurs)
+                if (toDeletePaths.contains(path)) { // Checking if the file is still to delete (no later write operation occurs)
                     if (TextFileReaderWriter.deleteFile(path)) {
                         deletedPaths.add(path);
                         if (!op.silent) {

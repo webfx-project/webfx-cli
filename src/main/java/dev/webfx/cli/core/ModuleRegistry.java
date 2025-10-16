@@ -1,6 +1,9 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.exceptions.CliException;
+import dev.webfx.cli.exceptions.UnresolvedException;
 import dev.webfx.cli.modulefiles.ResWebFxModuleFile;
+import dev.webfx.cli.specific.SpecificFiles;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
@@ -26,7 +29,7 @@ final public class ModuleRegistry {
 
 
     /*******************************************************************************************************************
-     *                             Module registration mechanism (includes import mechanism)                           *
+     *                          Module registration mechanism (includes an import mechanism)                           *
      ******************************************************************************************************************/
 
     private final List<ProjectModule> registeredProjectModules = new ArrayList<>(); // those processed by the registration stream
@@ -59,7 +62,7 @@ final public class ModuleRegistry {
         private ProjectModule getOrIncrementNextProjectModuleToRegister() {
             while (nextProjectModuleToRegister == null) {
                 if (rootModuleAndChildrenToRegisterResumableStream == null) { // Indicates that we need to go to the next module and children stream
-                    // But what if there is no more ?
+                    // But what if there is no more?
                     while (listOfRootModuleAndChildrenToRegister.isEmpty() && lastImportedProjectModuleIndex < registeredProjectModules.size() - 1) {
                         // Let's try to import more libraries
                         importProjectModuleRequiredLibraries(registeredProjectModules.get(++lastImportedProjectModuleIndex));
@@ -265,12 +268,10 @@ final public class ModuleRegistry {
                 @Override
                 public Module next() {
                     Module next = getOrIncrementNextProjectModuleToDeclare();
-                    if (next instanceof ProjectModule) {
-                        ProjectModule projectModule = (ProjectModule) next;
-                        declareProjectModulePackages(projectModule); // This also add the module to declaredModules
-                        if (next instanceof M2RootModule) { // Ex: M2Project for JUnit library declared as <library artifact="org.junit.jupiter:junit-jupiter:5.9.0"/>
+                    if (next instanceof ProjectModule projectModule) {
+                        declareProjectModulePackages(projectModule); // This also adds the module to declaredModules
+                        if (next instanceof M2RootModule m2RootModule) { // Ex: M2Project for JUnit library declared as <library artifact="org.junit.jupiter:junit-jupiter:5.9.0"/>
                             // => We must register the transitive dependencies as libraries as well
-                            M2RootModule m2RootModule = (M2RootModule) next;
                             LibraryModule libraryModule = m2RootModule.getLibraryModule();
                             if (libraryModule.isThirdParty() && libraryModule.getRootModule() == null)
                                 rootThirdPartyLibrariesWithPossibleTransitiveLibrariesToRegister.add(m2RootModule);
@@ -350,16 +351,16 @@ final public class ModuleRegistry {
     }
 
     Module getDeclaredJavaPackageModule(String packageName, ProjectModule sourceModule, boolean canReturnNull) {
+        // First, we check if the package is not in the source package! (ex: webfx-extras-controls-registry-spi)
+        if (sourceModule.getMainJavaSourceRootAnalyzer().getSourcePackages().anyMatch(p -> p.equals(packageName)))
+            return sourceModule;
         List<Module> lm = packagesModulesNameMap.get(packageName);
         Module module = lm == null ? null : lm.stream()
                 .filter(m -> isSuitableModule(m, sourceModule))
                 .findFirst()
                 .orElse(null);
         if (module == null) { // Module isn't found :-(
-            // Last chance: the package was actually in the source package! (ex: webfx-extras-controls-registry-spi)
-            if (sourceModule.getMainJavaSourceRootAnalyzer().getSourcePackages().anyMatch(p -> p.equals(packageName)))
-                module = sourceModule;
-            else if (!canReturnNull) { // Otherwise, raising an exception (unless returning null is permitted)
+            if (!canReturnNull) { // Otherwise, raising an exception (unless returning null is permitted)
                 if (lm == null || lm.isEmpty())
                     throw new UnresolvedException("Unresolved module for package " + packageName + " (used by " + sourceModule + ")");
                 StringBuilder sb = new StringBuilder("Unsuitable module for package " + packageName + " (used by " + sourceModule + ")");
@@ -378,9 +379,11 @@ final public class ModuleRegistry {
         if (m.isJavaBaseEmulationModule() && m.getName().contains("j2cl") && !m.getName().contains("gwt") && sourceModule.isExecutable(Platform.GWT)) {
             return "J2CL module (not suitable for GWT)";
         }
-        if (!(m instanceof ProjectModule))
+        if (!(m instanceof ProjectModule pm))
             return null;
-        ProjectModule pm = (ProjectModule) m;
+        //
+        if (pm.getTarget().hasTag(TargetTag.POLYFILL))
+            return "the elemental2 polyfill module is meant to be used only in the TeaVM plugin configuration in webfx-parent, project modules should refer to the actual elemental2 modules";
         if (pm.isDeprecated()) {
             return "this module is deprecated";
         }
@@ -416,7 +419,7 @@ final public class ModuleRegistry {
     // Registering JDK modules (packages registration will be done in the non-static constructor)
     static {
         // Reading the webfx.xml resource file listing all modules of the JDK
-        new ResWebFxModuleFile("dev/webfx/cli/jdk/webfx.xml")
+        new ResWebFxModuleFile(SpecificFiles.RES_JDK_WEBFX_XML)
                 // All modules are declared like third-party libraries
                 .getRequiredThirdPartyLibraryModules()
                 // Storing the module name together with the associated library
@@ -442,11 +445,11 @@ final public class ModuleRegistry {
      ===================================================================================================================
      The purpose of this section is to collect and register all java packages and classes usages listed in the
      <export-snapshot> section of all webfx.xml files related to the working project, and then provide a method that
-     will use this information to tell if a module is using a package or a class (the goal here is to compute that usage
+     will use this information to tell if a module is using a package or a class. The goal here is to compute that usage
      quickly, without having to download the sources of WebFX libraries when importing them - because downloading sources
-     of many modules can take a lot of time - at least 3s per module). Please note that this feature is designed to work
-     only for the execution of the directives if-uses-java-package and if-uses-java-class (because the usages listed in
-     export snapshots are restricted to only the packages and classes known to be used by such directives).
+     of many modules can take a lot of time - at least 3 s per module. Please note that this feature is designed to work
+     only for the execution of the directives if-uses-java-package and if-uses-java-class. Because the usages listed in
+     export snapshots are restricted to only the packages and classes known to be used by such directives.
      ******************************************************************************************************************/
 
     // On the fly export snapshots registration stream
@@ -487,7 +490,7 @@ final public class ModuleRegistry {
         if (packageOrClassSnapshotUsages == null) {
             m2ProjectModulesWithExportSnapshotsResume.takeWhile(m2 -> registeredSnapshotUsages.get(packageOrClass) == null).count();
             // If after pulling the whole stream we still haven't any, this means that no export snapshots mention that
-            // usage, therefore, we return null to say that we don't know if the modules use this package or class from
+            // usage. Therefore, we return null to say that we don't know if the modules use this package or class from
             // the export snapshots.
             packageOrClassSnapshotUsages = registeredSnapshotUsages.get(packageOrClass);
             if (packageOrClassSnapshotUsages == null)
@@ -514,28 +517,21 @@ final public class ModuleRegistry {
         return null; // we return null to say we don't know from the export snapshots
     }
 
-    private static class SnapshotUsages {
-        final M2ProjectModule m2ProjectModule;
-        final List<String> usedByModules;
-
-        public SnapshotUsages(M2ProjectModule m2ProjectModule, List<String> usedByModules) {
-            this.m2ProjectModule = m2ProjectModule;
-            this.usedByModules = usedByModules;
-        }
+    private record SnapshotUsages(M2ProjectModule m2ProjectModule, List<String> usedByModules) {
 
         public Boolean isModuleUsing(ProjectModule module) {
-            // First quick check: if the present module is listed in any already computed usage for that class or package, we return true
-            if (usedByModules.contains(module.getName()))
-                return true;
-            // At this stage we know that this module was never listed in any usage of this class or package computed
-            // so far, but we need to check if these computed usages considered that module or not in this computation.
-            // If any of them did, we can return false, because it means that that existing usage already checked
-            // that this module wasn't using that class or package.
-            if (m2ProjectModule.getDirectivesUsageCoverage().anyMatch(pm -> pm == module))
-                return false;
-            return null;
+                // First quick check: if the present module is listed in any already computed usage for that class or package, we return true
+                if (usedByModules.contains(module.getName()))
+                    return true;
+                // At this stage we know that this module was never listed in any usage of this class or package computed
+                // so far, but we need to check if these computed usages considered that module or not in this computation.
+                // If any of them did, we can return false, because it means that that existing usage already checked
+                // that this module wasn't using that class or package.
+                if (m2ProjectModule.getDirectivesUsageCoverage().anyMatch(pm -> pm == module))
+                    return false;
+                return null;
+            }
         }
-    }
 
 
     /*******************************************************************************************************************

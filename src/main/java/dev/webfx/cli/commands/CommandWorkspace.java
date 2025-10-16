@@ -2,6 +2,7 @@ package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.*;
 import dev.webfx.cli.core.Module;
+import dev.webfx.cli.exceptions.CliException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

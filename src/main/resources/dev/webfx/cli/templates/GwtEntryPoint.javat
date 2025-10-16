@@ -4,7 +4,7 @@ import com.google.gwt.core.client.EntryPoint;
 import dev.webfx.platform.boot.ApplicationBooter;
 import dev.webfx.platform.boot.spi.ApplicationBooterProvider;
 import dev.webfx.platform.reflect.RArray;
-import dev.webfx.platform.util.gwtj2cl.GwtJ2clUtil;
+import dev.webfx.platform.util.elemental2.Elemental2Util;
 
 import elemental2.dom.DomGlobal;
 import elemental2.dom.ServiceWorkerContainer;
@@ -18,7 +18,7 @@ public final class GwtEntryPoint implements ApplicationBooterProvider, EntryPoin
         registerArrayConstructors();
         registerServiceProviders();
         ApplicationBooter.start(this, null);
-        GwtJ2clUtil.registerPwa();
+        Elemental2Util.registerPwa();
     }
 
     private static void registerArrayConstructors() {

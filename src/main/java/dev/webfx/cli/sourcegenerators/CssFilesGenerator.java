@@ -24,7 +24,7 @@ public final class CssFilesGenerator {
     private final static Map<Path, String> CSS_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
 
     public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch) {
-        boolean isWebExecutable = module.isExecutable(Platform.GWT) || module.isExecutable(Platform.J2CL);
+        boolean isWebExecutable = module.getBuildInfo().isForWeb;
         boolean isJavaFxExecutable = !isWebExecutable && module.isExecutable() && (module.getTarget().hasTag(TargetTag.OPENJFX) || module.getTarget().hasTag(TargetTag.GLUON));
         if (!isWebExecutable && !isJavaFxExecutable)
             return 0;

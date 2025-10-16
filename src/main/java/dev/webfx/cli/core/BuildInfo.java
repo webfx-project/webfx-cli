@@ -1,5 +1,7 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.specific.SpecificModules;
+
 /**
  * @author Bruno Salmon
  */
@@ -9,6 +11,7 @@ public class BuildInfo {
     public final boolean isForGwt;
     public final boolean isForJ2cl;
     public final boolean isForTeaVm;
+    public final boolean isForElemental2;
     public final boolean isForWeb;
     public final boolean isForOpenJfx;
     public final boolean isForGluon;
@@ -23,7 +26,8 @@ public class BuildInfo {
         isForJ2cl = target.isMonoPlatform(Platform.J2CL);
         isForGwt = target.isMonoPlatform(Platform.GWT);
         isForTeaVm = target.isMonoPlatform(Platform.TEAVM);
-        isForWeb = isForGwt || isForJ2cl || isForTeaVm;
+        isForElemental2 = target.hasTag(TargetTag.ELEMENTAL2);
+        isForWeb = isForGwt || isForJ2cl || isForTeaVm || isForElemental2;
         isForVertx = target.isMonoPlatform(Platform.JRE) && target.hasTag(TargetTag.VERTX);
         isForOpenJfx = target.isMonoPlatform(Platform.JRE) && (target.hasTag(TargetTag.OPENJFX));
         isForGluon = target.isMonoPlatform(Platform.JRE) && target.hasTag(TargetTag.GLUON);

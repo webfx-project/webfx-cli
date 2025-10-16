@@ -1,5 +1,6 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.specific.SpecificFiles;
 import dev.webfx.cli.util.process.ProcessCall;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
@@ -54,9 +55,9 @@ public final class M2RootModule extends M2ProjectModule implements RootModule {
 
     public ReusableStream<LibraryModule> getTransitiveLibraries() {
         return ReusableStream.create(() -> {
-            // We invoke the Maven dependency tree, and analyse it, to get the transitive libraries
+            // We invoke the Maven dependency tree, and analyze it, to get the transitive libraries
             List<LibraryModule> tree = new ArrayList<>();
-            Path cachePath = MavenUtil.getMavenModuleWorkspace(this).resolve("dependency-tree.txt");
+            Path cachePath = MavenUtil.getMavenModuleWorkspace(this).resolve(SpecificFiles.WS_DEPENDENCY_TREE_TXT);
 
             Consumer<String> mavenDependencyTreeAnalyzer = new Consumer<>() {
                 boolean treelogstart, treelogend;

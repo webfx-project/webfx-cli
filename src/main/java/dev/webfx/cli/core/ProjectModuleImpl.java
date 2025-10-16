@@ -1,6 +1,7 @@
 package dev.webfx.cli.core;
 
 import dev.webfx.cli.modulefiles.abstr.XmlGavModuleFile;
+import dev.webfx.cli.specific.SpecificModules;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.util.List;
@@ -14,42 +15,42 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private JavaSourceRootAnalyzer mainJavaJavaSourceRootAnalyzer, testJavaJavaSourceRootAnalyzer;
 
     /**
-     * Returns the children project modules if any (only first level under this module).
+     * Returns the children project modules if any (only the first level under this module).
      */
     private final ReusableStream<ProjectModule> childrenModulesCache =
-            getChildrenModuleNames()
-                    .map(this::getOrCreateChildProjectModule)
-                    .cache();
+        getChildrenModuleNames()
+            .map(this::getOrCreateChildProjectModule)
+            .cache();
 
     /**
      * Returns the children project modules if any (all levels under this module).
      */
     private final ReusableStream<ProjectModule> childrenModulesInDepthCache =
-            childrenModulesCache
-                    .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
-            //.cache()
-            ;
+        childrenModulesCache
+            .flatMap(ProjectModule::getThisAndChildrenModulesInDepth)
+        //.cache()
+        ;
 
     /**
      * Returns all java services provided by this module (returns the list of files under META-INF/services).
      */
     private final ReusableStream<String> providedJavaServicesCache =
-            ReusableStream.create(() -> getWebFxModuleFile().providedServiceProviders())
-                    .map(ServiceProvider::getSpi)
-                    .distinct()
-                    .sorted()
-                    .cache();
+        ReusableStream.create(() -> getWebFxModuleFile().providedServiceProviders())
+            .map(ServiceProvider::getSpi)
+            .distinct()
+            .sorted()
+            .cache();
 
 
     /**
-     * Returns all source module dependencies directly required by the source code of this module but that couldn't be
+     * Returns all source module dependencies directly required by the source code of this module, but that couldn't be
      * detected by the source code analyzer (due to limitations of the current source code analyzer which is based on
      * regular expressions). These source module dependencies not detected by the source code analyzer must be listed
      * in the webfx module file for now.
      */
     final ReusableStream<ModuleDependency> undetectedByCodeAnalyzerSourceDependenciesCache =
-            ReusableStream.create(() -> getWebFxModuleFile().getUndetectedUsedBySourceModulesDependencies())
-                    .cache();
+        ReusableStream.create(() -> getWebFxModuleFile().getUndetectedUsedBySourceModulesDependencies())
+            .cache();
 
 
     /**
@@ -57,36 +58,36 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
      * attribute on those dependencies (ex: optional = "true").
      */
     final ReusableStream<ModuleDependency> explicitSourceDependenciesCache =
-            ReusableStream.create(() -> getWebFxModuleFile().getExplicitSourceModulesDependencies())
-                    .cache();
+        ReusableStream.create(() -> getWebFxModuleFile().getExplicitSourceModulesDependencies())
+            .cache();
 
     /**
      * Returns all resource module dependencies directly required by the source code of this module (must be listed in
      * the webfx module file).
      */
     final ReusableStream<ModuleDependency> resourceDirectDependenciesCache =
-            ReusableStream.create(() -> getWebFxModuleFile().getResourceModuleDependencies())
-                    .cache();
+        ReusableStream.create(() -> getWebFxModuleFile().getResourceModuleDependencies())
+            .cache();
 
     /**
      * Returns the application module to be executed in case this module is executable (otherwise returns nothing). For
-     * now the application module is implicitly guessed from the executable module name (ex: if executable module is
+     * now the application module is implicitly guessed from the executable module name (ex: if the executable module is
      * my-app-javafx or my-app-gwt, then the application module is my-app).
      */
     // Modules
     final ReusableStream<ModuleDependency> applicationDependencyCache =
-            ReusableStream.create(() -> {
-                ProjectModule applicationModule = getApplicationModule();
-                return applicationModule != null ? ReusableStream.of(ModuleDependency.createApplicationDependency(this, applicationModule)) : ReusableStream.empty();
-            });
+        ReusableStream.create(() -> {
+            ProjectModule applicationModule = getApplicationModule();
+            return applicationModule != null ? ReusableStream.of(ModuleDependency.createApplicationDependency(this, applicationModule)) : ReusableStream.empty();
+        });
 
     /**
      * Returns the plugin module dependencies to be directly added to this module (must be listed in the webfx module
      * file).
      */
     final ReusableStream<ModuleDependency> pluginDirectDependenciesCache =
-            ReusableStream.create(() -> getWebFxModuleFile().getPluginModuleDependencies())
-                    .cache();
+        ReusableStream.create(() -> getWebFxModuleFile().getPluginModuleDependencies())
+            .cache();
 
 
     private final ProjectModule parentDirectoryModule;
@@ -177,8 +178,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     private XmlGavModuleFile getMostRelevantGavModuleFile() {
         // Reading GAV from webfx.xml (and parents) unless webfx.xml doesn't exist or maven update is skipped
         return getWebFxModuleFile().fileExists() && !getWebFxModuleFile().skipMavenPomUpdate() ? getWebFxModuleFile()
-                // in that case, pom.xml is the reference to read the GAV for this module
-                : getMavenModuleFile();
+            // in that case, pom.xml is the reference to read the GAV for this module
+            : getMavenModuleFile();
     }
 
     private void readGavFromModuleFile(XmlGavModuleFile gavModuleFile) {
@@ -214,7 +215,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
                     else { // Otherwise
                         // If no parent is specified (and no parent directory module), we take "webfx-parent" by default
                         if (lookupParentName == null)
-                            lookupParentName = "webfx-parent";
+                            lookupParentName = SpecificModules.WEBFX_PARENT;
                         // Then we search the module from its name
                         if (!lookupParentName.equals(getName())) // parent shouldn't be this module
                             parentModule = getRootModule().searchRegisteredProjectModule(lookupParentName);
@@ -257,7 +258,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         return childrenModulesInDepthCache;
     }
 
-    ///// Java classes
+    /// // Java classes
 
     @Override
     public JavaSourceRootAnalyzer getMainJavaSourceRootAnalyzer() {
@@ -285,8 +286,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
         // Getting the requested dependencies (with or without implicit providers)
         ReusableStream<ModuleDependency> dependencies = withImplicitProviders ?
-                getMainJavaSourceRootAnalyzer().getTransitiveDependencies() :
-                getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders();
+            getMainJavaSourceRootAnalyzer().getTransitiveDependencies() :
+            getMainJavaSourceRootAnalyzer().getTransitiveDependenciesWithoutImplicitProviders();
 
         // Computing the dependency graph of these dependencies
         Map<ProjectModule, List<ProjectModule>> dependencyGraph = ModuleDependency.createProjectModulesDependencyGraph(dependencies);
@@ -300,7 +301,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         return dependencyGraph;
     }
 
-    ///// Java packages
+    /// // Java packages
 
     public ReusableStream<String> getProvidedJavaServices() {
         return providedJavaServicesCache;
@@ -333,8 +334,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     public ReusableStream<JavaFile> getJavaFilesDependingOn(String destinationModule) {
         return getMainJavaSourceRootAnalyzer().getSourceFiles()
-                .filter(jf -> jf.getUsedJavaPackages().anyMatch(p -> destinationModule.equals(rootModule.searchJavaPackageModule(p, this).getName())))
-                ;
+            .filter(jf -> jf.getUsedJavaPackages().anyMatch(p -> destinationModule.equals(rootModule.searchJavaPackageModule(p, this).getName())))
+            ;
     }
 
     private BuildInfo buildInfo;
@@ -346,6 +347,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     }
 
     private ReusableStream<ProjectModule> exportSnapshotUsageCoverage;
+
     @Override
     public ReusableStream<ProjectModule> getDirectivesUsageCoverage() {
         if (exportSnapshotUsageCoverage == null)
@@ -355,19 +357,19 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
 
     private static ReusableStream<ProjectModule> getDirectivesUsageCoverage(ProjectModule projectModule) {
         ReusableStream<ProjectModule> projectWithoutLibrariesCoverage = projectModule
-                .getThisAndChildrenModulesInDepth()
-                .flatMap(projectModule1 -> projectModule1.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()) // Normally doesn't require to access sources...
-                .filter(ProjectModule.class::isInstance).map(ProjectModule.class::cast)
-                .distinct();
+            .getThisAndChildrenModulesInDepth()
+            .flatMap(projectModule1 -> projectModule1.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()) // Normally doesn't require accessing sources...
+            .filter(ProjectModule.class::isInstance).map(ProjectModule.class::cast)
+            .distinct();
         ReusableStream<ProjectModule> librariesCoverage = projectWithoutLibrariesCoverage
-                .flatMap(ProjectModule::getRequiredLibraryModules)
-                .distinct()
-                .map(l -> projectModule.searchRegisteredModule(l.getName(), true))
-                .filter(ProjectModule.class::isInstance).map(ProjectModule.class::cast)
-                .flatMap(ProjectModule::getDirectivesUsageCoverage);
+            .flatMap(ProjectModule::getRequiredLibraryModules)
+            .distinct()
+            .map(l -> projectModule.searchRegisteredModule(l.getName(), true))
+            .filter(ProjectModule.class::isInstance).map(ProjectModule.class::cast)
+            .flatMap(ProjectModule::getDirectivesUsageCoverage);
         return ReusableStream.concat(
-                projectWithoutLibrariesCoverage,
-                librariesCoverage
+            projectWithoutLibrariesCoverage,
+            librariesCoverage
         );
     }
 

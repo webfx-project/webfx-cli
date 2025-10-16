@@ -13,6 +13,10 @@ public class JavaFilesGenerator {
         return module.getMainJavaModuleFile().writeFile();
     }
 
+    public static void deleteModuleInfoJavaFile(DevProjectModule module) {
+        TextFileReaderWriter.deleteTextFile(module.getMainJavaModuleFile().getModuleFilePath());
+    }
+
     public static int generateMetaInfServicesFiles(DevProjectModule module) {
         // Generating META-INF/services/ files
         // Note: this is the old way of declaring services (new way is in module-info.java) but still required for GraalVM and TeaVM

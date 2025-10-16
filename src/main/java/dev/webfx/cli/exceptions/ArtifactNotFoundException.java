@@ -1,4 +1,4 @@
-package dev.webfx.cli.core;
+package dev.webfx.cli.exceptions;
 
 /**
  * @author Bruno Salmon

@@ -3,6 +3,7 @@ package dev.webfx.cli.modulefiles;
 import dev.webfx.cli.core.*;
 import dev.webfx.cli.core.Module;
 import dev.webfx.cli.modulefiles.abstr.DevXmlModuleFileImpl;
+import dev.webfx.cli.specific.SpecificModules;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;

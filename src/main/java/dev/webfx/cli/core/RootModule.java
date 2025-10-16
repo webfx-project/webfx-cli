@@ -1,5 +1,6 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.specific.SpecificClasses;
 import dev.webfx.cli.util.sort.TopologicalSort;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
@@ -42,6 +43,9 @@ public interface RootModule extends ProjectModule {
     static ReusableStream<ProjectModule> findModulesProvidingJavaService(ReusableStream<ProjectModule> implementationScope, String javaService, ProjectModuleImpl targetModule, boolean keepBestOnly) {
         // Searching modules within the scope that are compatible with the requested target and that implement the service
         Target requestedTarget = targetModule.getTarget();
+        // ApplicationBooterProvider is actually implemented by the GWT/J2CL entry point, no need to search for it elsewhere
+        if (SpecificClasses.WEBFX_APPLICATION_BOOTER_PROVIDER.equals(javaService) && (requestedTarget.hasTag(TargetTag.GWT) || requestedTarget.hasTag(TargetTag.J2CL)))
+            return ReusableStream.empty();
         ReusableStream<ProjectModule> modules = implementationScope
             .filter(m -> !m.isDeprecated())
             .filter(m -> !m.isPreview()) // TODO: add preview mode allowing preview modules
@@ -86,22 +90,22 @@ public interface RootModule extends ProjectModule {
             // If there are several dev modules, we continue, but we get rid of possible other non-dev modules.
             if (!devModulesList.isEmpty())
                 modulesList = devModulesList;
-            // 4) Fourth criterion = the modules position in dependencies (we keep the one closest to the target module)
+            // 4) Fourth criterion = the module position in dependencies (we keep the one closest to the target module)
             // Creating the dependency graph of the transitive modules starting from the target module (probably executable module)
             Map<ProjectModule, List<ProjectModule>> dependencyGraph =
                 // Note: calling get getTransitiveDependencies() at this point seems to freeze its transitive
                 // dependencies before their final computation completion (so they remain incomplete and this
                 // has big consequences afterward). Calling getTransitiveDependenciesWithoutImplicitProviders()
-                // instead is working fine so far without creating subsequent problems.
+                // instead is working fine so far without creating later problems.
                 targetModule.getProjectModulesDependencyGraph(false);
             // Now we do a topological sort of all modules in the dependency graph
             List<ProjectModule> sortedModules = TopologicalSort.sortDesc(dependencyGraph);
-            // Going back to our modules list, we sort it following the same order as the topological sort
+            // Going back to our module list, we sort it following the same order as the topological sort
             modulesList.sort(Comparator.comparingInt(pm -> {
                 int indexOf = sortedModules.indexOf(pm);
                 return indexOf != -1 ? indexOf : Integer.MAX_VALUE;
             }));
-            // The first module in the list should be now the closest from the target module from the topological point of view
+            // The first module in the list should be now the closest to the target module from the topological point of view.
             modules = ReusableStream.of(modulesList.get(0));
         }
         return modules;

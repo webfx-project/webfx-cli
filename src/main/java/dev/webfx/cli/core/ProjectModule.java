@@ -1,13 +1,16 @@
 package dev.webfx.cli.core;
 
+import dev.webfx.cli.exceptions.UnresolvedException;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
+import dev.webfx.cli.specific.SpecificFolders;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
 import dev.webfx.platform.conf.SourcesConfig;
 import dev.webfx.platform.meta.Meta;
 
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Predicate;
@@ -64,14 +67,15 @@ public interface ProjectModule extends Module {
 
     default ReusableStream<LibraryModule> getRequiredLibraryModules() { // Should be overridden to use a cache
         return ReusableStream.concat(
-                getWebFxModuleFile().getRequiredWebFxLibraryModules(),
-                getWebFxModuleFile().getRequiredThirdPartyLibraryModules()
+            getWebFxModuleFile().getRequiredWebFxLibraryModules(),
+            getWebFxModuleFile().getRequiredThirdPartyLibraryModules()
         );
     }
 
     default ReusableStream<ProjectModule> getRequiredProvidersSearchScopeWithinWebFxLibraries() { // Should be overridden to use a cache
-        return getThisAndChildrenModules().flatMap(p -> p.getWebFxModuleFile().getRequiredWebFxLibraryModules()).distinct()
-                .flatMap(this::getRequiredProvidersSearchScopeWithinThisAndTransitiveWebFxLibraries);
+        return getThisAndChildrenModules()
+            .flatMap(p -> p.getWebFxModuleFile().getRequiredWebFxLibraryModules()).distinct()
+            .flatMap(this::getRequiredProvidersSearchScopeWithinThisAndTransitiveWebFxLibraries);
     }
 
     private ReusableStream<ProjectModule> getRequiredProvidersSearchScopeWithinThisAndTransitiveWebFxLibraries(LibraryModule thisWebFxLibrary) {
@@ -89,26 +93,26 @@ public interface ProjectModule extends Module {
 
     default ReusableStream<String> getResourcePackages() { // Direct calls: 1) DevGwtModuleFile (to list resources packages in GWT module) & 2) DevMavenPomModuleFile to generate the resourcesList for Gluon modules
         return ReusableStream.concat(
-                getNonEmbedResourcePackages(),
-                getMetaResourcePackage(),
-                getSourcesRootConfigResourcePackage(),
-                getI18nResourcePackage()
+            getNonEmbedResourcePackages(),
+            getMetaResourcePackage(),
+            getSourcesRootConfigResourcePackage(),
+            getI18nResourcePackage()
         ).distinct();
     }
 
     default ReusableStream<String> getNonEmbedResourcePackages() { // Direct calls: 1) DevGwtModuleFile (to list resources packages in GWT module) & 2) DevMavenPomModuleFile to generate the resourcesList for Gluon modules
         return ReusableStream.concat(
-                getExplicitResourcePackages(),
-                getWebFxModuleFile().areResourcePackagesAutomaticallyExported() ? getFileResourcePackages() : ReusableStream.empty()
+            getExplicitResourcePackages(),
+            getWebFxModuleFile().areResourcePackagesAutomaticallyExported() ? getFileResourcePackages() : ReusableStream.empty()
         ).distinct();
     }
 
     default ReusableStream<String> getEmbedResources() { // Direct call: GwtEmbedResourcesBundleSourceGenerator (to generate GWT bundles)
         return ReusableStream.concat(
-                getWebFxModuleFile().getEmbedResources(),
-                getMetaResource(),
-                getSourcesRootConfigResource(),
-                getI18nResources()
+            getWebFxModuleFile().getEmbedResources(),
+            getMetaResource(),
+            getSourcesRootConfigResource(),
+            getI18nResources()
         );
     }
 
@@ -133,9 +137,9 @@ public interface ProjectModule extends Module {
         Path srcRootConfFolderPath = mainResourcesDirectory.resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FOLDER);
         if (!TextFileReaderWriter.fileExists(srcRootConfFolderPath))
             return ReusableStream.empty();
-        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(srcRootConfFolderPath, 1))
-                .filter(Files::isRegularFile)
-                .map(path -> mainResourcesDirectory.relativize(path).toString());
+        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(srcRootConfFolderPath, 1, FileVisitOption.FOLLOW_LINKS))
+            .filter(Files::isRegularFile)
+            .map(path -> mainResourcesDirectory.relativize(path).toString());
     }
 
     default ReusableStream<String> getSourcesRootConfigResourcePackage() {
@@ -148,7 +152,7 @@ public interface ProjectModule extends Module {
         return ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE);
     }
 
-    String I18N_RESOURCE_FOLDER = "dev/webfx/extras/i18n";
+    String I18N_RESOURCE_FOLDER = SpecificFolders.RES_I18N_FOLDER;
     String I18N_PACKAGE = I18N_RESOURCE_FOLDER.replace('/', '.');
 
     default ReusableStream<String> getI18nResourcePackage() {
@@ -169,9 +173,9 @@ public interface ProjectModule extends Module {
         Path i18nFolderPath = mainResourcesDirectory.resolve(I18N_RESOURCE_FOLDER);
         if (!TextFileReaderWriter.fileExists(i18nFolderPath))
             return ReusableStream.empty();
-        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(i18nFolderPath, 1))
-                .filter(Files::isRegularFile)
-                .map(path -> mainResourcesDirectory.relativize(path).toString());
+        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(i18nFolderPath, 1, FileVisitOption.FOLLOW_LINKS))
+            .filter(Files::isRegularFile)
+            .map(path -> mainResourcesDirectory.relativize(path).toString());
     }
 
     default ReusableStream<String> getSystemProperties() {
@@ -224,8 +228,8 @@ public interface ProjectModule extends Module {
         if (getName().endsWith("-parent")) // ex: webfx-parent, webfx-stack-parent
             return false;
         return getWebFxModuleFile().skipMavenPomUpdate() ?
-                getMavenModuleFile().isAggregate()
-                : getWebFxModuleFile().isAggregate();
+            getMavenModuleFile().isAggregate()
+            : getWebFxModuleFile().isAggregate();
     }
 
     default boolean isImplementingInterface() {
@@ -239,8 +243,8 @@ public interface ProjectModule extends Module {
     default ReusableStream<String> getProvidedJavaServiceImplementations(String javaService, boolean replaceDollarWithDot) {
         // Providers declared in the webfx module file
         ReusableStream<String> implementations = getWebFxModuleFile().providedServiceProviders()
-                .filter(p -> p.getSpi().equals(javaService))
-                .map(ServiceProvider::getImplementation);
+            .filter(p -> p.getSpi().equals(javaService))
+            .map(ServiceProvider::getImplementation);
         if (replaceDollarWithDot)
             implementations = implementations.map(s -> s.replace('$', '.'));
         return implementations;
@@ -307,11 +311,11 @@ public interface ProjectModule extends Module {
 
     default boolean providesJavaService(String javaService) {
         return getProvidedJavaServices()
-                .anyMatch(javaService::equals)
-                ;
+            .anyMatch(javaService::equals)
+            ;
     }
 
-    ///// Dependencies
+    /// // Dependencies
 
     default boolean implementsModule(Module module) {
         return this != module && (getName().startsWith(module.getName()) || implementedInterfaces().anyMatch(m -> module.getName().equals(m)));
@@ -353,14 +357,14 @@ public interface ProjectModule extends Module {
 
     private ReusableStream<ProjectModule> getProjectModuleSearchScope(ReusableStream<ProjectModule> globalProjectModuleSearchScope) {
         return getThisAndChildrenModulesInDepth()
-                .concat(globalProjectModuleSearchScope)
-                .distinct();
+            .concat(globalProjectModuleSearchScope)
+            .distinct();
     }
 
     private ReusableStream<Module> getModuleSearchScope(ReusableStream<Module> globalModuleSearchScope) {
         return getThisAndChildrenModulesInDepth().map(Module.class::cast)
-                .concat(globalModuleSearchScope)
-                .distinct();
+            .concat(globalModuleSearchScope)
+            .distinct();
     }
 
     default ReusableStream<ProjectModule> searchRegisteredProjectModules(Predicate<? super Module> predicate, boolean resume) {
@@ -396,7 +400,7 @@ public interface ProjectModule extends Module {
     }
 
     default Module searchRegisteredModule(String name) {
-        return searchRegisteredModule(name, false);
+        return searchRegisteredModule(name, true);
     }
 
     default Module searchRegisteredModule(String name, boolean silent) {
@@ -431,16 +435,15 @@ public interface ProjectModule extends Module {
     }
 
 
-
     ReusableStream<ProjectModule> getDirectivesUsageCoverage();
 
 
-    //// Static utility methods
+    /// / Static utility methods
 
     static ReusableStream<ProjectModule> filterProjectModules(ReusableStream<Module> modules) {
         return modules
-                .filter(ProjectModule.class::isInstance)
-                .map(ProjectModule.class::cast);
+            .filter(ProjectModule.class::isInstance)
+            .map(ProjectModule.class::cast);
     }
 
     static boolean modulesUsesJavaPackage(ReusableStream<ProjectModule> modules, String javaPackage) {

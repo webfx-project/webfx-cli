@@ -2,6 +2,7 @@ package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.*;
 import dev.webfx.cli.sourcegenerators.*;
+import dev.webfx.cli.specific.SpecificModules;
 import dev.webfx.cli.util.javacode.JavaCode;
 import dev.webfx.cli.util.javacode.JavaCodePatternFinder;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
@@ -260,15 +261,20 @@ public final class Update extends CommonSubcommand implements Runnable {
                 // Skipping module-info.java for some special cases
                 .filter(m -> !SpecificModules.skipJavaModuleInfo(m.getName()))
                 .forEach(m -> {
-                    boolean jre = m.getTarget().isAnyPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
-                    boolean gwt = m.getTarget().hasTag(TargetTag.GWT);
-                    boolean j2cl = m.getTarget().hasTag(TargetTag.J2CL);
-                    boolean teavm = m.getTarget().isAnyPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM
-                    boolean web = gwt || j2cl || m.getTarget().hasTag(TargetTag.EMUL);
-                    if (tasks.moduleInfo && jre && !web) { // Not for TeaVM because the TeaVM modules in module-info.java are not recognised by JPMS
+                    Target target = m.getTarget();
+                    boolean jre = target.isAnyPlatformSupported(Platform.JRE); // => module-info.java + META-INF/services for GraalVM
+                    boolean gwt = target.hasTag(TargetTag.GWT);
+                    boolean j2cl = target.hasTag(TargetTag.J2CL);
+                    boolean teavm = target.isAnyPlatformSupported(Platform.TEAVM); // => META-INF/services for TeaVM
+                    boolean isForElemental2 = target.hasTag(TargetTag.ELEMENTAL2);
+                    boolean web = gwt || j2cl || isForElemental2 || target.hasTag(TargetTag.EMUL);
+                    if (tasks.moduleInfo) { // Not for TeaVM because the TeaVM modules in module-info.java are not recognized by JPMS
                         tasks.moduleInfoStopWatch.on();
-                        if (JavaFilesGenerator.generateModuleInfoJavaFile(m))
-                            tasks.moduleInfoCount++;
+                        if (jre && ! web) {
+                            if (JavaFilesGenerator.generateModuleInfoJavaFile(m))
+                                tasks.moduleInfoCount++;
+                        } else
+                            JavaFilesGenerator.deleteModuleInfoJavaFile(m);
                         tasks.moduleInfoStopWatch.off();
                     }
                     if (tasks.metaInfServices && (jre /* for GraalVM */ || teavm)) {
@@ -282,8 +288,12 @@ public final class Update extends CommonSubcommand implements Runnable {
         // Generate files for executable GWT/J2CL modules (module.gwt.xml, index.html, super sources, service loader, resource bundle, callbacks)
         if (tasks.gwtXml || tasks.indexHtml || tasks.entryPoint || tasks.embedResource || tasks.callbacks) {
             workingAndChildrenModulesInDepthCache
-                .filter(m -> m.isExecutable(Platform.GWT) || m.isExecutable(Platform.J2CL))
-                .forEach(m -> GwtJ2clFilesGenerator.generateGwtJ2clFiles(m, tasks));
+                .forEach(m -> {
+                    if (m.isExecutable(Platform.GWT) || m.isExecutable(Platform.J2CL))
+                        GwtJ2clFilesGenerator.generateGwtJ2clFiles(m, tasks);
+                    else if (m.isExecutable(Platform.TEAVM))
+                        TeaVMFilesGenerator.generateTeaVMFiles(m, tasks);
+                });
         }
 
         // Generate files for executable Gluon modules (graalvm_config/reflection.json)

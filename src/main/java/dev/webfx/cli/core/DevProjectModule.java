@@ -3,6 +3,8 @@ package dev.webfx.cli.core;
 import dev.webfx.cli.modulefiles.*;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFileCache;
+import dev.webfx.cli.specific.SpecificFiles;
+import dev.webfx.cli.specific.SpecificFolders;
 import dev.webfx.cli.util.hashlist.HashList;
 import dev.webfx.cli.util.sort.TopologicalSort;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
@@ -13,6 +15,7 @@ import dev.webfx.lib.reusablestream.ReusableStream;
 import javax.lang.model.SourceVersion;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,38 +33,38 @@ public class DevProjectModule extends ProjectModuleImpl {
     private WebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
     private DevGwtModuleFile gwtModuleFile;
-    private DevGwtJ2clHtmlFile gwtJ2clHtmlFile;
-    // The webfx root module of the application repository which may be different from the root module in case of
+    private WebHtmlFile webHtmlFile;
+    // The webfx root module of the application repository which may be different from the root module in the case of
     // aggregate modules with different submodules (each submodule is a different app repo with its own root webfx module).
     private DevProjectModule webFxRootModule;
 
     private final ReusableStream<String> fileResourcePackagesCache =
-            ReusableStream.create(() -> ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
-                            hasMainResourcesDirectory() ? SplitFiles.uncheckedWalk(getMainResourcesDirectory()) : Spliterators.emptySpliterator())
-                    // We want to filter directories that are not empty. To do that by walking through files and getting their parent directory
-                    .filter(path -> {
-                        if (Files.isDirectory(path))
+        ReusableStream.create(() -> ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
+                    hasMainResourcesDirectory() ? SplitFiles.uncheckedWalk(getMainResourcesDirectory()) : Spliterators.emptySpliterator())
+                // We want to filter directories that are not empty. To do that by walking through files and getting their parent directory
+                .filter(path -> {
+                    if (Files.isDirectory(path))
+                        return false;
+                    // We also ignore hidden files
+                    try {
+                        if (Files.isHidden(path))
                             return false;
-                        // We also ignore hidden files
-                        try {
-                            if (Files.isHidden(path))
-                                return false;
-                        } catch (IOException e) {
-                            return false;
-                        }
-                        return true;
-                    })
-                    .map(Path::getParent)
-                    // We remove duplicates (because the directory was repeated by the number of files in it)
-                    .distinct()
-                    // We get the relative path from the resource directory
-                    .map(path -> getMainResourcesDirectory().relativize(path))
-                    // We transform the path into a package name
-                    .map(path -> path.toString().replace('/', '.')))
-                    // We ignore those not following the Java package name convention (this includes META-INF)
-                    .filter(pkg -> SourceVersion.isName(pkg) && !pkg.contains("$"))
-                    .cache()
-                    .name("resourcePackagesCache");
+                    } catch (IOException e) {
+                        return false;
+                    }
+                    return true;
+                })
+                .map(Path::getParent)
+                // We remove duplicates (because the directory was repeated by the number of files in it)
+                .distinct()
+                // We get the relative path from the resource directory
+                .map(path -> getMainResourcesDirectory().relativize(path))
+                // We transform the path into a package name
+                .map(path -> path.toString().replace('/', '.')))
+            // We ignore those not following the Java package name convention (this includes META-INF)
+            .filter(pkg -> SourceVersion.isName(pkg) && !pkg.contains("$"))
+            .cache()
+            .name("resourcePackagesCache");
 
 
     /************************
@@ -86,7 +89,7 @@ public class DevProjectModule extends ProjectModuleImpl {
         if (webFxRootModule == null) {
             ProjectModule pm = getWebFxModuleFile().fileExists() ? this : null;
             while (pm != null) {
-                // We can detect the webfx root module through its break in the modules hierarchy: its parent module
+                // We can detect the webfx root module through its break in the module hierarchy: its parent module
                 // (ex: webfx-parent) is different from the parent directory module (ex: aggregate module).
                 ProjectModule parentDirectoryModule = pm.getParentDirectoryModule();
                 if (parentDirectoryModule != pm.getParentModule())
@@ -115,31 +118,31 @@ public class DevProjectModule extends ProjectModuleImpl {
     }
 
     public Path getSourceDirectory() {
-        return homeDirectory != null ? homeDirectory.resolve("src") : null;
+        return homeDirectory != null ? homeDirectory.resolve(SpecificFolders.SRC) : null;
     }
 
     @Override
     public Path getMainJavaSourceDirectory() {
-        return homeDirectory != null ? homeDirectory.resolve("src/main/java/") : null;
+        return homeDirectory != null ? homeDirectory.resolve(SpecificFolders.SRC_MAIN_JAVA) : null;
     }
 
     @Override
     public Path getMainWebFxSourceDirectory() {
-        return homeDirectory != null ? homeDirectory.resolve("src/main/webfx/") : null;
+        return homeDirectory != null ? homeDirectory.resolve(SpecificFolders.SRC_MAIN_WEBFX) : null;
     }
 
     @Override
     public Path getTestJavaSourceDirectory() {
-        return homeDirectory != null ? homeDirectory.resolve("src/test/java/") : null;
+        return homeDirectory != null ? homeDirectory.resolve(SpecificFolders.SRC_TEST_JAVA) : null;
     }
 
     @Override
     public Path getMainResourcesDirectory() {
-        return homeDirectory != null ? homeDirectory.resolve("src/main/resources/") : null;
+        return homeDirectory != null ? homeDirectory.resolve(SpecificFolders.SRC_MAIN_RESOURCES) : null;
     }
 
     public Path getMetaInfJavaServicesDirectory() {
-        return getMainResourcesDirectory().resolve("META-INF/services/");
+        return getMainResourcesDirectory().resolve(SpecificFolders.META_INF_SERVICES);
     }
 
     public DevGwtModuleFile getGwtModuleFile() {
@@ -148,10 +151,10 @@ public class DevProjectModule extends ProjectModuleImpl {
         return gwtModuleFile;
     }
 
-    public DevGwtJ2clHtmlFile getGwtJ2clHtmlFile() {
-        if (gwtJ2clHtmlFile == null)
-            gwtJ2clHtmlFile = new DevGwtJ2clHtmlFile(this);
-        return gwtJ2clHtmlFile;
+    public WebHtmlFile getWebHtmlFile() {
+        if (webHtmlFile == null)
+            webHtmlFile = new WebHtmlFile(this);
+        return webHtmlFile;
     }
 
     public DevProjectModule getOrCreateChildProjectModule(String name) {
@@ -212,13 +215,13 @@ public class DevProjectModule extends ProjectModuleImpl {
 
     @Override
     public ReusableStream<String> getSubdirectoriesChildrenModules() {
-        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(getHomeDirectory(), 1))
-                .filter(Files::isDirectory)
-                .filter(path -> !path.equals(getHomeDirectory()))
-                .filter(path -> Files.exists(path.resolve("webfx.xml")) || Files.exists(path.resolve("pom.xml")))
-                .map(path -> path.toFile().getName())
-                .sorted(Module::compareModuleNames)
-                .cache();
+        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(getHomeDirectory(), 1, FileVisitOption.FOLLOW_LINKS))
+            .filter(Files::isDirectory)
+            .filter(path -> !path.equals(getHomeDirectory()))
+            .filter(path -> Files.exists(path.resolve(SpecificFiles.WEBFX_XML)) || Files.exists(path.resolve(SpecificFiles.POM_XML)))
+            .map(path -> path.toFile().getName())
+            .sorted(Module::compareModuleNames)
+            .cache();
     }
 
     public DevRootModule getRootModule() {
@@ -232,7 +235,7 @@ public class DevProjectModule extends ProjectModuleImpl {
     }
 
     public Path getGwtExecutableFilePath() {
-        return getHomeDirectory().resolve("target").resolve(getName() + "-" + getVersion() + "/" + getName().replace('-', '_') + "/index.html");
+        return getHomeDirectory().resolve(SpecificFolders.TARGET).resolve(getName() + "-" + getVersion() + "/" + getName().replace('-', '_') + "/" + SpecificFiles.INDEX_HTML);
     }
 
     private LinkedHashMap<String, Path> moduleWebFxPathsAsc;
@@ -267,33 +270,32 @@ public class DevProjectModule extends ProjectModuleImpl {
             }
         }
         if (!cacheRead) {
-            // Creating the dependency graph of the transitive project modules (i.e. list of dependencies for each module)
+            // Creating the dependency graph of the transitive project modules (i.e., list of dependencies for each module)
             Map<ProjectModule, List<ProjectModule>> modulesDependencyGraph = getProjectModulesDependencyGraph(true);
 
             // We sort these transitive modules in the requested order (ascending = most independent modules first,
             // ending with the executable module - descending = reverse order).
             List<ProjectModule> sortedModules =
-                    asc ? TopologicalSort.sortAsc (modulesDependencyGraph) :
-                          TopologicalSort.sortDesc(modulesDependencyGraph);
+                asc ? TopologicalSort.sortAsc(modulesDependencyGraph) :
+                    TopologicalSort.sortDesc(modulesDependencyGraph);
 
             // Reducing the modules to only WebFX project modules with a webfx source directory
             sortedModules = sortedModules.stream()
-                    .filter(ProjectModule::hasMainWebFxSourceDirectory)
-                    .collect(Collectors.toList());
+                .filter(ProjectModule::hasMainWebFxSourceDirectory)
+                .collect(Collectors.toList());
 
             // The previous sort is not good enough, because it doesn't take in consideration that the modules may come
             // from different repositories that also have (non-circular) dependencies between them, and modules coming
             // from repository B that depends on repository A should always be listed second (if ascending), i.e.
             // modules B listed after modules A. This is important, especially if there is an implicit dependency not
             // known by WebFX, such as overriding in module B (typically application code) some CSS rules declared in
-            // module A (typically webfx-A, webfx-lib-A, or webfx-extras-A, etc...). These rules from B needs to be
+            // module A (typically webfx-A, webfx-lib-A, or webfx-extras-A, etc...). These rules from B need to be
             // merged after the rules from A in the final CSS file, isn't it? But if these rules B are declared in a
             // separate module B (such as a global CSS module for the application), there is no explicit code dependency
-            // between module B and module A, and the result of the previous sort may list module B first (because it
-            // looks like an independent module). We can resolve that wrong order by understanding that repository B
-            // depends (in general) on repository A, and therefore all modules B should be listed after modules A.
-            // In order to achieve that second sort, we first build the repository dependency graph from the modules
-            // dependency graph:
+            // between module B and module A. The result of the previous sort may list module B first (because it looks
+            // like an independent module). We can resolve that wrong order by understanding that repository B depends
+            // (in general) on repository A, and therefore all modules B should be listed after modules A. To achieve
+            // that second sort, we first build the repository dependency graph from the module dependency graph:
             Map<ProjectModule, List<ProjectModule>> repositoriesDependencyGraph = new HashMap<>();
             modulesDependencyGraph.forEach((module, moduleDeps) -> {
                 ProjectModule repoModule = getRepositoryModule(module);
@@ -303,10 +305,10 @@ public class DevProjectModule extends ProjectModuleImpl {
 
             // Then we sort these repositories in the same requested order
             List<ProjectModule> sortedRepositoryModules =
-                    asc ? TopologicalSort.sortAsc (repositoriesDependencyGraph) :
-                          TopologicalSort.sortDesc(repositoriesDependencyGraph);
+                asc ? TopologicalSort.sortAsc(repositoriesDependencyGraph) :
+                    TopologicalSort.sortDesc(repositoriesDependencyGraph);
 
-            // Finally we execute that second sorting pass, which will group modules by repository (but modules inside
+            // Finally, we execute that second sorting pass, which will group modules by repository (but modules inside
             // the same repository keep the same order coming from the first sorting pass).
             sortedModules.sort((pm1, pm2) -> {
                 ProjectModule rm1 = getRepositoryModule(pm1);
@@ -321,7 +323,7 @@ public class DevProjectModule extends ProjectModuleImpl {
 
             StringBuilder sb = new StringBuilder();
             moduleWebFxPaths.forEach((moduleName, webfxPath) -> {
-                if (sb.length() > 0)
+                if (!sb.isEmpty())
                     sb.append("\n");
                 // URI stored in cache so that we can retrieve the path even if inside jar or zip files
                 sb.append(moduleName).append(':').append(webfxPath.toUri());

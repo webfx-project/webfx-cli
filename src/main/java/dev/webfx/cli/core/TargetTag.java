@@ -8,16 +8,18 @@ import java.util.*;
 public enum TargetTag {
 
     PLATFORM_PARTITION(),
-    JAVA            ("java", PLATFORM_PARTITION, Platform.JRE /*, Platform.ANDROID*/),
+    JAVA            ("java", PLATFORM_PARTITION, Platform.JRE, Platform.GWT, Platform.J2CL, Platform.TEAVM),
     JRE             ("jre", JAVA, Platform.JRE),
     OPENJFX         ("openjfx", JRE), // => DESKTOP
     GLUON           ("gluon", OPENJFX), // => native
     VERTX           ("vertx", JRE),
-    WEB             ("web", PLATFORM_PARTITION, Platform.GWT, Platform.J2CL, Platform.TEAVM), // => BROWSER
-    GWT             ("gwt", WEB, Platform.GWT),
-    J2CL            ("j2cl", WEB, Platform.J2CL),
-    TEAVM           ("teavm", WEB, Platform.TEAVM),
+    WEB             ("web", JAVA, Platform.GWT, Platform.J2CL, Platform.TEAVM), // => BROWSER
+    ELEMENTAL2      ("elemental2", WEB), // => BROWSER
+    GWT             ("gwt", ELEMENTAL2, Platform.GWT),
+    J2CL            ("j2cl", ELEMENTAL2, Platform.J2CL),
+    TEAVM           ("teavm", ELEMENTAL2, Platform.TEAVM),
     EMUL            ("emul", WEB),
+    POLYFILL        ("polyfill", TEAVM),
 
     ARCH_PARTITION  (),
     SHARED          ("shared", ARCH_PARTITION),
@@ -38,17 +40,16 @@ public enum TargetTag {
     ;
 
     private static TargetTag directImpliedTag(TargetTag tag) {
-        switch (tag) {
-            case SERVER: return JRE;
-            case OPENJFX: return DESKTOP;
-            case WEB: return BROWSER;
-            case VIEWER_PARTITION: return CLIENT;
-            case DESKTOP: return JRE;
+        return switch (tag) {
+            case SERVER, DESKTOP -> JRE;
+            case OPENJFX -> DESKTOP;
+            case WEB -> BROWSER;
+            case VIEWER_PARTITION -> CLIENT;
             //case WEB: return GWT;
-            case WEB_TECHNO_PARTITION: return WEB;
-            case VERTX: return SERVER;
-        }
-        return null;
+            case WEB_TECHNO_PARTITION -> WEB;
+            case VERTX -> SERVER;
+            default -> null;
+        };
     }
 
     private final String tagName;
@@ -98,8 +99,9 @@ public enum TargetTag {
 
     List<Platform> getSupportedPlatforms() {
         if (supportedPlatforms == null) {
-            supportedPlatforms = new ArrayList<>(Arrays.asList(Platform.values()));
-            restrictPlatforms(supportedPlatforms, this, true);
+            ArrayList<Platform> platforms = new ArrayList<>(Arrays.asList(Platform.values()));
+            restrictPlatforms(platforms, this, true);
+            supportedPlatforms = platforms;
         }
         return supportedPlatforms;
     }
@@ -155,8 +157,8 @@ public enum TargetTag {
     }
 
     private int gradePartitionCompatibility(TargetTag requestedTag) {
-        // We don't accept a tag that is deeper than the requested tag (related the same partition tag). For example,
-        // webfx-platform-shutdown-gluon is for gluon only, it shouldn't be taken for openjfx, which should take
+        // We don't accept a tag that is deeper than the requested tag (related to the same partition tag). For example,
+        // webfx-platform-shutdown-gluon is for gluon only; it shouldn't be taken for openjfx, which should take
         // webfx-platform-shutdown-java (less deep) instead.
         if (getPartitionTag() == requestedTag.getPartitionTag() && getPartitionDepth() > requestedTag.getPartitionDepth())
             return -1;
@@ -211,7 +213,7 @@ public enum TargetTag {
 
     public static TargetTag[] parseTags(String text, boolean skipFirstToken) {
         return Arrays.stream(text.split("-"))
-                .skip(skipFirstToken ? 1 : 0) // Ignoring first tag for module names (ex: gluon-image-issue-application-gwt => for gwt, not gluon)
+                .skip(skipFirstToken ? 1 : 0) // Ignoring the first tag for module names (ex: gluon-image-issue-application-gwt => for gwt, not gluon)
                 .map(TargetTag::fromTagName)
                 .filter(Objects::nonNull)
                 .toArray(TargetTag[]::new);

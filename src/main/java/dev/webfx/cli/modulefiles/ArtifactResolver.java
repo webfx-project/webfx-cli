@@ -2,6 +2,7 @@ package dev.webfx.cli.modulefiles;
 
 import dev.webfx.cli.core.Module;
 import dev.webfx.cli.core.*;
+import dev.webfx.cli.specific.SpecificModules;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ public final class ArtifactResolver {
 
     static String getArtifactId(Module module, boolean isForGwt, boolean isForJ2cl, boolean isExecutable, boolean isJ2clCompilable, boolean requiresJavafxEmul) {
         String moduleName = module.getName();
-        // Emulated JDK modules needs to be listed in executable GWT modules, and also in any module that may be
+        // Emulated JDK modules need to be listed in executable GWT modules, and also in any module that may be
         // compiled by J2CL (as provided). Otherwise, (ex: for Java modules) no external dependency is required.
         if (!(isForGwt && isExecutable || isJ2clCompilable) && module.isJavaBaseEmulationModule())
             return null;
@@ -160,14 +161,13 @@ public final class ArtifactResolver {
             return scope;
         Module module = moduleGroup.getKey();
         // Setting scope to "provided" for optional dependencies and interface modules
-        if (module instanceof ProjectModule) {
+        if (module instanceof ProjectModule projectModule) {
             // Optional dependencies
             if (moduleGroup.getValue().stream().anyMatch(ModuleDependency::isOptional))
                 return PROVIDED;
             // An interface module should have scope "provided" in general (as it will be replaced by another module
             // implementing it in the end), but an exception is that when the implementing module is itself! (which
             // can happen for interface modules providing a default implementation).
-            ProjectModule projectModule = ((ProjectModule) module);
             if (projectModule.isInterface() // yes, it's an interface module
                     // So we also check that it's not an implicit provider (which indicates that it was chosen as the implementing module)
                     && moduleGroup.getValue().stream().map(ModuleDependency::getType).noneMatch(type -> type == ModuleDependency.Type.IMPLICIT_PROVIDER))
@@ -182,6 +182,8 @@ public final class ArtifactResolver {
             return RUNTIME; // because other environments than J2CL actually don't need it
         if (!isForGwt && !isForOpenJfx && !isExecutable && !requiresJavafxEmul && (SpecificModules.isJavafxModule(moduleName) || SpecificModules.isJavafxEmulModule(moduleName)))
             return PROVIDED;
+        if (SpecificModules.isElemental2Module(moduleName) || SpecificModules.isJsIntertopModule(moduleName) || SpecificModules.isPolyfillCompatModule(moduleName))
+            return PROVIDED; // because they are possibly replaced with the elemental2 polyfill when compiling for TeaVM
         return null;
     }
 

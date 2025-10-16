@@ -9,13 +9,8 @@ public enum Platform {
      * Supported target platforms for now *
      **************************************/
       JRE       // Java Runtime Environment -> for desktop applications or servers
-    , GWT       // Google Web Toolkit (Java to Javascript transpiler) -> for browser applications
+    , GWT       // Google Web Toolkit (Java to JavaScript transpiler) -> for browser applications
     , J2CL      // Java to Closure transpiler (will replace GWT) -> for browser applications
-
-
-    /****************************************
-     * Partially supported target platforms *
-     /**************************************/
     , TEAVM      // Java to JavaScript or WebAssembly transpiler -> for browser applications
 
     /*****************************************************

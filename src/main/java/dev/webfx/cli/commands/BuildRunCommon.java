@@ -1,6 +1,7 @@
 package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.*;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.modulefiles.DevMavenPomModuleFile;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
