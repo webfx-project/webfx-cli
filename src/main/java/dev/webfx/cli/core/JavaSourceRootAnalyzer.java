@@ -622,7 +622,7 @@ public final class JavaSourceRootAnalyzer {
                     collectingSourceRoot.getTransitiveDependenciesWithoutImplicitProviders()
                         // Note: the previous stream may contain interface modules, so we resolve them here because the
                         // implementing modules may also declare additional providers
-                        .flatMap(collectingSourceRoot::resolveInterfaceDependencyIfExecutable)
+                        .flatMap(collectingSourceRoot::resolveInterfaceDependency)
                 ));
         // Fixing possible incompleteness of the list, causing missing optional services in pom.xml.
         // Ex: webfx update -p -M kbs-backoffice-application-openjfx
@@ -704,45 +704,47 @@ public final class JavaSourceRootAnalyzer {
     }
 
     ReusableStream<ModuleDependency> resolveInterfaceDependencyIfExecutable(ModuleDependency dependency) {
-        if (projectModule.isExecutable() && dependency.getDestinationModule() instanceof ProjectModule module) {
-            if (module.isInterface()) {
-                ReusableStream<ProjectModule> searchScope = getRequiredProvidersModulesSearchScope();
-                ProjectModule concreteModule = searchScope
-                    .filter(m -> m.implementsModule(module))
-                    .filter(m -> m.isCompatibleWithTargetModule(projectModule))
-                    // Also if the module has auto-injection conditions, we check that these conditions are true
-                    // Ex: webfx-platform-conf-zero-impl is the ZeroConf implementation only when the Conf API is used
-                    // TODO: fix issue because executableAutoInjectedModulesCaches may not be completed at this stage => second pass resolution?
-                    .filter(m -> !m.hasAutoInjectionConditions() || projectModule.getMainJavaSourceRootAnalyzer().executableAutoInjectedModulesCaches.anyMatch(autoModule -> autoModule == m))
-                    .max(Comparator.comparingInt(m -> m.gradeTargetMatch(projectModule.getTarget())))
-                    .orElse(null);
-                // If the search was fruitless, the remaining possibility is that the module interface implements itself
-                // (i.e., it provides a default implementation itself).
-                if (concreteModule == null && module.implementsItself() && module.isCompatibleWithTargetModule(projectModule))
-                    return ReusableStream.of(ModuleDependency.createImplicitProviderDependency(projectModule, module));
-                if (concreteModule != null) {
-                    // Creating the dependency to this concrete module and adding transitive dependencies
-                    ReusableStream<ModuleDependency> concreteModuleDependencies = ModuleDependency.createImplicitProviderDependency(projectModule, concreteModule)
-                        .collectThisAndTransitiveDependencies();
-                    // In case these dependencies have a SPI, collecting the providers and adding their associated implicit dependencies
-                    // Ex: interface = [webfx-extras-visual-]grid-registry, concrete = [...]-grid-registry-spi, provider = [...]-grid-peers-javafx
-                    // TODO: See if we can move this up to the generic steps when building dependencies
-                    return ReusableStream.concat(
-                            concreteModuleDependencies,
-                            collectExecutableModuleProviders(this, concreteModule.getMainJavaSourceRootAnalyzer())
-                                .flatMap(Providers::getProviderModules)
-                                //.filter(m -> transitiveDependenciesWithoutImplicitProvidersCache.noneMatch(dep -> dep.getDestinationModule() == m)) // Removing modules already in transitive dependencies (no need to repeat them)
-                                .map(m -> ModuleDependency.createImplicitProviderDependency(projectModule, m))
-                        )
-                        .filter(dep -> !(dep.getDestinationModule() instanceof ProjectModule && ((ProjectModule) dep.getDestinationModule()).isInterface()))
-                        .distinct();
-                }
-                String message = "No concrete module found for interface module " + module + " in executable module " + projectModule + " among " + searchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList());
-                //if (isModuleUnderRootHomeDirectory(this))
-                Logger.warning(message);
-                //else
-                //    Logger.verbose(message);
+        if (projectModule.isExecutable())
+            return resolveInterfaceDependency(dependency);
+        return ReusableStream.of(dependency);
+    }
+
+    ReusableStream<ModuleDependency> resolveInterfaceDependency(ModuleDependency dependency) {
+        if (dependency.getDestinationModule() instanceof ProjectModule module && module.isInterface()) {
+            ReusableStream<ProjectModule> searchScope = getRequiredProvidersModulesSearchScope();
+            ProjectModule concreteModule = searchScope
+                .filter(m -> m.implementsModule(module))
+                .filter(m -> m.isCompatibleWithTargetModule(projectModule))
+                // Also if the module has auto-injection conditions, we check that these conditions are true
+                // Ex: webfx-platform-conf-zero-impl is the ZeroConf implementation only when the Conf API is used
+                // TODO: fix issue because executableAutoInjectedModulesCaches may not be completed at this stage => second pass resolution?
+                .filter(m -> !m.hasAutoInjectionConditions() || projectModule.getMainJavaSourceRootAnalyzer().executableAutoInjectedModulesCaches.anyMatch(autoModule -> autoModule == m))
+                .max(Comparator.comparingInt(m -> m.gradeTargetMatch(projectModule.getTarget())))
+                .orElse(null);
+            // If the search was fruitless, the remaining possibility is that the module interface implements itself
+            // (i.e., it provides a default implementation itself).
+            if (concreteModule == null && module.implementsItself() && module.isCompatibleWithTargetModule(projectModule))
+                concreteModule = module;
+            if (concreteModule != null) {
+                // Creating the dependency to this concrete module and adding transitive dependencies
+                ReusableStream<ModuleDependency> concreteModuleDependencies = ModuleDependency.createImplicitProviderDependency(projectModule, concreteModule)
+                    .collectThisAndTransitiveDependencies();
+                // In case these dependencies have a SPI, collecting the providers and adding their associated implicit dependencies
+                // Ex: interface = [webfx-extras-visual-]grid-registry, concrete = [...]-grid-registry-spi, provider = [...]-grid-peers-javafx
+                // TODO: See if we can move this up to the generic steps when building dependencies
+                return ReusableStream.concat(
+                        concreteModuleDependencies,
+                        collectExecutableModuleProviders(this, concreteModule.getMainJavaSourceRootAnalyzer())
+                            .flatMap(Providers::getProviderModules)
+                            //.filter(m -> transitiveDependenciesWithoutImplicitProvidersCache.noneMatch(dep -> dep.getDestinationModule() == m)) // Removing modules already in transitive dependencies (no need to repeat them)
+                            .map(m -> ModuleDependency.createImplicitProviderDependency(projectModule, m))
+                    )
+                    // Resolving possible further interface dependencies coming from the transitive dependencies or implicit providers
+                    .flatMap(dep -> dep.getDestinationModule() == module ? ReusableStream.empty() /* because already done */ : resolveInterfaceDependency(dep))
+                    .distinct();
             }
+            String message = "No concrete module found for interface module " + module + " in executable module " + projectModule + " among " + searchScope.map(ProjectModule::getName).sorted().collect(Collectors.toList());
+            Logger.warning(message);
         }
         return ReusableStream.of(dependency);
     }
