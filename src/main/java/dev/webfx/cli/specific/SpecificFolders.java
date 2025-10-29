@@ -9,6 +9,7 @@ public interface SpecificFolders {
     String USER_M2_REPOSITORY = ".m2/repository";
 
     String SRC = "src";
+    String SRC_MAIN = "src/main";
     String SRC_MAIN_JAVA = "src/main/java";
     String SRC_MAIN_WEBFX = "src/main/webfx";
     String SRC_TEST_JAVA = "src/test/java";

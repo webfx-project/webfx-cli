@@ -33,7 +33,7 @@ public class DevProjectModule extends ProjectModuleImpl {
     private WebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
     private DevGwtModuleFile gwtModuleFile;
-    private WebHtmlFile webHtmlFile;
+    private IndexHtmlFile indexHtmlFile;
     // The webfx root module of the application repository which may be different from the root module in the case of
     // aggregate modules with different submodules (each submodule is a different app repo with its own root webfx module).
     private DevProjectModule webFxRootModule;
@@ -121,6 +121,10 @@ public class DevProjectModule extends ProjectModuleImpl {
         return homeDirectory != null ? homeDirectory.resolve(SpecificFolders.SRC) : null;
     }
 
+    public Path getMainSourceDirectory() {
+        return homeDirectory != null ? homeDirectory.resolve(SpecificFolders.SRC_MAIN) : null;
+    }
+
     @Override
     public Path getMainJavaSourceDirectory() {
         return homeDirectory != null ? homeDirectory.resolve(SpecificFolders.SRC_MAIN_JAVA) : null;
@@ -151,10 +155,17 @@ public class DevProjectModule extends ProjectModuleImpl {
         return gwtModuleFile;
     }
 
-    public WebHtmlFile getWebHtmlFile() {
-        if (webHtmlFile == null)
-            webHtmlFile = new WebHtmlFile(this);
-        return webHtmlFile;
+    public Path getWebAppSourceDirectory() {
+        if (getBuildInfo().isForTeaVm) {
+            return getMainSourceDirectory().resolve("webapp");
+        }
+        return getMainResourcesDirectory().resolve("public");
+    }
+
+    public IndexHtmlFile getIndexHtmlFile() {
+        if (indexHtmlFile == null)
+            indexHtmlFile = new IndexHtmlFile(this);
+        return indexHtmlFile;
     }
 
     public DevProjectModule getOrCreateChildProjectModule(String name) {

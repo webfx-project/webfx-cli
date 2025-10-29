@@ -19,8 +19,9 @@ public class JavaFilesGenerator {
 
     public static int generateMetaInfServicesFiles(DevProjectModule module) {
         // Generating META-INF/services/ files
-        // Note: this is the old way of declaring services (new way is in module-info.java) but still required for GraalVM and TeaVM
-        // => To be removed as soon as GraalVM and TeaVM supports the new way of declaring services
+        // Note: this is the old way of declaring services (the new way is in module-info.java) but still required
+        // for GraalVM and TeaVM
+        // TODO Remove as soon as GraalVM and TeaVM supports the new way of declaring services
         int[] metaInfCount = { 0 };
         module.getProvidedJavaServices()
                 .forEach(service -> {

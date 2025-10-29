@@ -98,7 +98,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         }
         // J2CL resources
         if (template.contains("${resourceArtifactItems}")) {
-            String artifactItems = ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
+            String artifactItems = ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()) // Not getThisAndTransitiveModules() because for teavm modules, this module is a war and the unpack goal fails with them
                 .map(pm -> {
                     ReusableStream<String> resourcePackages = pm.getNonEmbedResourcePackages();
                     if (resourcePackages.isEmpty())

@@ -31,9 +31,9 @@ public final class CssFilesGenerator {
 
         String cssTag = isWebExecutable ? "web@" : "javafx@";
 
-        Path mergedCssSourceFolder = module.getMainResourcesDirectory().resolve((isWebExecutable ? "public/" : "") + "dev/webfx/kit/css");
+        Path mergedCssSourceFolder = (isWebExecutable ? module.getWebAppSourceDirectory() : module.getMainResourcesDirectory()).resolve("dev/webfx/kit/css");
 
-        Map<Path /* relative path to merged css file */, StringBuilder /* content concatenation */> cssMerges = new HashMap<>();
+        Map<Path /* relative path to the merged CSS file */, StringBuilder /* content concatenation */> cssMerges = new HashMap<>();
 
         Map<String, Path> moduleWebFxPaths = module.collectThisAndTransitiveWebFXPaths(canUseCache, true, mergePrepStopWatch);
 
@@ -83,7 +83,7 @@ public final class CssFilesGenerator {
                     fontFaces.append(cssContent, p1, p2 + 1);
                     cssContent = cssContent.substring(0, p1) + cssContent.substring(p2 + 1);
                 }
-                if (fontFaces.length() > 0) {
+                if (!fontFaces.isEmpty()) {
                     cssContent = "/* @font-face rules listed first, otherwise they are ignored (OpenJFX bug) */\n\n" + fontFaces + cssContent;
                 }
             }

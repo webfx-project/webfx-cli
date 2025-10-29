@@ -11,7 +11,7 @@ public class TeaVMFilesGenerator {
     public static void generateTeaVMFiles(DevProjectModule module, UpdateTasks tasks) {
         if (tasks.indexHtml) {
             tasks.indexHtmlStopWatch.on();
-            if (module.getWebHtmlFile().writeFile())
+            if (module.getIndexHtmlFile().writeFile())
                 tasks.indexHtmlCount++;
             tasks.indexHtmlStopWatch.off();
         }

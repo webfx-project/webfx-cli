@@ -146,7 +146,11 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         ProjectModule applicationModule = null;
         if (isExecutable()) {
             String moduleName = getName();
-            applicationModule = getModuleRegistry().getRegisteredProjectModule(moduleName.substring(0, moduleName.lastIndexOf('-')));
+            String applicationModuleName = moduleName;
+            if (getTarget().hasTag(TargetTag.WASM) && moduleName.endsWith("-wasm"))
+                applicationModuleName = moduleName.substring(0, applicationModuleName.lastIndexOf('-'));
+            applicationModuleName = moduleName.substring(0, applicationModuleName.lastIndexOf('-'));
+            applicationModule = getModuleRegistry().getRegisteredProjectModule(applicationModuleName);
         }
         return applicationModule;
     }
@@ -166,6 +170,10 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         if (target == null)
             target = new Target(this);
         return target;
+    }
+
+    public boolean isWasmModule() {
+        return getTarget().hasTag(TargetTag.WASM);
     }
 
     private void checkReadGavFromModuleFiles() {

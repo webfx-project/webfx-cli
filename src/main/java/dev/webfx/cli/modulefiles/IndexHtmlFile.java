@@ -1,9 +1,6 @@
 package dev.webfx.cli.modulefiles;
 
-import dev.webfx.cli.core.BuildInfo;
-import dev.webfx.cli.core.DevProjectModule;
-import dev.webfx.cli.core.ProjectModule;
-import dev.webfx.cli.core.Workaround;
+import dev.webfx.cli.core.*;
 import dev.webfx.cli.modulefiles.abstr.DevModuleFileImpl;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
@@ -19,12 +16,12 @@ import java.util.Scanner;
 /**
  * @author Bruno Salmon
  */
-public class WebHtmlFile extends DevModuleFileImpl {
+public class IndexHtmlFile extends DevModuleFileImpl {
 
     private static final String MAIN_CSS_RELATIVE_PATH = "dev/webfx/kit/css/main.css";
 
-    public WebHtmlFile(DevProjectModule module) {
-        super(module, module.getMainResourcesDirectory().resolve("public/index.html"));
+    public IndexHtmlFile(DevProjectModule module) {
+        super(module, module.getWebAppSourceDirectory().resolve("index.html"));
     }
 
     @Override
@@ -38,7 +35,7 @@ public class WebHtmlFile extends DevModuleFileImpl {
                 ProjectModule.filterProjectModules(getProjectModule().getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules()).distinct();
         // Fixing possible incomplete stream
         Workaround.fixTerminalReusableStream(transitiveProjectModules); // TODO: remove this once fixed
-        Path mainCssPath = getModule().getMainResourcesDirectory().resolve("public").resolve(MAIN_CSS_RELATIVE_PATH);
+        Path mainCssPath = getModule().getWebAppSourceDirectory().resolve(MAIN_CSS_RELATIVE_PATH);
         boolean isMainCssPresent = Files.exists(mainCssPath);
         // Now the stream should be complete
         ReusableStream.concat(
@@ -51,7 +48,7 @@ public class WebHtmlFile extends DevModuleFileImpl {
                 .filter(htmlNode -> checkNodeConditions(htmlNode, transitiveProjectModules))
                 .flatMap(htmlNode -> htmlNode == null ? ReusableStream.empty() : XmlUtil.nodeListToReusableStream(htmlNode.content(), n -> n))
                 .filter(Element.class::isInstance).map(Element.class::cast)
-                .sorted(Comparator.comparingInt(WebHtmlFile::getNodeOrder))
+                .sorted(Comparator.comparingInt(IndexHtmlFile::getNodeOrder))
                 .filter(headOrBodyNode -> checkNodeConditions(headOrBodyNode, transitiveProjectModules))
                 .forEach(headOrBodyNode -> {
                     String nodeName = headOrBodyNode.getName();
@@ -95,8 +92,23 @@ public class WebHtmlFile extends DevModuleFileImpl {
                         }
                     }
                 });
-        if (getModule().getBuildInfo().isForTeaVm)
+        if (getModule().getBuildInfo().isForTeaVm) {
+            if (getModule().isWasmModule()) {
+                bodySb.append("""
+                <script>
+                    async function main() {
+                        let teavm = await TeaVM.wasmGC.load("classes.wasm", {
+                            stackDeobfuscator: {
+                                enabled: false // Can be set to true during development to get clear stack traces
+                            }
+                        });
+                        teavm.exports.main([]);
+                    }
+                </script>
+                """.indent(8));
+            }
             bodySb.append("        <script>main()</script>");
+        }
         String html = ResourceTextFileReader.readTemplate("index.html")
                 .replace("${generatedHeadContent}", headSb)
                 .replace("${generatedBodyContent}", bodySb);
@@ -111,7 +123,7 @@ public class WebHtmlFile extends DevModuleFileImpl {
     private String getGeneratedJsFileName() {
         BuildInfo buildInfo = getModule().getBuildInfo();
         if (buildInfo.isForTeaVm)
-            return "classes.js";
+            return getModule().isWasmModule() ? "classes.wasm-runtime.js" : "classes.js";
         if (buildInfo.isForJ2cl)
             return getModule().getName() + ".js";
         // GWT

@@ -21,6 +21,10 @@ public enum TargetTag {
     EMUL            ("emul", WEB),
     POLYFILL        ("polyfill", TEAVM),
 
+    TARGET_LANG_PARTITION(),
+    JS              ("js", TARGET_LANG_PARTITION),
+    WASM            ("wasm", TARGET_LANG_PARTITION),
+
     ARCH_PARTITION  (),
     SHARED          ("shared", ARCH_PARTITION),
     SERVER          ("server", SHARED), // => JRE
