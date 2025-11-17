@@ -28,6 +28,8 @@ import java.util.Map;
 public final class I18nFilesGenerator {
 
     private static final String JAVA_KEYS_CONTAINER_TYPE = "interface"; // possible values are: "interface", "enum", "class", or "final class"
+    private static final boolean IS_ENUM_CONTAINER_TYPE = "enum".equals(JAVA_KEYS_CONTAINER_TYPE);
+    private static final boolean IS_INTERFACE_CONTAINER_TYPE = "interface".equals(JAVA_KEYS_CONTAINER_TYPE);
 
     private final static Map<Path, Config> I18N_CACHE = new HashMap<>(); // We assume the CLI exits after the update command, so no need to clear that cache
 
@@ -77,19 +79,18 @@ public final class I18nFilesGenerator {
             return false;
 
         StringBuilder sb = new StringBuilder();
-        boolean isEnum = "enum".equals(JAVA_KEYS_CONTAINER_TYPE);
-        boolean isInterface = "interface".equals(JAVA_KEYS_CONTAINER_TYPE);
-        keys.forEach(key -> {
-            if (sb.length() > 0)
-                sb.append(isEnum ? ",\n" : "\n");
-            if (!SourceVersion.isName(key) || key.contains(".")) // Commenting keys that are not valid java names
-                sb.append("//");
-            if (isEnum)
-                sb.append("    ").append(key);
-            else {
-                sb.append("    ").append(isInterface ? "" : "public static final ").append("Object ").append(key).append(" = \"").append(key).append("\";");
-            }
-        });
+        keys.stream().sorted() // Sorting the keys alphabetically
+            .forEach(key -> {
+                if (!sb.isEmpty())
+                    sb.append(IS_ENUM_CONTAINER_TYPE ? ",\n" : "\n");
+                if (!SourceVersion.isName(key) || key.contains(".")) // Commenting keys that are not valid java names
+                    sb.append("//");
+                if (IS_ENUM_CONTAINER_TYPE)
+                    sb.append("    ").append(key);
+                else {
+                    sb.append("    ").append(IS_INTERFACE_CONTAINER_TYPE ? "" : "public static final ").append("Object ").append(key).append(" = \"").append(key).append("\";");
+                }
+            });
 
         Path javaFilePath = module.getMainJavaSourceDirectory().resolve(javaKeysClass.replace('.', '/') + ".java");
         int lastDotIndex = javaKeysClass.lastIndexOf('.');
