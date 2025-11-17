@@ -2,6 +2,7 @@ package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.ProjectModule;
+import dev.webfx.cli.core.TargetTag;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.platform.meta.Meta;
@@ -12,7 +13,8 @@ import dev.webfx.platform.meta.Meta;
 public final class MetaFileGenerator {
 
     public static boolean generateExecutableModuleMetaResourceFile(DevProjectModule module) {
-        if (module.isExecutable()) {
+        // We generate the meta file only for executable modules, except for web workers (booted differently and no metadata)
+        if (module.isExecutable() && !module.getTarget().hasTag(TargetTag.WORKERTHREAD)) {
             ProjectModule applicationModule = module.getApplicationModule();
             String applicationModuleName = applicationModule != null ? applicationModule.getName() : "";
             TextFileReaderWriter.writeTextFileIfNewOrModified(

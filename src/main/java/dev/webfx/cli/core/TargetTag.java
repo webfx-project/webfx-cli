@@ -31,6 +31,7 @@ public enum TargetTag {
     CLIENT          ("client", SHARED), // TODO: automatically assign CLIENT when code is using javafx.graphics, etc... Ex: kbs-magiclink-application
     BACKOFFICE      ("backoffice", CLIENT),
     FRONTOFFICE     ("frontoffice", CLIENT),
+    WORKERTHREAD    ("workerthread", CLIENT),
 
     VIEWER_PARTITION(), // => CLIENT
     DESKTOP         ("desktop", VIEWER_PARTITION), // => JRE

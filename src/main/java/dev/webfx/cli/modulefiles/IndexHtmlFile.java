@@ -104,10 +104,11 @@ public class IndexHtmlFile extends DevModuleFileImpl {
                         });
                         teavm.exports.main([]);
                     }
+                    main();
                 </script>
                 """.indent(8));
-            }
-            bodySb.append("        <script>main()</script>");
+            } else
+                bodySb.append("        <script>main()</script>");
         }
         String html = ResourceTextFileReader.readTemplate("index.html")
                 .replace("${generatedHeadContent}", headSb)

@@ -1,8 +1,10 @@
 package dev.webfx.cli.modulefiles.abstr;
 
+import dev.webfx.cli.core.Module;
 import dev.webfx.cli.core.ModuleDependency;
 import dev.webfx.cli.core.Target;
 import dev.webfx.cli.core.TargetTag;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.util.xml.XmlDocumentApi;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
@@ -36,17 +38,22 @@ public interface XmlModuleFile extends ModuleFile, XmlDocumentApi {
     }
 
     default ReusableStream<ModuleDependency> lookupDependencies(String xPathExpression, ModuleDependency.Type type, String defaultScope) {
-        return XmlUtil.nodeListToReusableStream(lookupElementList(xPathExpression), node ->
-                new ModuleDependency(
-                        getModule(),
-                        getProjectModule().getRootModule().searchRegisteredModule(node.getText()),
-                        type,
-                        XmlUtil.getBooleanAttributeValue(node, "optional"),
-                        XmlUtil.getBooleanAttributeValue(node, "transitive"),
-                        coalesce(XmlUtil.getAttributeValue(node, "scope"), defaultScope),
-                        XmlUtil.getAttributeValue(node, "classifier"),
-                        getTargetAttributeValue(node, "executable-target")
-                ));
+        return XmlUtil.nodeListToReusableStream(lookupElementList(xPathExpression), node -> {
+            String destinationModuleName = node.getText();
+            Module destinationModule = getProjectModule().getRootModule().searchRegisteredModule(destinationModuleName);
+            if (destinationModule == null)
+                throw new CliException("Module " + destinationModuleName + " was not found in project");
+            return new ModuleDependency(
+                getModule(),
+                destinationModule,
+                type,
+                XmlUtil.getBooleanAttributeValue(node, "optional"),
+                XmlUtil.getBooleanAttributeValue(node, "transitive"),
+                coalesce(XmlUtil.getAttributeValue(node, "scope"), defaultScope),
+                XmlUtil.getAttributeValue(node, "classifier"),
+                getTargetAttributeValue(node, "executable-target")
+            );
+        });
     }
 
     private String coalesce(String s1, String s2) {
@@ -58,8 +65,8 @@ public interface XmlModuleFile extends ModuleFile, XmlDocumentApi {
         if (stringValue == null)
             return Collections.emptyList();
         return Arrays.stream(stringValue.split(","))
-                .map(token -> new Target(TargetTag.parseTags(stringValue, false)))
-                .collect(Collectors.toUnmodifiableList());
+            .map(token -> new Target(TargetTag.parseTags(stringValue, false)))
+            .toList();
     }
 
 }

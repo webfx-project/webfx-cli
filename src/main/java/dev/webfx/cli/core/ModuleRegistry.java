@@ -4,6 +4,7 @@ import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.exceptions.UnresolvedException;
 import dev.webfx.cli.modulefiles.ResWebFxModuleFile;
 import dev.webfx.cli.specific.SpecificFiles;
+import dev.webfx.cli.specific.SpecificModules;
 import dev.webfx.lib.reusablestream.ReusableStream;
 
 import java.nio.file.Path;
@@ -371,12 +372,14 @@ final public class ModuleRegistry {
         return module;
     }
 
-    private boolean isSuitableModule(Module m, ProjectModule sourceModule) {
+    public boolean isSuitableModule(Module m, ProjectModule sourceModule) {
         return getUnsuitableModuleReason(m, sourceModule) == null;
     }
 
     private String getUnsuitableModuleReason(Module m, ProjectModule sourceModule) {
-        if (m.isJavaBaseEmulationModule() && m.getName().contains("j2cl") && !m.getName().contains("gwt") && sourceModule.isExecutable(Platform.GWT)) {
+        String moduleName = m.getName();
+        String sourceModuleName = sourceModule.getName();
+        if (m.isJavaBaseEmulationModule() && moduleName.contains("j2cl") && !moduleName.contains("gwt") && sourceModule.isExecutable(Platform.GWT)) {
             return "J2CL module (not suitable for GWT)";
         }
         if (!(m instanceof ProjectModule pm))
@@ -398,13 +401,16 @@ final public class ModuleRegistry {
             boolean exception = !sourceModule.getProvidedJavaServices().isEmpty();
             //.anyMatch(service -> pm.getJavaSourceFiles().anyMatch(c -> c.getClassName().equals(service)));
             if (!exception)
-                return "it implements an interface module (" + pm.implementedInterfaces().findFirst().orElse(null) + "), and only executable modules should use it (" + sourceModule.getName() + " is not an executable module)";
+                return "it implements an interface module (" + pm.implementedInterfaces().findFirst().orElse(null) + "), and only executable modules should use it (" + sourceModuleName + " is not an executable module)";
         }
         // Second not permitted case:
         // Ex: webfx-extras-controls-registry-openjfx should not include webfx-extras-controls-registry (but webfx-extras-controls-registry-spi instead)
         if (pm.isInterface()) {
-            if (sourceModule.getName().startsWith(pm.getName()))
-                return "it should not be included in " + sourceModule.getName();
+            if (sourceModuleName.startsWith(moduleName))
+                return "it should not be included in " + sourceModuleName;
+        }
+        if (sourceModuleName.contains("workerthread") && pm.getTarget().hasTag(TargetTag.ELEMENTAL2)) {
+            return "elemental2 cannot be used in web worker threads as the DOM is inaccessible"; // Ex: use webfx-platform-console-java instead of webfx-platform-console-elemental2
         }
         return null;
     }

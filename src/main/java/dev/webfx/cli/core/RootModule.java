@@ -47,8 +47,7 @@ public interface RootModule extends ProjectModule {
         if (SpecificClasses.WEBFX_APPLICATION_BOOTER_PROVIDER.equals(javaService) && (requestedTarget.hasTag(TargetTag.GWT) || requestedTarget.hasTag(TargetTag.J2CL)))
             return ReusableStream.empty();
         ReusableStream<ProjectModule> modules = implementationScope
-            .filter(m -> !m.isDeprecated())
-            .filter(m -> !m.isPreview()) // TODO: add preview mode allowing preview modules
+            .filter(m -> m.getModuleRegistry().isSuitableModule(m, targetModule))
             .filter(m -> m.isCompatibleWithTarget(requestedTarget))
             .filter(m -> m.providesJavaService(javaService));
         // If we have several modules and need to keep the best only (ex: required service),
@@ -58,7 +57,7 @@ public interface RootModule extends ProjectModule {
             // 1) First criterion = if explicitly listed as plugin-module in the target module or application module,
             // this is the main point of control for the developer to force a specific service implementation
             ReusableStream<Module> directPluginModules = targetModule.getWebFxModuleFile().getPluginModuleDependencies().map(ModuleDependency::getDestinationModule);
-            ReusableStream<Module> directApplicationPluginModules = targetModule.getApplicationModule().getWebFxModuleFile().getPluginModuleDependencies().map(ModuleDependency::getDestinationModule);
+            ReusableStream<Module> directApplicationPluginModules = targetModule.getApplicationModule() == null ? ReusableStream.empty() : targetModule.getApplicationModule().getWebFxModuleFile().getPluginModuleDependencies().map(ModuleDependency::getDestinationModule);
             for (ProjectModule module : modulesList) {
                 if (directPluginModules.anyMatch(m -> m.equals(module)) || directApplicationPluginModules.anyMatch(m -> m.equals(module))) {
                     return ReusableStream.of(module);
