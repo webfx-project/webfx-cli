@@ -717,8 +717,11 @@ public final class JavaSourceRootAnalyzer {
                 .filter(m -> m.isCompatibleWithTargetModule(projectModule))
                 // Also if the module has auto-injection conditions, we check that these conditions are true
                 // Ex: webfx-platform-conf-zero-impl is the ZeroConf implementation only when the Conf API is used
-                // TODO: fix issue because executableAutoInjectedModulesCaches may not be completed at this stage => second pass resolution?
-                .filter(m -> !m.hasAutoInjectionConditions() || projectModule.getMainJavaSourceRootAnalyzer().executableAutoInjectedModulesCaches.anyMatch(autoModule -> autoModule == m))
+                // Note: commented because executableAutoInjectedModulesCaches may not be completed at this stage, so
+                // the module will be included even if it doesn't match the auto-injection conditions (ex: even if
+                // webfx-platform-conf is not used).
+                // TODO: fix issue => second pass resolution?
+                //.filter(m -> !m.hasAutoInjectionConditions() || projectModule.getMainJavaSourceRootAnalyzer().executableAutoInjectedModulesCaches.anyMatch(autoModule -> autoModule == m))
                 .max(Comparator.comparingInt(m -> m.gradeTargetMatch(projectModule.getTarget())))
                 .orElse(null);
             // If the search was fruitless, the remaining possibility is that the module interface implements itself
