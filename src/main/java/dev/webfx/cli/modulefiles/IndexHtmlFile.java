@@ -33,82 +33,171 @@ public class IndexHtmlFile extends DevModuleFileImpl {
                 <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>
                 <link rel='manifest' href='./pwa-manifest.json'>
                 <style>
+                    :root {
+                        --progress-circle-radius: 52px;
+                        --progress-icon-size: 32px;
+                    }
+            
                     #pwa-progress-bar-container {
                         display: none;
                         position: fixed;
                         top: 50%;
-                        left: 25%;
-                        width: 50%;
-                        height: 10px;
-                        border: 1px lightgray solid;
-                        color: transparent;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: calc(var(--progress-circle-radius) * 2 + 16px);
+                        height: calc(var(--progress-circle-radius) * 2 + 16px);
                     }
-                    #pwa-progress-bar {
-                        width: 0;
-                        height: 100%;
+            
+                    .circular-progress {
+                        position: relative;
+                        width: calc(var(--progress-circle-radius) * 2 + 16px);
+                        height: calc(var(--progress-circle-radius) * 2 + 16px);
+                    }
+            
+                    .circular-progress > svg {
+                        transform: rotate(-90deg);
+                        width: calc(var(--progress-circle-radius) * 2 + 16px);
+                        height: calc(var(--progress-circle-radius) * 2 + 16px);
+                    }
+            
+                    .circular-progress-bg {
+                        fill: none;
+                        stroke: #e6e6e6;
+                        stroke-width: 8;
+                    }
+            
+                    .circular-progress-bar {
+                        fill: none;
+                        stroke: #007bff;
+                        stroke-width: 8;
+                        stroke-linecap: round;
+                        transition: stroke-dashoffset 0.3s ease;
+                    }
+            
+                    .progress-icon {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+            
+                    .pause-icon {
+                        width: var(--progress-icon-size);
+                        height: var(--progress-icon-size);
                         background-color: #007bff;
-                        transition: width 0.2s ease;
+                        border-radius: calc(var(--progress-icon-size) * 0.125);
+                    }
+            
+                    .play-icon {
+                        width: calc(var(--progress-icon-size) * 1.4);
+                        height: calc(var(--progress-icon-size) * 1.4);
+                        background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 2v20c0 .83.84 1.37 1.55.98l15-10c.68-.49.68-1.47 0-1.96l-15-10C5.84 .63 5 1.17 5 2z" stroke-linejoin="round" fill="%23007bff"/></svg>');
+                        background-size: contain;
+                        background-repeat: no-repeat;
+                        background-position: center;
                     }
                 </style>""".indent(8));
             bodySb.append("""
-                    <div id="pwa-progress-bar-container">
-                        <div id="pwa-progress-bar">This is to force the browser to paint this new page</div>
+                <div id="pwa-progress-bar-container">
+                    <div class="circular-progress">
+                        <svg id="progress-svg">
+                            <circle class="circular-progress-bg" id="progress-bg"></circle>
+                            <circle id="pwa-progress-bar" class="circular-progress-bar"></circle>
+                        </svg>
+                        <div class="progress-icon">
+                            <div id="progress-icon-inner" class="pause-icon"></div>
+                        </div>
                     </div>
+                </div>
                
-                    <script>
-                        function loadGwtApp() {
-                            console.log('Injecting application script...');
-                            var script = document.createElement('script');
-                            script.src = "./%APP_SCRIPT_SRC%";
-                            document.body.appendChild(script);
+                <script>
+                    function loadGwtApp() {
+                        console.log('Injecting application script...');
+                        var script = document.createElement('script');
+                        script.src = "./kbs_frontoffice_application_gwt.nocache.js";
+                        document.body.appendChild(script);
+                    }
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.register('pwa-service-worker.js');
+                        let isCriticalDone = false;
+               
+                        // Initialize circular progress bar using CSS variable
+                        const radiusValue = getComputedStyle(document.documentElement).getPropertyValue('--progress-circle-radius').trim();
+                        const radius = parseFloat(radiusValue);
+                        const circumference = 2 * Math.PI * radius;
+                        const center = radius + 8; // radius + half stroke width
+               
+                        const bgCircle = document.getElementById('progress-bg');
+                        const bar = document.getElementById('pwa-progress-bar');
+               
+                        if (bgCircle) {
+                            bgCircle.setAttribute('cx', center);
+                            bgCircle.setAttribute('cy', center);
+                            bgCircle.setAttribute('r', radius);
                         }
-                        if ('serviceWorker' in navigator) {
-                            navigator.serviceWorker.register('pwa-service-worker.js');
-                            let isCriticalDone = false;
-                            function checkLaunch() {
-                                if (isCriticalDone && navigator.serviceWorker.controller) {
-                                    loadGwtApp();
-                                }
+               
+                        if (bar) {
+                            bar.setAttribute('cx', center);
+                            bar.setAttribute('cy', center);
+                            bar.setAttribute('r', radius);
+                            bar.style.strokeDasharray = circumference;
+                            bar.style.strokeDashoffset = circumference;
+                        }
+               
+                        function checkLaunch() {
+                            if (isCriticalDone && navigator.serviceWorker.controller) {
+                                loadGwtApp();
                             }
-                            navigator.serviceWorker.addEventListener('message', event => {
-                                if (event.data) {
-                                    if (event.data.type === 'loading_progress') {
-                                        const percent = Math.round((event.data.current / event.data.total) * 100);
-                                        const container = document.getElementById('pwa-progress-bar-container');
-                                        const bar = document.getElementById('pwa-progress-bar');
-                                        if (container && bar) {
-                                            if (!event.data.completed && percent < 100) {
-                                                container.style.display = 'block';
-                                                bar.style.width = percent + '%';
-                                            }
-                                            if (event.data.completed || percent >= 100) {
-                                                bar.style.width = '100%';
-                                                setTimeout(() => container.style.display = 'none', 500);
+                        }
+                        navigator.serviceWorker.addEventListener('message', event => {
+                            if (event.data) {
+                                if (event.data.type === 'loading_progress') {
+                                    const percent = Math.round((event.data.current / event.data.total) * 100);
+                                    const container = document.getElementById('pwa-progress-bar-container');
+                                    const bar = document.getElementById('pwa-progress-bar');
+                                    const icon = document.getElementById('progress-icon-inner');
+                                    if (container && bar) {
+                                        if (!event.data.completed && percent < 100) {
+                                            container.style.display = 'block';
+                                            bar.style.strokeDashoffset = circumference - (percent / 100) * circumference;
+                                            if (icon) {
+                                                icon.className = 'pause-icon';
                                             }
                                         }
-                                        if (event.data.criticalCompleted && !isCriticalDone) {
-                                            isCriticalDone = true;
-                                            checkLaunch();
-                                        }
-                                    } else if (event.data.type === 'status') {
-                                        if (event.data.criticalCompleted && !isCriticalDone) {
-                                            isCriticalDone = true;
-                                            checkLaunch();
+                                        if (event.data.completed || percent >= 100) {
+                                            bar.style.strokeDashoffset = 0;
+                                            if (icon) {
+                                                icon.className = 'play-icon';
+                                            }
+                                            setTimeout(() => container.style.display = 'none', 800);
                                         }
                                     }
+                                    if (event.data.criticalCompleted && !isCriticalDone) {
+                                        isCriticalDone = true;
+                                        checkLaunch();
+                                    }
+                                } else if (event.data.type === 'status') {
+                                    if (event.data.criticalCompleted && !isCriticalDone) {
+                                        isCriticalDone = true;
+                                        checkLaunch();
+                                    }
                                 }
-                            });
-                            if (navigator.serviceWorker.controller) {
-                                navigator.serviceWorker.controller.postMessage({ type: 'check_status' });
-                            } else {
-                                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                                    navigator.serviceWorker.controller.postMessage({ type: 'check_status' });
-                                });
                             }
+                        });
+                        if (navigator.serviceWorker.controller) {
+                            navigator.serviceWorker.controller.postMessage({ type: 'check_status' });
                         } else {
-                            loadGwtApp();
+                            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                                navigator.serviceWorker.controller.postMessage({ type: 'check_status' });
+                            });
                         }
-                    </script>
+                    } else {
+                        loadGwtApp();
+                    }
+                </script>
                """.replace("%APP_SCRIPT_SRC%", getApplicationJsScriptFileName(module)).indent(8));
         } else {
             bodySb.append("""
