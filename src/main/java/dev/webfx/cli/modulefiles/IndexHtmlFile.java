@@ -117,7 +117,7 @@ public class IndexHtmlFile extends DevModuleFileImpl {
                     function loadGwtApp() {
                         console.log('Injecting application script...');
                         var script = document.createElement('script');
-                        script.src = "./kbs_frontoffice_application_gwt.nocache.js";
+                        script.src = "./%APP_SCRIPT_SRC%";
                         document.body.appendChild(script);
                     }
                     if ('serviceWorker' in navigator) {
