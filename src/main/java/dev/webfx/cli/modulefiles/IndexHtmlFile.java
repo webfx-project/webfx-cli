@@ -122,7 +122,7 @@ public class IndexHtmlFile extends DevModuleFileImpl {
                     }
                     if ('serviceWorker' in navigator) {
                         navigator.serviceWorker.register('pwa-service-worker.js');
-                        let isCriticalDone = false;
+                        var isCriticalDone = false; // Don't use `let` declaration otherwise it might be unaccessible in closures on older Safari/WebKit versions on iOS  
                
                         // Initialize circular progress bar using CSS variable
                         const radiusValue = getComputedStyle(document.documentElement).getPropertyValue('--progress-circle-radius').trim();
