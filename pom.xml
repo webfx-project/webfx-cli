@@ -15,7 +15,6 @@
     <artifactId>webfx-cli</artifactId>
 
     <repositories>
-        <!-- For WebFX snapshots download (including webfx-parent) -->
         <repository>
             <id>webfx-snapshots</id>
             <url>https://central.sonatype.com/repository/maven-snapshots/</url>
@@ -28,15 +27,12 @@
         </repository>
     </repositories>
 
-
     <properties>
         <webfx.mainClass>dev.webfx.cli.WebFxCLI</webfx.mainClass>
         <!-- disabling classes and sources dependencies unpack to avoid including them again in the jar -->
         <plugin.dependency.param.unpack-classes.phase>none</plugin.dependency.param.unpack-classes.phase>
         <plugin.dependency.param.unpack-sources.phase>none</plugin.dependency.param.unpack-sources.phase>
-    </properties>
-
-    <build>
+    </properties>    <build>
         <plugins>
 
             <plugin>
@@ -45,9 +41,7 @@
             </plugin>
 
         </plugins>
-    </build>
-
-    <profiles>
+    </build>    <profiles>
         <profile>
             <id>webfx-cli-timestamp-dev-version</id>
             <properties>
@@ -60,7 +54,7 @@
                     <resource>
                         <directory>src/main/resources/dev/webfx/cli/version/template</directory>
                         <filtering>true</filtering>
-                        <!-- A bit hacky but for now the development version is stored in a resource file under git source control -->
+                        <!-- A bit hacky, but for now the development version is stored in a resource file under git source control -->
                         <targetPath>../../src/main/resources/dev/webfx/cli/version/dev</targetPath>
                     </resource>
                 </resources>
@@ -73,19 +67,26 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.28.0</version>
+            <version>1.21</version>
         </dependency>
 
         <dependency>
             <groupId>org.dom4j</groupId>
             <artifactId>dom4j</artifactId>
-            <version>2.2.0</version>
+            <version>2.1.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.treblereel.gwt.nio</groupId>
+            <artifactId>gwt-nio</artifactId>
+            <version>1.1</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>jaxen</groupId>
             <artifactId>jaxen</artifactId>
-            <version>2.0.0</version>
+            <version>1.1.6</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -131,6 +132,22 @@
             <groupId>dev.webfx</groupId>
             <artifactId>webfx-platform-conf</artifactId>
             <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.webfx</groupId>
+            <artifactId>webfx-platform-javabase-emul-j2cl</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.webfx</groupId>
+            <artifactId>webfx-platform-javatime-emul-j2cl</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+            <scope>runtime</scope>
+            <optional>true</optional>
         </dependency>
 
         <dependency>

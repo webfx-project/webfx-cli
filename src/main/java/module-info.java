@@ -19,9 +19,11 @@ module webfx.cli {
     exports dev.webfx.cli;
     exports dev.webfx.cli.commands;
     exports dev.webfx.cli.core;
+    exports dev.webfx.cli.exceptions;
     exports dev.webfx.cli.modulefiles;
     exports dev.webfx.cli.modulefiles.abstr;
     exports dev.webfx.cli.sourcegenerators;
+    exports dev.webfx.cli.specific;
     exports dev.webfx.cli.util.hashlist;
     exports dev.webfx.cli.util.javacode;
     exports dev.webfx.cli.util.os;
@@ -35,7 +37,5 @@ module webfx.cli {
 
     // Resources packages
     opens dev.webfx.cli.commands;
-    exports dev.webfx.cli.specific;
-    exports dev.webfx.cli.exceptions;
 
 }

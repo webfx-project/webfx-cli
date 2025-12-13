@@ -1,8 +1,8 @@
 package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
-import dev.webfx.cli.core.Platform;
 import dev.webfx.cli.core.TargetTag;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.stopwatch.StopWatch;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
@@ -21,7 +21,7 @@ import java.util.Map;
 public final class CssFilesGenerator {
 
     private final static PathMatcher CSS_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.css");
-    private final static Map<Path, String> CSS_CACHE = new HashMap<>(); // We assume the CLI exits after the update commande, so no need to clear that cache
+    private final static Map<Path, String> CSS_CACHE = new HashMap<>(); // We assume the CLI exits after the update command, so no need to clear that cache
 
     public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch) {
         boolean isWebExecutable = module.getBuildInfo().isForWeb;
@@ -45,11 +45,38 @@ public final class CssFilesGenerator {
                         .forEach(path -> {
                             Path relativeCssPath = webfxCssDirectory.relativize(path);
                             String fileName = relativeCssPath.getFileName().toString();
-                            if (fileName.contains(cssTag)) {
-                                String cssContent = CSS_CACHE.get(path);
-                                if (cssContent == null) {
-                                    cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + TextFileReaderWriter.readInputTextFile(path);
-                                    CSS_CACHE.put(path, cssContent);
+                            boolean isWebFxUnified = fileName.contains("webfx@");
+                            boolean useThisFile = fileName.contains(cssTag) || isWebFxUnified; // include unified CSS in both targets
+                            if (useThisFile) {
+                                // Cache only the RAW file content so it can be transformed per-target on each use
+                                String rawFileContent = CSS_CACHE.get(path);
+                                if (rawFileContent == null) {
+                                    rawFileContent = TextFileReaderWriter.readInputTextFile(path);
+                                    CSS_CACHE.put(path, rawFileContent);
+                                }
+                                // Build target-specific content with header, and apply translation based on target
+                                String cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + rawFileContent;
+                                // If this is a unified webfx@ CSS, validate and transform for the target platform
+                                if (isWebFxUnified) {
+                                    // Validation: enforce the v1 subset before translation
+                                    try {
+                                        CssWebFxAnalyzer.CssValidationMode mode = CssWebFxAnalyzer.CssValidationMode.from(
+                                                System.getProperty("webfx.css.validation", "error"));
+                                        // Validate raw content (without the per-file header)
+                                        CssWebFxAnalyzer.validate(rawFileContent, mode, relativeCssPath + " from " + moduleName);
+                                    } catch (RuntimeException e) {
+                                        // Re-throw with file header context for better UX
+                                        throw new CliException(e.getMessage());
+                                    }
+                                    // Apply platform-specific transformation
+                                    if (isWebExecutable) {
+                                        // For web: move border properties to :before pseudo-element (single-host strategy)
+                                        cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
+                                                   + CssWebFxTranslator.transformUnifiedWebForWebOutput(rawFileContent);
+                                    } else {
+                                        // For JavaFX: translate web CSS syntax to JavaFX CSS syntax
+                                        cssContent = CssWebFxTranslator.translateUnifiedWebToJavaFx(cssContent);
+                                    }
                                 }
                                 if (fileName.contains("@")) {
                                     fileName = fileName.substring(fileName.lastIndexOf('@') + 1);
