@@ -46,7 +46,8 @@ public final class CssFilesGenerator {
                             Path relativeCssPath = webfxCssDirectory.relativize(path);
                             String fileName = relativeCssPath.getFileName().toString();
                             boolean isWebFxUnified = fileName.contains("webfx@");
-                            boolean useThisFile = fileName.contains(cssTag) || isWebFxUnified; // include unified CSS in both targets
+                            boolean isFxWebUnified = fileName.contains("fxweb@");
+                            boolean useThisFile = fileName.contains(cssTag) || isWebFxUnified || isFxWebUnified; // include unified CSS in both targets
                             if (useThisFile) {
                                 // Cache only the RAW file content so it can be transformed per-target on each use
                                 String rawFileContent = CSS_CACHE.get(path);
@@ -56,26 +57,40 @@ public final class CssFilesGenerator {
                                 }
                                 // Build target-specific content with header, and apply translation based on target
                                 String cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + rawFileContent;
-                                // If this is a unified webfx@ CSS, validate and transform for the target platform
-                                if (isWebFxUnified) {
-                                    // Validation: enforce the v1 subset before translation
+                                // If this is a unified CSS, validate/transform per variant and target
+                                if (isWebFxUnified || isFxWebUnified) {
                                     try {
                                         CssWebFxAnalyzer.CssValidationMode mode = CssWebFxAnalyzer.CssValidationMode.from(
                                                 System.getProperty("webfx.css.validation", "error"));
                                         // Validate raw content (without the per-file header)
-                                        CssWebFxAnalyzer.validate(rawFileContent, mode, relativeCssPath + " from " + moduleName);
+                                        if (isWebFxUnified) {
+                                            CssWebFxAnalyzer.validate(rawFileContent, mode, relativeCssPath + " from " + moduleName);
+                                        } else { // fxweb@
+                                            CssWebFxAnalyzer.validateFxWeb(rawFileContent, mode, relativeCssPath + " from " + moduleName);
+                                        }
                                     } catch (RuntimeException e) {
                                         // Re-throw with file header context for better UX
                                         throw new CliException(e.getMessage());
                                     }
-                                    // Apply platform-specific transformation
+                                    // Apply platform-specific transformation depending on target and variant
                                     if (isWebExecutable) {
-                                        // For web: move border properties to :before pseudo-element (single-host strategy)
-                                        cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
-                                                   + CssWebFxTranslator.transformUnifiedWebForWebOutput(rawFileContent);
-                                    } else {
-                                        // For JavaFX: translate web CSS syntax to JavaFX CSS syntax
-                                        cssContent = CssWebFxTranslator.translateUnifiedWebToJavaFx(cssContent);
+                                        if (isWebFxUnified) {
+                                            // For web: move border properties to :before pseudo-element (single-host strategy)
+                                            cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
+                                                    + CssWebFxTranslator.transformUnifiedWebForWebOutput(rawFileContent);
+                                        } else { // fxweb@
+                                            // For web: map -fx-* background/border properties to --fx-* variables and .root -> :root
+                                            cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
+                                                    + CssWebFxTranslator.transformFxWebForWebOutput(rawFileContent);
+                                        }
+                                    } else { // JavaFX executable
+                                        if (isWebFxUnified) {
+                                            // Translate web CSS syntax to JavaFX CSS syntax
+                                            cssContent = CssWebFxTranslator.translateUnifiedWebToJavaFx(cssContent);
+                                        } else {
+                                            // fxweb@ is already authored in JavaFX CSS; no translation needed
+                                            // cssContent already contains the header + raw content
+                                        }
                                     }
                                 }
                                 if (fileName.contains("@")) {

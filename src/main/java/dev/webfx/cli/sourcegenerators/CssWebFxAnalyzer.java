@@ -58,6 +58,35 @@ final class CssWebFxAnalyzer {
         }
     }
 
+    /**
+     * Validate fxweb@ (JavaFX-authored) unified CSS files. Similar to {@link #validate(String, CssValidationMode, String)}
+     * but with an allow-list geared toward JavaFX CSS property names (-fx-* family) plus custom properties.
+     */
+    static void validateFxWeb(String css, CssValidationMode mode, String sourceName) {
+        if (mode == CssValidationMode.OFF) return;
+        List<Violation> violations = analyzeFxWeb(css, sourceName);
+        if (!violations.isEmpty()) {
+            if (mode == CssValidationMode.WARN) {
+                for (Violation v : violations) {
+                    System.err.println(v.format());
+                }
+            } else {
+                StringBuilder sb = new StringBuilder();
+                sb.append("[Unified CSS v1] Found ").append(violations.size()).append(" unsupported rule(s) in ")
+                  .append(sourceName).append('\n');
+                int shown = 0;
+                for (Violation v : violations) {
+                    sb.append(" - ").append(v.format()).append('\n');
+                    if (++shown >= 20) {
+                        sb.append("   ... +").append(violations.size() - shown).append(" more\n");
+                        break;
+                    }
+                }
+                throw new IllegalArgumentException(sb.toString());
+            }
+        }
+    }
+
     private static final Pattern DECL_PATTERN = Pattern.compile("(^|[;{\n\r])\\s*([a-zA-Z_-][a-zA-Z0-9_-]*)\\s*:(?!//)");
 
     private static final Set<String> ALLOWED_EXACT = new HashSet<>();
@@ -125,6 +154,119 @@ final class CssWebFxAnalyzer {
         }
 
         return out;
+    }
+
+    // --- fxweb@ variant (JavaFX-authored unified CSS) ---
+
+    private static final Set<String> FXWEB_ALLOWED_EXACT = new HashSet<>();
+    private static final Set<String> FXWEB_ALLOWED_PREFIX = new HashSet<>();
+
+    static {
+        // fxweb@ scope v1.1: background, border, text fill, and font properties are supported.
+        // Backgrounds
+        FXWEB_ALLOWED_EXACT.add("-fx-background-color");
+        FXWEB_ALLOWED_EXACT.add("-fx-background-image");
+        FXWEB_ALLOWED_EXACT.add("-fx-background-repeat");
+        FXWEB_ALLOWED_EXACT.add("-fx-background-position");
+        FXWEB_ALLOWED_EXACT.add("-fx-background-size");
+        FXWEB_ALLOWED_EXACT.add("-fx-background-radius");
+
+        // Borders
+        FXWEB_ALLOWED_EXACT.add("-fx-border-style");
+        FXWEB_ALLOWED_EXACT.add("-fx-border-color");
+        FXWEB_ALLOWED_EXACT.add("-fx-border-width");
+        FXWEB_ALLOWED_EXACT.add("-fx-border-radius");
+
+        // Text color
+        FXWEB_ALLOWED_EXACT.add("-fx-text-fill");
+
+        // Shape/Text fill (used for Text and SVG shapes)
+        FXWEB_ALLOWED_EXACT.add("-fx-fill");
+
+        // Shape stroke properties (SVG/Shape)
+        FXWEB_ALLOWED_EXACT.add("-fx-stroke");
+        FXWEB_ALLOWED_EXACT.add("-fx-stroke-width");
+        // Support both hyphenated and compact variants for cap/join
+        FXWEB_ALLOWED_EXACT.add("-fx-stroke-line-cap");
+        FXWEB_ALLOWED_EXACT.add("-fx-stroke-linecap");
+        FXWEB_ALLOWED_EXACT.add("-fx-stroke-line-join");
+        FXWEB_ALLOWED_EXACT.add("-fx-stroke-linejoin");
+
+        // Opacity
+        FXWEB_ALLOWED_EXACT.add("-fx-opacity");
+
+        // Text alignment
+        FXWEB_ALLOWED_EXACT.add("-fx-text-alignment");
+
+        // Effects
+        FXWEB_ALLOWED_EXACT.add("-fx-effect");
+
+        // Fonts
+        FXWEB_ALLOWED_EXACT.add("-fx-font-family");
+        FXWEB_ALLOWED_EXACT.add("-fx-font-size");
+        FXWEB_ALLOWED_EXACT.add("-fx-font-weight");
+        FXWEB_ALLOWED_EXACT.add("-fx-font-style");
+
+        // Cursor
+        FXWEB_ALLOWED_EXACT.add("-fx-cursor");
+
+        // Allow typical @font-face properties in case they appear
+        FXWEB_ALLOWED_EXACT.add("src");
+        FXWEB_ALLOWED_EXACT.add("unicode-range");
+        FXWEB_ALLOWED_EXACT.add("font-stretch");
+        FXWEB_ALLOWED_EXACT.add("font-style");
+        FXWEB_ALLOWED_EXACT.add("font-weight");
+
+        // Prefix allowances
+        // Keep per-side border longhands
+        FXWEB_ALLOWED_PREFIX.add("-fx-border-top-");
+        FXWEB_ALLOWED_PREFIX.add("-fx-border-right-");
+        FXWEB_ALLOWED_PREFIX.add("-fx-border-bottom-");
+        FXWEB_ALLOWED_PREFIX.add("-fx-border-left-");
+        // We still do NOT allow generic -fx-* or custom properties (--) here to stay strict in v1.
+    }
+
+    static List<Violation> analyzeFxWeb(String css, String sourceName) {
+        List<Violation> out = new ArrayList<>();
+
+        String scanned = maskCssBlockComments(css);
+
+        // At-rules: allow @font-face only
+        if (containsInsensitive(scanned, "@media") || containsInsensitive(scanned, "@supports") || containsInsensitive(scanned, "@keyframes")) {
+            out.add(v(scanned, 0, "At-rules '@media/@supports/@keyframes' are not supported in v1"));
+        }
+
+        // Value checks that are independent of property naming
+        quickValueScan(scanned, out);
+        scanOpacity(scanned, out);
+
+        // Property name scanning
+        Matcher m = DECL_PATTERN.matcher(scanned);
+        while (m.find()) {
+            String prop = m.group(2);
+            if (!isAllowedPropertyFxWeb(prop)) {
+                int[] lc = new LineCounter(scanned).pos(m.start(2));
+                out.add(new Violation(lc[0], lc[1], "Unsupported property '" + prop + "' in JavaFX-authored unified CSS (fxweb@). Supported in v1: -fx-background-*, -fx-border-* (including per-side), -fx-text-fill, -fx-text-alignment, -fx-fill, -fx-stroke, -fx-stroke-width, -fx-stroke-line-cap/linecap, -fx-stroke-line-join/linejoin, -fx-opacity, -fx-effect (dropshadow), -fx-font-{family|size|weight|style}, -fx-cursor, and JavaFX custom properties declared with a single dash (e.g., -your-var)."));
+            }
+        }
+
+        return out;
+    }
+
+    private static boolean isAllowedPropertyFxWeb(String prop) {
+        String p = prop.toLowerCase(Locale.ROOT);
+        if (FXWEB_ALLOWED_EXACT.contains(p)) return true;
+        for (String pref : FXWEB_ALLOWED_PREFIX) {
+            if (p.startsWith(pref)) return true;
+        }
+        // Allow JavaFX-style custom properties declared with a single dash (but exclude -fx-)
+        if (p.startsWith("-") && !p.startsWith("--") && !p.startsWith("-fx-")) {
+            // Must look like an identifier after the leading dash
+            if (p.length() >= 2 && Character.isLetter(p.charAt(1))) return true;
+        }
+        // Also allow standard web custom properties (`--name`) in fxweb@, to be permissive
+        if (p.startsWith("--") && p.length() >= 3 && Character.isLetter(p.charAt(2))) return true;
+        return false;
     }
 
     // Replace all characters inside /* ... */ comments with spaces, preserving newlines,

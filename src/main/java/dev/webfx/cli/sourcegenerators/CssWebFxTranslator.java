@@ -1,5 +1,7 @@
 package dev.webfx.cli.sourcegenerators;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1132,6 +1134,419 @@ final class CssWebFxTranslator {
 
             i = braceClose + 1;
         }
+
+        return out.toString();
+    }
+
+    /**
+     * Transforms unified JavaFX-authored CSS (fxweb@) for web output by:
+     * 1. Mapping JavaFX property names to WebFX custom properties:
+     *    -fx-background-* → --fx-background-*
+     *    -fx-border-*     → --fx-border-*
+     * 2. Translating JavaFX root selector to web root:
+     *    .root → :root (in selector headers)
+     *
+     * No other transformations are performed in this initial version.
+     */
+    static String transformFxWebForWebOutput(String css) {
+        StringBuilder out = new StringBuilder(css.length());
+        int i = 0;
+        while (i < css.length()) {
+            int braceOpen = css.indexOf('{', i);
+            if (braceOpen == -1) {
+                out.append(css, i, css.length());
+                break;
+            }
+
+            String selector = css.substring(i, braceOpen);
+            int braceClose = findMatchingBrace(css, braceOpen);
+            if (braceClose == -1) {
+                out.append(css.substring(i));
+                break;
+            }
+
+            // Map .root to :root in selector headers (conservative, token-based)
+            String translatedSelector = selector.replaceAll("(?i)(?<![\\w-])\\.root(?![\\w-])", ":root");
+            // Map JavaFX pseudo-class :selected to a web-compatible helper class .pseudo-selected
+            // (Web CSS lacks a native :selected pseudo-class on generic elements)
+            // Note: allow replacement even when preceded by a class or type (e.g., .foo:selected)
+            translatedSelector = translatedSelector.replaceAll("(?i):selected(?![\\w-])", ".pseudo-selected");
+
+            // Extract declarations block
+            String ruleContent = css.substring(braceOpen + 1, braceClose);
+
+            // Map -fx-background-* and -fx-border-* property names to --fx-*
+            String transformedContent = ruleContent;
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-background-", "$1$2--fx-background-");
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-border-", "$1$2--fx-border-");
+
+            // Map text color: -fx-text-fill -> --fx-text-fill
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-text-fill", "$1$2--fx-text-fill");
+
+            // Map text alignment: -fx-text-alignment -> text-align
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-text-alignment", "$1$2text-align");
+
+            // Map shape/text fill color: -fx-fill -> --fx-fill
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-fill", "$1$2--fx-fill");
+
+            // Map shape stroke properties from JavaFX to WebFX custom properties
+            // -fx-stroke -> --fx-stroke (only when used as a full property name, i.e., followed by ':')
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-stroke\\s*:", "$1$2--fx-stroke:");
+            // -fx-stroke-width -> --fx-stroke-width
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-stroke-width", "$1$2--fx-stroke-width");
+            // Support both JavaFX canonical hyphenation and compact variant for line-cap/line-join
+            // -fx-stroke-line-cap or -fx-stroke-linecap -> --fx-stroke-linecap
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-stroke-line-?cap", "$1$2--fx-stroke-linecap");
+            // -fx-stroke-line-join or -fx-stroke-linejoin -> --fx-stroke-linejoin
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-stroke-line-?join", "$1$2--fx-stroke-linejoin");
+
+            // Map opacity: -fx-opacity -> opacity
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-opacity", "$1$2opacity");
+
+            // Map font properties to standard web CSS
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-font-family", "$1$2font-family");
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-font-size", "$1$2font-size");
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-font-weight", "$1$2font-weight");
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-font-style", "$1$2font-style");
+
+            // Support JavaFX-authored custom property declarations (single-dash) by converting
+            // them to standard web custom properties (double-dash) in the web output.
+            // Example: -kbs-primary-color: #00A3FF;  ->  --kbs-primary-color: #00A3FF;
+            // Safeguards: do not touch -fx-* properties and do not alter already valid --* names.
+            transformedContent = transformedContent.replaceAll(
+                    "(?i)(^|[;\\{\\n\\r])(\\s*)-(?!-)(?!fx-)([a-zA-Z][a-zA-Z0-9_-]*)\\s*:",
+                    "$1$2--$3:");
+
+            // Normalize unitless font-size numbers to px for web CSS
+            transformedContent = transformedContent.replaceAll(
+                    "(?i)(^|[;\\{\\n\\r])\\s*(font-size)\\s*:\\s*([0-9]*\\.?[0-9]+)\\s*;",
+                    "$1 $2: $3px;");
+
+            // Cursor: map -fx-cursor -> cursor and translate JavaFX keywords to web keywords
+            // Property name
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])(\\s*)-fx-cursor", "$1$2cursor");
+            // Values mapping based on HtmlSvgNodePeer.toCssCursor()
+            // hand -> pointer
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])\\s*(cursor)\\s*:\\s*hand\\s*;", "$1 $2: pointer;");
+            // open-hand -> grab
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])\\s*(cursor)\\s*:\\s*open-hand\\s*;", "$1 $2: grab;");
+            // closed-hand -> grabbing
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])\\s*(cursor)\\s*:\\s*closed-hand\\s*;", "$1 $2: grabbing;");
+            // h-resize -> ew-resize
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])\\s*(cursor)\\s*:\\s*h-resize\\s*;", "$1 $2: ew-resize;");
+            // v-resize -> ns-resize
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])\\s*(cursor)\\s*:\\s*v-resize\\s*;", "$1 $2: ns-resize;");
+            // disappear -> no-drop
+            transformedContent = transformedContent.replaceAll("(?i)(^|[;\\{\\n\\r])\\s*(cursor)\\s*:\\s*disappear\\s*;", "$1 $2: no-drop;");
+
+            // Normalize unitless numbers to px for properties where the web expects a length unit
+            // Example: -fx-border-radius: 4  ->  --fx-border-radius: 4px
+            transformedContent = normalizeFxWebLengthValuesForWeb(transformedContent);
+
+            // Rewrite single-dash JavaFX custom variables used as values to CSS var(--...) syntax
+            // Example: --fx-border-color: -kbs-border-color; -> --fx-border-color: var(--kbs-border-color);
+            transformedContent = rewriteSingleDashVariablesInValues(transformedContent);
+
+            // Map JavaFX drop shadow effect to web box-shadow
+            transformedContent = translateFxEffectDropShadowToBoxShadow(transformedContent);
+
+            out.append(translatedSelector).append("{");
+            out.append(transformedContent);
+            out.append("}");
+            i = braceClose + 1;
+        }
+        return out.toString();
+    }
+
+    // --- fxweb@ helpers for web output ---
+
+    /**
+     * Translates JavaFX '-fx-effect: dropshadow(...)' declarations to web 'box-shadow: ...' declarations.
+     * Supported form (JavaFX CSS): dropshadow( blurType , color , radius , spread , offsetX , offsetY )
+     * - blurType and spread are accepted but ignored for mapping (web doesn't need them for a basic shadow)
+     * - radius, offsetX, offsetY: unitless numbers are converted to 'px'
+     * - color: kept as-is (supports hex, rgb[a], var(...))
+     */
+    private static String translateFxEffectDropShadowToBoxShadow(String declarations) {
+        if (declarations == null || declarations.isEmpty()) return declarations;
+
+        String s = declarations;
+        StringBuilder out = new StringBuilder(s.length());
+        int i = 0;
+        while (i < s.length()) {
+            int propStart = indexOfIgnoreCase(s, "-fx-effect", i);
+            if (propStart < 0) {
+                out.append(s, i, s.length());
+                break;
+            }
+
+            // Append text before the property
+            out.append(s, i, propStart);
+
+            // Find ':' after -fx-effect
+            int colon = s.indexOf(':', propStart);
+            if (colon < 0) {
+                // Malformed, append rest and stop
+                out.append(s.substring(propStart));
+                break;
+            }
+
+            // Append the part up to the ':' normalized as a single space before name
+            out.append(s, propStart, colon + 1); // keep original up to ':' for warning fallback cases
+
+            // From after ':' skip spaces
+            int vStart = colon + 1;
+            while (vStart < s.length() && Character.isWhitespace(s.charAt(vStart))) vStart++;
+
+            // Expect dropshadow(
+            if (!regionMatchesIgnoreCase(s, vStart, "dropshadow(")) {
+                // Not a dropshadow(), leave original segment untouched and continue after this declaration end
+                int end = findEndOfDeclaration(s, colon + 1);
+                out.append(s, colon + 1, end);
+                i = end;
+                continue;
+            }
+
+            int argsStart = vStart + "dropshadow(".length();
+            int argsEnd = findMatchingParen(s, argsStart - 1); // pass index of '(' just before argsStart
+            if (argsEnd < 0) {
+                // Unbalanced, keep original to end of declaration
+                int end = findEndOfDeclaration(s, colon + 1);
+                out.append(s, colon + 1, end);
+                i = end;
+                continue;
+            }
+
+            String args = s.substring(argsStart, argsEnd);
+            DropShadowArgs dsa = parseJavaFxDropShadowArgs(args);
+            if (dsa == null) {
+                // Can't parse: keep original and add warning just before it
+                out.append(" /* [webfx translator] WARNING: couldn't parse -fx-effect dropshadow(), leaving as-is */\n ");
+                int end = findEndOfDeclaration(s, argsEnd + 1);
+                out.append(s, colon + 1, end);
+                i = end;
+                continue;
+            }
+
+            // Build replacement box-shadow
+            String ox = appendPxIfUnitless(dsa.offsetX);
+            String oy = appendPxIfUnitless(dsa.offsetY);
+            String blur = appendPxIfUnitless(dsa.radius);
+            String color = dsa.color == null ? "rgba(0,0,0,0.25)" : dsa.color.trim();
+
+            // Replace entire declaration value up to optional trailing semicolon
+            int declEnd = findEndOfDeclaration(s, argsEnd + 1);
+            // Remove what we appended up to ':' and replace the whole value by box-shadow
+            // We already appended up to ':' at the beginning; now overwrite that by writing the final property instead
+            // To keep the output clean, backtrack to just before the property name we appended
+            int rollbackTo = out.length() - (colon + 1 - propStart);
+            if (rollbackTo >= 0) out.setLength(rollbackTo);
+
+            out.append(" box-shadow: ").append(ox).append(' ').append(oy).append(' ').append(blur).append(' ').append(color).append(';');
+            i = declEnd;
+        }
+        return out.toString();
+    }
+
+    private static int indexOfIgnoreCase(String s, String needle, int from) {
+        int nlen = needle.length();
+        for (int i = Math.max(0, from); i + nlen <= s.length(); i++) {
+            if (s.regionMatches(true, i, needle, 0, nlen)) return i;
+        }
+        return -1;
+    }
+
+    private static boolean regionMatchesIgnoreCase(String s, int offset, String needle) {
+        if (offset < 0 || offset + needle.length() > s.length()) return false;
+        return s.regionMatches(true, offset, needle, 0, needle.length());
+    }
+
+    private static int findEndOfDeclaration(String s, int from) {
+        // Return index just after the declaration value including optional semicolon
+        int i = from;
+        int depth = 0;
+        while (i < s.length()) {
+            char c = s.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') depth = Math.max(0, depth - 1);
+            else if (c == ';' && depth == 0) return i + 1;
+            else if (c == '}' && depth == 0) return i; // block end, semicolon may be omitted
+            i++;
+        }
+        return i;
+    }
+
+    private static int findMatchingParen(String s, int openParenIndex) {
+        // openParenIndex is the index of '('; returns index of matching ')' or -1
+        if (openParenIndex < 0 || openParenIndex >= s.length() || s.charAt(openParenIndex) != '(') return -1;
+        int depth = 0;
+        for (int i = openParenIndex; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    private static String appendPxIfUnitless(String token) {
+        if (token == null) return null;
+        String t = token.trim();
+        if (t.isEmpty()) return t;
+        // If already has a unit or percentage, keep
+        if (t.matches("(?i).*[a-z%].*")) return t;
+        // If it's a number (possibly negative/decimal), append px
+        if (t.matches("^-?[0-9]*\\.?[0-9]+$")) return t + "px";
+        return t; // fallback
+    }
+
+    private static final class DropShadowArgs {
+        String blurType; // ignored in mapping
+        String color;
+        String radius;
+        String spread;  // ignored in mapping
+        String offsetX;
+        String offsetY;
+    }
+
+    private static DropShadowArgs parseJavaFxDropShadowArgs(String insideParens) {
+        // Split on top-level commas (ignore commas inside parentheses like rgba(...))
+        List<String> parts = splitArgsRespectingParens(insideParens);
+        if (parts.isEmpty()) return null;
+
+        DropShadowArgs dsa = new DropShadowArgs();
+        // JavaFX order: blurType, color, radius, spread, offsetX, offsetY (all optional after blurType)
+        // We will assign by position conservatively if present
+        int n = parts.size();
+        // Trim all
+        for (int i = 0; i < n; i++) parts.set(i, parts.get(i).trim());
+        try {
+            if (n >= 1) dsa.blurType = parts.get(0);
+            if (n >= 2) dsa.color = parts.get(1);
+            if (n >= 3) dsa.radius = parts.get(2);
+            if (n >= 4) dsa.spread = parts.get(3);
+            if (n >= 5) dsa.offsetX = parts.get(4);
+            if (n >= 6) dsa.offsetY = parts.get(5);
+            // Fallbacks: if offsets missing, default to 0,0
+            if (dsa.offsetX == null) dsa.offsetX = "0";
+            if (dsa.offsetY == null) dsa.offsetY = "0";
+            // If radius missing, default to 0 (no blur)
+            if (dsa.radius == null) dsa.radius = "0";
+            return dsa;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static List<String> splitArgsRespectingParens(String s) {
+        List<String> out = new java.util.ArrayList<>();
+        if (s == null) return out;
+        int depth = 0;
+        int start = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') depth = Math.max(0, depth - 1);
+            else if (c == ',' && depth == 0) {
+                out.add(s.substring(start, i));
+                start = i + 1;
+            }
+        }
+        if (start <= s.length()) out.add(s.substring(start));
+        return out;
+    }
+
+    /**
+     * In JavaFX CSS, bare numbers are often interpreted as px (e.g., -fx-border-radius: 4).
+     * Browsers, however, require explicit units once these values are used in CSS variable substitutions.
+     * This method appends "px" to any unitless numeric tokens for a selected set of properties
+     * that represent lengths in the web output:
+     *  - --fx-border-width
+     *  - --fx-border-<side>-width
+     *  - --fx-border-radius
+     *  - --fx-background-radius
+     * It preserves numbers that already carry a unit and supports multi-value syntaxes
+     * separated by spaces, commas, or slashes (for elliptical radii).
+     */
+    private static String normalizeFxWebLengthValuesForWeb(String declarations) {
+        // Pattern to find the targeted properties and capture their values up to the next ';' or '}'
+        Pattern p = Pattern.compile(
+                "(?is)(^|[;{\\n\\r])\\s*(--fx-border-width|--fx-border-(?:top|right|bottom|left)-width|--fx-border-radius|--fx-background-radius|--fx-stroke-width)\\s*:\\s*([^;}]*)"
+        );
+        Matcher m = p.matcher(declarations);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+            String prefix = m.group(1);
+            String prop = m.group(2);
+            String value = m.group(3);
+            String normalized = appendPxToUnitlessNumbers(value);
+            String replacement = prefix + " " + prop + ": " + normalized;
+            m.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+    /**
+     * Appends "px" to any unitless numeric token in the given value string.
+     * Tokens may be separated by whitespace, commas, or slashes.
+     * Examples:
+     *  - "4" -> "4px"
+     *  - "4 8" -> "4px 8px"
+     *  - "10/20" -> "10px/20px"
+     *  - "1.5em, 12" -> "1.5em, 12px"
+     */
+    private static String appendPxToUnitlessNumbers(String value) {
+        if (value == null || value.isEmpty()) return value;
+        // We can't use variable-length lookbehind in Java for (^|separator), so capture it and re-insert on replacement.
+        // IMPORTANT: Ensure the number is followed by a boundary (end, whitespace, comma, slash, ')' or '}', or ';')
+        // to avoid partial matches inside tokens like '16px' (which previously produced '1px6px').
+        Pattern num = Pattern.compile("(?i)(^|[\\s,\\/])([0-9]*\\.?[0-9]+)(?=$|[\\s,\\/;\\)\\}])");
+        Matcher m = num.matcher(value);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+            String sep = m.group(1);
+            String number = m.group(2);
+            m.appendReplacement(sb, Matcher.quoteReplacement(sep + number + "px"));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+    /**
+     * Rewrites tokens that look like JavaFX-style custom variables (single dash, e.g. -kbs-primary-color)
+     * to standard web CSS custom property usage with var(--...): var(--kbs-primary-color).
+     * This operates only on values (right-hand side of declarations), preserving property names.
+     */
+    private static String rewriteSingleDashVariablesInValues(String declarations) {
+        if (declarations == null || declarations.isEmpty()) return declarations;
+
+        // Match a declaration and capture its property and value (up to next ';' or '}')
+        Pattern decl = Pattern.compile("(?is)(^|[;{\\n\\r])\\s*([a-zA-Z_-][a-zA-Z0-9_-]*)\\s*:\\s*([^;}]*)");
+        Matcher dm = decl.matcher(declarations);
+        StringBuffer out = new StringBuffer();
+        while (dm.find()) {
+            String prefix = dm.group(1);
+            String prop = dm.group(2); // not used here, but kept for clarity
+            String value = dm.group(3);
+
+            // Replace occurrences of a single-dash custom name token with var(--name)
+            // Preceded by start/whitespace/comma/slash/open-paren to avoid touching mid-ident parts
+            Pattern singleDashVar = Pattern.compile("(^|[\\s,:/\\(])-(?!-)([a-zA-Z][a-zA-Z0-9-]*)");
+            Matcher vm = singleDashVar.matcher(value);
+            StringBuffer vb = new StringBuffer();
+            while (vm.find()) {
+                String sep = vm.group(1);
+                String name = vm.group(2);
+                vm.appendReplacement(vb, Matcher.quoteReplacement(sep + "var(--" + name + ")"));
+            }
+            vm.appendTail(vb);
+
+            dm.appendReplacement(out, Matcher.quoteReplacement(prefix + " " + prop + ": " + vb.toString()));
+        }
+        dm.appendTail(out);
 
         return out.toString();
     }
