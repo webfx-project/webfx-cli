@@ -67,6 +67,8 @@ final class CssWebFxAnalyzer {
         List<Violation> violations = analyzeFxWeb(css, sourceName);
         if (!violations.isEmpty()) {
             if (mode == CssValidationMode.WARN) {
+                // Print the supported set once, then individual violations
+                System.err.println("[Unified CSS v1] fxweb@ supported set: " + FXWEB_SUPPORTED_SET_MESSAGE);
                 for (Violation v : violations) {
                     System.err.println(v.format());
                 }
@@ -74,6 +76,8 @@ final class CssWebFxAnalyzer {
                 StringBuilder sb = new StringBuilder();
                 sb.append("[Unified CSS v1] Found ").append(violations.size()).append(" unsupported rule(s) in ")
                   .append(sourceName).append('\n');
+                // Print supported set once
+                sb.append("   fxweb@ supported set: ").append(FXWEB_SUPPORTED_SET_MESSAGE).append('\n');
                 int shown = 0;
                 for (Violation v : violations) {
                     sb.append(" - ").append(v.format()).append('\n');
@@ -246,12 +250,17 @@ final class CssWebFxAnalyzer {
             String prop = m.group(2);
             if (!isAllowedPropertyFxWeb(prop)) {
                 int[] lc = new LineCounter(scanned).pos(m.start(2));
-                out.add(new Violation(lc[0], lc[1], "Unsupported property '" + prop + "' in JavaFX-authored unified CSS (fxweb@). Supported in v1: -fx-background-*, -fx-border-* (including per-side), -fx-text-fill, -fx-text-alignment, -fx-fill, -fx-stroke, -fx-stroke-width, -fx-stroke-line-cap/linecap, -fx-stroke-line-join/linejoin, -fx-opacity, -fx-effect (dropshadow), -fx-font-{family|size|weight|style}, -fx-cursor, and JavaFX custom properties declared with a single dash (e.g., -your-var)."));
+                // Keep the per-violation message concise; the fxweb@ context and supported-set
+                // are printed once by the caller (validateFxWeb).
+                out.add(new Violation(lc[0], lc[1], "Unsupported property '" + prop + "'"));
             }
         }
 
         return out;
     }
+
+    // Single shared description printed once per validation run (not per-violation)
+    private static final String FXWEB_SUPPORTED_SET_MESSAGE = "-fx-background-*, -fx-border-* (including per-side), -fx-text-fill, -fx-text-alignment, -fx-fill, -fx-stroke, -fx-stroke-width, -fx-stroke-line-cap/linecap, -fx-stroke-line-join/linejoin, -fx-opacity, -fx-effect (dropshadow), -fx-font-{family|size|weight|style}, -fx-cursor, and JavaFX custom properties declared with a single dash (e.g., -your-var).";
 
     private static boolean isAllowedPropertyFxWeb(String prop) {
         String p = prop.toLowerCase(Locale.ROOT);
