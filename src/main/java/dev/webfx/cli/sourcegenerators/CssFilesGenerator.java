@@ -23,7 +23,7 @@ public final class CssFilesGenerator {
     private final static PathMatcher CSS_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.css");
     private final static Map<Path, String> CSS_CACHE = new HashMap<>(); // We assume the CLI exits after the update command, so no need to clear that cache
 
-    public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch) {
+    public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch, boolean skipErrors) {
         boolean isWebExecutable = module.getBuildInfo().isForWeb;
         boolean isJavaFxExecutable = !isWebExecutable && module.isExecutable() && (module.getTarget().hasTag(TargetTag.OPENJFX) || module.getTarget().hasTag(TargetTag.GLUON));
         if (!isWebExecutable && !isJavaFxExecutable)
@@ -60,8 +60,10 @@ public final class CssFilesGenerator {
                                 // If this is a unified CSS, validate/transform per variant and target
                                 if (isWebFxUnified || isFxWebUnified) {
                                     try {
-                                        CssWebFxAnalyzer.CssValidationMode mode = CssWebFxAnalyzer.CssValidationMode.from(
-                                                System.getProperty("webfx.css.validation", "error"));
+                                        CssWebFxAnalyzer.CssValidationMode mode = skipErrors
+                                                ? CssWebFxAnalyzer.CssValidationMode.OFF
+                                                : CssWebFxAnalyzer.CssValidationMode.from(
+                                                        System.getProperty("webfx.css.validation", "error"));
                                         // Validate raw content (without the per-file header)
                                         if (isWebFxUnified) {
                                             CssWebFxAnalyzer.validate(rawFileContent, mode, relativeCssPath + " from " + moduleName);
@@ -69,8 +71,10 @@ public final class CssFilesGenerator {
                                             CssWebFxAnalyzer.validateFxWeb(rawFileContent, mode, relativeCssPath + " from " + moduleName);
                                         }
                                     } catch (RuntimeException e) {
-                                        // Re-throw with file header context for better UX
-                                        throw new CliException(e.getMessage());
+                                        if (!skipErrors) {
+                                            // Re-throw with file header context for better UX
+                                            throw new CliException(e.getMessage());
+                                        }
                                     }
                                     // Apply platform-specific transformation depending on target and variant
                                     if (isWebExecutable) {
