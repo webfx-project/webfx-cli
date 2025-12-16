@@ -22,7 +22,8 @@ public final class UpdateTasks {
         conf,
         i18n,
         css,
-        skipErrors;
+        skipCssErrors,
+        removeCssErrors;
 
     public final StopWatch
         pomStopWatch = StopWatch.createSystemNanoStopWatch(),

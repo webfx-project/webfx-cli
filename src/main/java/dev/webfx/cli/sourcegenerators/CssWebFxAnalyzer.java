@@ -248,6 +248,19 @@ final class CssWebFxAnalyzer {
         Matcher m = DECL_PATTERN.matcher(scanned);
         while (m.find()) {
             String prop = m.group(2);
+            // Special handling for -fx-* names: if it's NOT a known JavaFX CSS property,
+            // treat it as a project-defined custom variable (keep, no violation).
+            if (prop.startsWith("-fx-")) {
+                if (!isKnownJavaFxProperty(prop)) {
+                    continue; // allow unknown -fx-* as custom var declarations
+                }
+                // Known JavaFX property: must be part of the supported subset
+                if (!isAllowedPropertyFxWeb(prop)) {
+                    int[] lc = new LineCounter(scanned).pos(m.start(2));
+                    out.add(new Violation(lc[0], lc[1], "Unsupported property '" + prop + "'"));
+                }
+                continue;
+            }
             if (!isAllowedPropertyFxWeb(prop)) {
                 int[] lc = new LineCounter(scanned).pos(m.start(2));
                 // Keep the per-violation message concise; the fxweb@ context and supported-set
@@ -262,6 +275,14 @@ final class CssWebFxAnalyzer {
     // Single shared description printed once per validation run (not per-violation)
     private static final String FXWEB_SUPPORTED_SET_MESSAGE = "-fx-background-*, -fx-border-* (including per-side), -fx-text-fill, -fx-text-alignment, -fx-fill, -fx-stroke, -fx-stroke-width, -fx-stroke-line-cap/linecap, -fx-stroke-line-join/linejoin, -fx-opacity, -fx-effect (dropshadow), -fx-font-{family|size|weight|style}, -fx-cursor, and JavaFX custom properties declared with a single dash (e.g., -your-var).";
 
+    /**
+     * Public predicate to check whether a property name is supported by the fxweb@ v1 subset.
+     * Exposed for tools (like the cleaner) to reuse the same rules as the validator.
+     */
+    static boolean isFxWebPropertySupported(String prop) {
+        return isAllowedPropertyFxWeb(prop);
+    }
+
     private static boolean isAllowedPropertyFxWeb(String prop) {
         String p = prop.toLowerCase(Locale.ROOT);
         if (FXWEB_ALLOWED_EXACT.contains(p)) return true;
@@ -275,6 +296,53 @@ final class CssWebFxAnalyzer {
         }
         // Also allow standard web custom properties (`--name`) in fxweb@, to be permissive
         if (p.startsWith("--") && p.length() >= 3 && Character.isLetter(p.charAt(2))) return true;
+        return false;
+    }
+
+    // --- Known JavaFX CSS properties list ---
+    // This list is broader than the fxweb@ supported subset. It enumerates the JavaFX CSS property
+    // names that are recognized by the JavaFX CSS engine, used here to distinguish between
+    // genuine JavaFX properties and project-defined custom variables that happen to start with -fx-.
+    private static final Set<String> KNOWN_JAVAFX_PROPERTIES = new HashSet<>();
+    private static final Set<String> KNOWN_JAVAFX_PREFIXES = new HashSet<>();
+
+    static {
+        // Common JavaFX properties (non-exhaustive but broad enough for v1 needs)
+        // Background / border
+        addKnown("-fx-background-color", "-fx-background-image", "-fx-background-insets", "-fx-background-radius",
+                "-fx-background-position", "-fx-background-repeat", "-fx-background-size");
+        addKnown("-fx-border-color", "-fx-border-insets", "-fx-border-radius", "-fx-border-style", "-fx-border-width");
+        // Font / text
+        addKnown("-fx-font", "-fx-font-family", "-fx-font-size", "-fx-font-style", "-fx-font-weight", "-fx-text-fill",
+                "-fx-text-alignment", "-fx-text-origin");
+        // Opacity / effect
+        addKnown("-fx-opacity", "-fx-effect", "-fx-blend-mode");
+        // Shape / stroke / fill
+        addKnown("-fx-stroke", "-fx-stroke-width", "-fx-stroke-line-cap", "-fx-stroke-linecap",
+                "-fx-stroke-line-join", "-fx-stroke-linejoin", "-fx-fill");
+        // Cursor
+        addKnown("-fx-cursor");
+        // Region spacing/layout (even if moved to Java code, include here as known JavaFX props)
+        addKnown("-fx-padding", "-fx-hgap", "-fx-vgap", "-fx-alignment", "-fx-content-display",
+                "-fx-graphic-text-gap", "-fx-label-padding", "-fx-wrap-text",
+                "-fx-min-width", "-fx-min-height", "-fx-pref-width", "-fx-pref-height",
+                "-fx-max-width", "-fx-max-height");
+
+        // Prefix families considered known
+        addKnownPrefix("-fx-border-top-", "-fx-border-right-", "-fx-border-bottom-", "-fx-border-left-",
+                "-fx-background-", "-fx-border-");
+    }
+
+    private static void addKnown(String... names) { for (String n : names) KNOWN_JAVAFX_PROPERTIES.add(n); }
+    private static void addKnownPrefix(String... prefixes) { for (String p : prefixes) KNOWN_JAVAFX_PREFIXES.add(p); }
+
+    public static boolean isKnownJavaFxProperty(String prop) {
+        if (prop == null) return false;
+        String p = prop.toLowerCase(Locale.ROOT);
+        if (KNOWN_JAVAFX_PROPERTIES.contains(p)) return true;
+        for (String pref : KNOWN_JAVAFX_PREFIXES) {
+            if (p.startsWith(pref)) return true;
+        }
         return false;
     }
 

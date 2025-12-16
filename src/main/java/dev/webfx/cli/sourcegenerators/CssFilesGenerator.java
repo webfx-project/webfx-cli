@@ -23,7 +23,8 @@ public final class CssFilesGenerator {
     private final static PathMatcher CSS_FILE_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.css");
     private final static Map<Path, String> CSS_CACHE = new HashMap<>(); // We assume the CLI exits after the update command, so no need to clear that cache
 
-    public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch, boolean skipErrors) {
+    // New overload allowing removal of unsupported fxweb@ declarations during generation
+    public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch, boolean skipCssErrors, boolean removeCssErrors) {
         boolean isWebExecutable = module.getBuildInfo().isForWeb;
         boolean isJavaFxExecutable = !isWebExecutable && module.isExecutable() && (module.getTarget().hasTag(TargetTag.OPENJFX) || module.getTarget().hasTag(TargetTag.GLUON));
         if (!isWebExecutable && !isJavaFxExecutable)
@@ -55,23 +56,35 @@ public final class CssFilesGenerator {
                                     rawFileContent = TextFileReaderWriter.readInputTextFile(path);
                                     CSS_CACHE.put(path, rawFileContent);
                                 }
+                                // Optionally clean fxweb@ raw content (remove unsupported declarations) before any processing
+                                String contentForProcessing = rawFileContent;
+                                if (removeCssErrors && isFxWebUnified) {
+                                    try {
+                                        contentForProcessing = CssFxWebCleaner.cleanFxWebCss(contentForProcessing);
+                                        TextFileReaderWriter.writeTextFileIfNewOrModified(contentForProcessing, path);
+                                    } catch (RuntimeException e) {
+                                        // Be resilient: if cleaning fails, fall back to original content
+                                        contentForProcessing = rawFileContent;
+                                    }
+                                }
+
                                 // Build target-specific content with header, and apply translation based on target
-                                String cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + rawFileContent;
+                                String cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + contentForProcessing;
                                 // If this is a unified CSS, validate/transform per variant and target
                                 if (isWebFxUnified || isFxWebUnified) {
                                     try {
-                                        CssWebFxAnalyzer.CssValidationMode mode = skipErrors
+                                        CssWebFxAnalyzer.CssValidationMode mode = skipCssErrors
                                                 ? CssWebFxAnalyzer.CssValidationMode.OFF
                                                 : CssWebFxAnalyzer.CssValidationMode.from(
                                                         System.getProperty("webfx.css.validation", "error"));
                                         // Validate raw content (without the per-file header)
                                         if (isWebFxUnified) {
-                                            CssWebFxAnalyzer.validate(rawFileContent, mode, relativeCssPath + " from " + moduleName);
+                                            CssWebFxAnalyzer.validate(contentForProcessing, mode, relativeCssPath + " from " + moduleName);
                                         } else { // fxweb@
-                                            CssWebFxAnalyzer.validateFxWeb(rawFileContent, mode, relativeCssPath + " from " + moduleName);
+                                            CssWebFxAnalyzer.validateFxWeb(contentForProcessing, mode, relativeCssPath + " from " + moduleName);
                                         }
                                     } catch (RuntimeException e) {
-                                        if (!skipErrors) {
+                                        if (!skipCssErrors) {
                                             // Re-throw with file header context for better UX
                                             throw new CliException(e.getMessage());
                                         }
@@ -81,11 +94,11 @@ public final class CssFilesGenerator {
                                         if (isWebFxUnified) {
                                             // For web: move border properties to :before pseudo-element (single-host strategy)
                                             cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
-                                                    + CssWebFxTranslator.transformUnifiedWebForWebOutput(rawFileContent);
+                                                    + CssWebFxTranslator.transformUnifiedWebForWebOutput(contentForProcessing);
                                         } else { // fxweb@
                                             // For web: map -fx-* background/border properties to --fx-* variables and .root -> :root
                                             cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
-                                                    + CssWebFxTranslator.transformFxWebForWebOutput(rawFileContent);
+                                                    + CssWebFxTranslator.transformFxWebForWebOutput(contentForProcessing);
                                         }
                                     } else { // JavaFX executable
                                         if (isWebFxUnified) {
@@ -93,7 +106,7 @@ public final class CssFilesGenerator {
                                             cssContent = CssWebFxTranslator.translateUnifiedWebToJavaFx(cssContent);
                                         } else {
                                             // fxweb@ is already authored in JavaFX CSS; no translation needed
-                                            // cssContent already contains the header + raw content
+                                            // cssContent already contains the header + (possibly cleaned) content
                                         }
                                     }
                                 }

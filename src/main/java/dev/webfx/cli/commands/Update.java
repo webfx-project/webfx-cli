@@ -64,8 +64,11 @@ public final class Update extends CommonSubcommand implements Runnable {
     @Option(names = {"-s", "--css"}, description = "Update WebFX CSS files.")
     boolean css;
 
-    @Option(names = {"-k", "--skiperrors"}, description = "Skip errors (works only with CSS for now).")
-    boolean skipErrors;
+    @Option(names = {"-k", "--skip-css-errors"}, description = "Skip errors in fxweb@ CSS files (unsupported properties).")
+    boolean skipCssErrors;
+
+    @Option(names = {"-r", "--remove-css-errors"}, description = "Remove unsupported properties from fxweb@ CSS files")
+    boolean removeCssErrors;
 
     @Option(names = {"-T", "--times"}, description = "Print an execution times report.")
     boolean times;
@@ -87,7 +90,8 @@ public final class Update extends CommonSubcommand implements Runnable {
         tasks.conf = conf;
         tasks.i18n = i18n;
         tasks.css = css;
-        tasks.skipErrors = skipErrors;
+        tasks.skipCssErrors = skipCssErrors;
+        tasks.removeCssErrors = removeCssErrors;
         execute(cleanSnapshots, tasks, times, getWorkspace());
     }
 
@@ -228,7 +232,7 @@ public final class Update extends CommonSubcommand implements Runnable {
                     }
                     if (tasks.css) {
                         tasks.cssMergeStopWatch.on();
-                        tasks.cssCount += CssFilesGenerator.generateExecutableModuleCssResourceFiles(module, canUseCache, tasks.mergePrepStopWatch, tasks.skipErrors);
+                        tasks.cssCount += CssFilesGenerator.generateExecutableModuleCssResourceFiles(module, canUseCache, tasks.mergePrepStopWatch, tasks.skipCssErrors, tasks.removeCssErrors);
                         tasks.cssMergeStopWatch.off();
                     }
                 });

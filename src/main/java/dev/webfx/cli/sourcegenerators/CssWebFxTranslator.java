@@ -1250,6 +1250,11 @@ final class CssWebFxTranslator {
             // Map JavaFX drop shadow effect to web box-shadow
             transformedContent = translateFxEffectDropShadowToBoxShadow(transformedContent);
 
+            // Finally, for any remaining -fx-* property names that are NOT known JavaFX CSS properties,
+            // treat them as project-defined variables and emit them as web custom properties `--fx-...`.
+            // Example: -fx-spinner-color: white; -> --fx-spinner-color: white;
+            transformedContent = rewriteUnknownFxPropertiesAsWebCustom(transformedContent);
+
             out.append(translatedSelector).append("{");
             out.append(transformedContent);
             out.append("}");
@@ -1549,6 +1554,32 @@ final class CssWebFxTranslator {
         dm.appendTail(out);
 
         return out.toString();
+    }
+
+    /**
+     * Converts declaration names that start with -fx- but are not recognized as JavaFX CSS properties
+     * into web custom properties by prepending an extra dash: -fx-foo -> --fx-foo.
+     * This lets teams define component-level variables under the -fx- namespace.
+     */
+    private static String rewriteUnknownFxPropertiesAsWebCustom(String declarations) {
+        if (declarations == null || declarations.isEmpty()) return declarations;
+        Pattern declName = Pattern.compile("(?is)(^|[;\\{\\n\\r])\\s*(-fx-[a-zA-Z0-9_-]+)\\s*:");
+        Matcher m = declName.matcher(declarations);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+            String prefix = m.group(1);
+            String name = m.group(2);
+            // If it's a known JavaFX property, leave as-is (it may have already been mapped earlier)
+            if (CssWebFxAnalyzer.isKnownJavaFxProperty(name)) {
+                m.appendReplacement(sb, Matcher.quoteReplacement(prefix + " " + name + ":"));
+            } else {
+                // Unknown -fx- name: convert to web custom property by doubling the leading dash
+                String webName = "--" + name.substring(1); // -fx-xyz -> --fx-xyz
+                m.appendReplacement(sb, Matcher.quoteReplacement(prefix + " " + webName + ":"));
+            }
+        }
+        m.appendTail(sb);
+        return sb.toString();
     }
 
     private static String transformWebProperties(String ruleContent) {
