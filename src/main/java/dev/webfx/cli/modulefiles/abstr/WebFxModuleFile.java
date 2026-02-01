@@ -179,7 +179,42 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     }*/
 
     default String getI18nJavaKeysClass() {
-        return XmlUtil.getAttributeValue(lookupElement("i18n[1]"), "javaKeysClass");
+        Element i18nElement = lookupElement("i18n[1]");
+        if (i18nElement != null) {
+            String javaKeysClass = XmlUtil.getAttributeValue(i18nElement, "javaKeysClass");
+            if (javaKeysClass != null) {
+                return javaKeysClass;
+            }
+        }
+        Element javaUiApiElement = lookupElement("java-ui-api[1]");
+        if (javaUiApiElement != null && javaUiApiElement.element("i18n") != null) {
+            return getJavaUiApiPackageAndClassName(javaUiApiElement, "I18nKeys");
+        }
+        return null;
+    }
+
+    default String getCssJavaSelectorsClass() {
+        Element cssElement = lookupElement("css[1]");
+        if (cssElement != null) {
+            String javaSelectorsClass = XmlUtil.getAttributeValue(cssElement, "javaSelectorsClass");
+            if (javaSelectorsClass != null) {
+                return javaSelectorsClass;
+            }
+        }
+        Element javaUiApiElement = lookupElement("java-ui-api[1]");
+        if (javaUiApiElement != null && javaUiApiElement.element("css") != null) {
+            return getJavaUiApiPackageAndClassName(javaUiApiElement, "CssSelectors");
+        }
+        return null;
+    }
+
+    private String getJavaUiApiPackageAndClassName(Element javaUiApiElement, String suffix) {
+        String pkg = javaUiApiElement.attributeValue("package");
+        if (pkg != null) {
+            String prefix = javaUiApiElement.attributeValue("prefix");
+            return pkg + "." + (prefix != null ? prefix : "") + suffix;
+        }
+        return null;
     }
 
     default ReusableStream<ServiceProvider> providedServiceProviders() {

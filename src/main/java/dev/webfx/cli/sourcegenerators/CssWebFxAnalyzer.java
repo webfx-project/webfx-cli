@@ -348,7 +348,7 @@ final class CssWebFxAnalyzer {
 
     // Replace all characters inside /* ... */ comments with spaces, preserving newlines,
     // so that indexes and line/column positions remain stable for error reporting.
-    private static String maskCssBlockComments(String css) {
+    static String maskCssBlockComments(String css) {
         StringBuilder sb = new StringBuilder(css);
         int i = 0;
         while (i < sb.length()) {

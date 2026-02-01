@@ -144,6 +144,7 @@ public final class Update extends CommonSubcommand implements Runnable {
                     .addRow("Merge preparation", -tasks.mergePrepStopWatch.getRunCount(), tasks.mergePrepStopWatch)
                     .addRow("Conf merge", tasks.confCount, tasks.confMergeStopWatch)
                     .addRow("css merge", tasks.cssCount, tasks.cssMergeStopWatch)
+                    .addRow("css Java selectors", tasks.cssJavaCount, tasks.cssJavaStopWatch)
                     .addRow("i18n merge", tasks.i18nCount, tasks.i18nMergeStopWatch)
                     .addRow("i18n Java keys", tasks.i18nJavaCount, tasks.i18nJavaStopWatch)
                     .addComplementRow("Dependencies computing, etc...")
@@ -247,6 +248,19 @@ public final class Update extends CommonSubcommand implements Runnable {
                         tasks.i18nJavaCount++;
                     }
                     tasks.i18nJavaStopWatch.off();
+                });
+            ConfigMerge.logDuplicatedKeysWarnings();
+        }
+
+        if (tasks.css) { // Java css selectors generation
+            workingAndChildrenModulesInDepthCache
+                .filter(ProjectModule::hasMainWebFxSourceDirectory)
+                .forEach(module -> {
+                    tasks.cssJavaStopWatch.on();
+                    if (CssFilesGenerator.generateCssModuleJavaSelectors(module)) {
+                        tasks.cssJavaCount++;
+                    }
+                    tasks.cssJavaStopWatch.off();
                 });
             ConfigMerge.logDuplicatedKeysWarnings();
         }

@@ -237,6 +237,11 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
+    default String getCssJavaSelectorsClass() {
+        return getDelegate().getCssJavaSelectorsClass();
+    }
+
+    @Override
     default ReusableStream<ServiceProvider> providedServiceProviders() {
         return getDelegate().providedServiceProviders();
     }

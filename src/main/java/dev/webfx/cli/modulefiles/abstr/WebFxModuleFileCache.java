@@ -348,6 +348,14 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         return i18nJavaKeysClass;
     }
 
+    private String cssJavaSelectorsClass;
+    @Override
+    public String getCssJavaSelectorsClass() {
+        if (cssJavaSelectorsClass == null)
+            cssJavaSelectorsClass = WebFxModuleFileDelegate.super.getCssJavaSelectorsClass();
+        return cssJavaSelectorsClass;
+    }
+
     private ReusableStream<ServiceProvider> providedServiceProviders;
     @Override
     public ReusableStream<ServiceProvider> providedServiceProviders() {

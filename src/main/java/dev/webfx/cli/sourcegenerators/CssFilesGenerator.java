@@ -5,15 +5,22 @@ import dev.webfx.cli.core.TargetTag;
 import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.stopwatch.StopWatch;
+import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
 import dev.webfx.lib.reusablestream.ReusableStream;
+import dev.webfx.platform.util.tuples.Pair;
 
+import javax.lang.model.SourceVersion;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Bruno Salmon
@@ -42,83 +49,83 @@ public final class CssFilesGenerator {
             Path webfxCssDirectory = webfxPath.resolve("css");
             if (Files.isDirectory(webfxCssDirectory)) {
                 ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxCssDirectory))
-                        .filter(CSS_FILE_MATCHER::matches)
-                        .forEach(path -> {
-                            Path relativeCssPath = webfxCssDirectory.relativize(path);
-                            String fileName = relativeCssPath.getFileName().toString();
-                            boolean isWebFxUnified = fileName.contains("webfx@");
-                            boolean isFxWebUnified = fileName.contains("fxweb@");
-                            boolean useThisFile = fileName.contains(cssTag) || isWebFxUnified || isFxWebUnified; // include unified CSS in both targets
-                            if (useThisFile) {
-                                // Cache only the RAW file content so it can be transformed per-target on each use
-                                String rawFileContent = CSS_CACHE.get(path);
-                                if (rawFileContent == null) {
-                                    rawFileContent = TextFileReaderWriter.readInputTextFile(path);
-                                    CSS_CACHE.put(path, rawFileContent);
-                                }
-                                // Optionally clean fxweb@ raw content (remove unsupported declarations) before any processing
-                                String contentForProcessing = rawFileContent;
-                                if (removeCssErrors && isFxWebUnified) {
-                                    try {
-                                        contentForProcessing = CssFxWebCleaner.cleanFxWebCss(contentForProcessing);
-                                        TextFileReaderWriter.writeTextFileIfNewOrModified(contentForProcessing, path);
-                                    } catch (RuntimeException e) {
-                                        // Be resilient: if cleaning fails, fall back to original content
-                                        contentForProcessing = rawFileContent;
-                                    }
-                                }
-
-                                // Build target-specific content with header, and apply translation based on target
-                                String cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + contentForProcessing;
-                                // If this is a unified CSS, validate/transform per variant and target
-                                if (isWebFxUnified || isFxWebUnified) {
-                                    try {
-                                        CssWebFxAnalyzer.CssValidationMode mode = skipCssErrors
-                                                ? CssWebFxAnalyzer.CssValidationMode.OFF
-                                                : CssWebFxAnalyzer.CssValidationMode.from(
-                                                        System.getProperty("webfx.css.validation", "error"));
-                                        // Validate raw content (without the per-file header)
-                                        if (isWebFxUnified) {
-                                            CssWebFxAnalyzer.validate(contentForProcessing, mode, relativeCssPath + " from " + moduleName);
-                                        } else { // fxweb@
-                                            CssWebFxAnalyzer.validateFxWeb(contentForProcessing, mode, relativeCssPath + " from " + moduleName);
-                                        }
-                                    } catch (RuntimeException e) {
-                                        if (!skipCssErrors) {
-                                            // Re-throw with file header context for better UX
-                                            throw new CliException(e.getMessage());
-                                        }
-                                    }
-                                    // Apply platform-specific transformation depending on target and variant
-                                    if (isWebExecutable) {
-                                        if (isWebFxUnified) {
-                                            // For web: move border properties to :before pseudo-element (single-host strategy)
-                                            cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
-                                                    + CssWebFxTranslator.transformUnifiedWebForWebOutput(contentForProcessing);
-                                        } else { // fxweb@
-                                            // For web: map -fx-* background/border properties to --fx-* variables and .root -> :root
-                                            cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
-                                                    + CssWebFxTranslator.transformFxWebForWebOutput(contentForProcessing);
-                                        }
-                                    } else { // JavaFX executable
-                                        if (isWebFxUnified) {
-                                            // Translate web CSS syntax to JavaFX CSS syntax
-                                            cssContent = CssWebFxTranslator.translateUnifiedWebToJavaFx(cssContent);
-                                        } else {
-                                            // fxweb@ is already authored in JavaFX CSS; no translation needed
-                                            // cssContent already contains the header + (possibly cleaned) content
-                                        }
-                                    }
-                                }
-                                if (fileName.contains("@")) {
-                                    fileName = fileName.substring(fileName.lastIndexOf('@') + 1);
-                                    Path parent = relativeCssPath.getParent();
-                                    relativeCssPath = parent == null ? Path.of(fileName) : parent.resolve(fileName);
-                                }
-                                StringBuilder sb = cssMerges.computeIfAbsent(relativeCssPath, k -> new StringBuilder());
-                                sb.append(cssContent);
+                    .filter(CSS_FILE_MATCHER::matches)
+                    .forEach(path -> {
+                        Path relativeCssPath = webfxCssDirectory.relativize(path);
+                        String fileName = relativeCssPath.getFileName().toString();
+                        boolean isWebFxUnified = fileName.contains("webfx@");
+                        boolean isFxWebUnified = fileName.contains("fxweb@");
+                        boolean useThisFile = fileName.contains(cssTag) || isWebFxUnified || isFxWebUnified; // include unified CSS in both targets
+                        if (useThisFile) {
+                            // Cache only the RAW file content so it can be transformed per-target on each use
+                            String rawFileContent = CSS_CACHE.get(path);
+                            if (rawFileContent == null) {
+                                rawFileContent = TextFileReaderWriter.readInputTextFile(path);
+                                CSS_CACHE.put(path, rawFileContent);
                             }
-                        });
+                            // Optionally clean fxweb@ raw content (remove unsupported declarations) before any processing
+                            String contentForProcessing = rawFileContent;
+                            if (removeCssErrors && isFxWebUnified) {
+                                try {
+                                    contentForProcessing = CssFxWebCleaner.cleanFxWebCss(contentForProcessing);
+                                    TextFileReaderWriter.writeTextFileIfNewOrModified(contentForProcessing, path);
+                                } catch (RuntimeException e) {
+                                    // Be resilient: if cleaning fails, fall back to original content
+                                    contentForProcessing = rawFileContent;
+                                }
+                            }
+
+                            // Build target-specific content with header, and apply translation based on target
+                            String cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n" + contentForProcessing;
+                            // If this is a unified CSS, validate/transform per variant and target
+                            if (isWebFxUnified || isFxWebUnified) {
+                                try {
+                                    CssWebFxAnalyzer.CssValidationMode mode = skipCssErrors
+                                        ? CssWebFxAnalyzer.CssValidationMode.OFF
+                                        : CssWebFxAnalyzer.CssValidationMode.from(
+                                        System.getProperty("webfx.css.validation", "error"));
+                                    // Validate raw content (without the per-file header)
+                                    if (isWebFxUnified) {
+                                        CssWebFxAnalyzer.validate(contentForProcessing, mode, relativeCssPath + " from " + moduleName);
+                                    } else { // fxweb@
+                                        CssWebFxAnalyzer.validateFxWeb(contentForProcessing, mode, relativeCssPath + " from " + moduleName);
+                                    }
+                                } catch (RuntimeException e) {
+                                    if (!skipCssErrors) {
+                                        // Re-throw with file header context for better UX
+                                        throw new CliException(e.getMessage());
+                                    }
+                                }
+                                // Apply platform-specific transformation depending on target and variant
+                                if (isWebExecutable) {
+                                    if (isWebFxUnified) {
+                                        // For web: move border properties to :before pseudo-element (single-host strategy)
+                                        cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
+                                                     + CssWebFxTranslator.transformUnifiedWebForWebOutput(contentForProcessing);
+                                    } else { // fxweb@
+                                        // For web: map -fx-* background/border properties to --fx-* variables and .root -> :root
+                                        cssContent = "\n/*===== " + relativeCssPath + " from " + moduleName + " =====*/\n\n"
+                                                     + CssWebFxTranslator.transformFxWebForWebOutput(contentForProcessing);
+                                    }
+                                } else { // JavaFX executable
+                                    if (isWebFxUnified) {
+                                        // Translate web CSS syntax to JavaFX CSS syntax
+                                        cssContent = CssWebFxTranslator.translateUnifiedWebToJavaFx(cssContent);
+                                    } else {
+                                        // fxweb@ is already authored in JavaFX CSS; no translation needed
+                                        // cssContent already contains the header + (possibly cleaned) content
+                                    }
+                                }
+                            }
+                            if (fileName.contains("@")) {
+                                fileName = fileName.substring(fileName.lastIndexOf('@') + 1);
+                                Path parent = relativeCssPath.getParent();
+                                relativeCssPath = parent == null ? Path.of(fileName) : parent.resolve(fileName);
+                            }
+                            StringBuilder sb = cssMerges.computeIfAbsent(relativeCssPath, k -> new StringBuilder());
+                            sb.append(cssContent);
+                        }
+                    });
             }
         });
 
@@ -156,6 +163,108 @@ public final class CssFilesGenerator {
         }
 
         return cssMerges.size();
+    }
+
+    public static boolean generateCssModuleJavaSelectors(DevProjectModule module) {
+        String javaSelectorsClass = module.getWebFxModuleFile().getCssJavaSelectorsClass();
+        if (javaSelectorsClass == null || !module.hasMainWebFxSourceDirectory())
+            return false;
+
+        Path webfxCssDirectory = module.getMainWebFxSourceDirectory().resolve("css");
+        if (!Files.isDirectory(webfxCssDirectory))
+            return false;
+
+        Set<String> cssClasses = new HashSet<>();
+        Set<String> cssIds = new HashSet<>();
+
+        ReusableStream.create(() -> SplitFiles.uncheckedWalk(webfxCssDirectory))
+            .filter(CSS_FILE_MATCHER::matches)
+            .forEach(path -> {
+                String fileName = path.getFileName().toString();
+                if (fileName.contains("webfx@") || fileName.contains("fxweb@") || fileName.contains("javafx@")) {
+                    String cssContent = TextFileReaderWriter.readInputTextFile(path);
+                    cssContent = CssWebFxAnalyzer.maskCssBlockComments(cssContent);
+                    extractSelectors(cssContent, cssClasses, cssIds);
+                }
+            });
+
+        if (cssClasses.isEmpty() && cssIds.isEmpty())
+            return false;
+
+        StringBuilder sb = new StringBuilder();
+        ReusableStream.concat(
+            ReusableStream.fromIterable(cssClasses).map(name -> new Pair<>(name, false)),
+            ReusableStream.fromIterable(cssIds).map(name -> new Pair<>(name, true))
+        ).sorted((p1, p2) -> p1.get1().compareToIgnoreCase(p2.get1()))
+            .forEach(pair -> {
+                String selectorName = pair.get1();
+                boolean isId = pair.get2();
+                String javaConstantName = toJavaConstantName(selectorName);
+                if (!sb.isEmpty())
+                    sb.append("\n");
+                sb.append("    String ").append(javaConstantName).append(" = \"").append(selectorName).append("\";");
+            });
+
+        Path javaFilePath = module.getMainJavaSourceDirectory().resolve(javaSelectorsClass.replace('.', '/') + ".java");
+        int lastDotIndex = javaSelectorsClass.lastIndexOf('.');
+        String content = ResourceTextFileReader.readTemplate("CssSelectors.javat")
+            .replace("${package}", javaSelectorsClass.substring(0, lastDotIndex))
+            .replace("${name}", javaSelectorsClass.substring(lastDotIndex + 1))
+            .replace("${cssSelectorsDeclaration}", sb);
+        TextFileReaderWriter.writeTextFileIfNewOrModified(content, javaFilePath);
+
+        return true;
+    }
+
+    private static void extractSelectors(String cssContent, Set<String> cssClasses, Set<String> cssIds) {
+        // This regex looks for CSS selectors (classes and IDs)
+        // It matches .class-name or #id-name, but avoids matching inside declarations (already handled by maskCssBlockComments for comments)
+        // We also want to avoid matching values that start with . or # like colors or decimal numbers.
+        // A simple way is to match what is BEFORE an opening brace '{' or between ',' and '{'.
+        int i = 0;
+        while (i < cssContent.length()) {
+            int braceOpen = cssContent.indexOf('{', i);
+            if (braceOpen == -1) break;
+
+            String selectorHeader = cssContent.substring(i, braceOpen);
+            // Extract classes: . followed by identifier
+            Matcher classMatcher = Pattern.compile("\\.([a-zA-Z0-9_-]+)").matcher(selectorHeader);
+            while (classMatcher.find()) {
+                cssClasses.add(classMatcher.group(1));
+            }
+            // Extract IDs: # followed by identifier
+            Matcher idMatcher = Pattern.compile("#([a-zA-Z0-9_-]+)").matcher(selectorHeader);
+            while (idMatcher.find()) {
+                cssIds.add(idMatcher.group(1));
+            }
+
+            // Find matching brace to skip the block
+            int braceClose = findMatchingBrace(cssContent, braceOpen);
+            if (braceClose == -1) break;
+            i = braceClose + 1;
+        }
+    }
+
+    private static int findMatchingBrace(String s, int openIndex) {
+        int depth = 0;
+        for (int j = openIndex; j < s.length(); j++) {
+            char c = s.charAt(j);
+            if (c == '{') depth++;
+            else if (c == '}') {
+                depth--;
+                if (depth == 0) return j;
+            }
+        }
+        return -1;
+    }
+
+    private static String toJavaConstantName(String selectorName) {
+        // Convert kebab-case to snake_case
+        String name = selectorName.replace('-', '_');
+        if (!SourceVersion.isName(name)) {
+            return "_" + name;
+        }
+        return name;
     }
 
 }
