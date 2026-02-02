@@ -63,38 +63,58 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         // For the executable Gluon pom, we need to add some extra configuration required by the GluonFX plugin:
         if (template.contains("${plugin.gluonfx.configuration}")) {
             // 1) <attachList> => lists all the Gluon attach modules used by the application:
-            String gluonConfig = "<attachList>\n" +
-                                 projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
-                                     .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
-                                     .map(GavApi::getArtifactId)
-                                     .distinct()
-                                     .stream().sorted()
-                                     .map(a -> "<list>" + a + "</list>")
-                                     .collect(Collectors.joining("\n"))
-                                 + "</attachList>";
+            StringBuilder gluonConfig = new StringBuilder()
+                .append("<attachList>\n")
+                .append(projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()
+                    .filter(m -> "com.gluonhq.attach".equals(m.getGroupId()))
+                    .map(GavApi::getArtifactId)
+                    .distinct()
+                    .stream().sorted()
+                    .map(a -> "<list>" + a + "</list>")
+                    .collect(Collectors.joining("\n")))
+                .append("</attachList>");
             // 2) <resourcesList> => lists all resource files potentially used by the application
-            gluonConfig += "\n<resourcesList>\n"
-                           + ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
-                               .flatMap(ProjectModule::getResourcePackages)
-                               .distinct()
-                               .stream().sorted()
-                               .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
-                               .collect(Collectors.joining("\n"))
-                           + "</resourcesList>";
+            gluonConfig
+                .append("\n<resourcesList>\n")
+                .append(ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getThisAndTransitiveModules())
+                    .flatMap(ProjectModule::getResourcePackages)
+                    .distinct()
+                    .stream().sorted()
+                    .map(p -> "<list>" + p.replace('.', '/') + "/[^/]+$</list>")
+                    .collect(Collectors.joining("\n")))
+                .append("</resourcesList>");
             // 3) application identifier
             String applicationId = projectModule.getApplicationId();
             if (applicationId != null)
-                gluonConfig += "\n<appIdentifier>" + applicationId + "</appIdentifier>";
+                gluonConfig
+                    .append("\n<appIdentifier>")
+                    .append(applicationId)
+                    .append("</appIdentifier>");
             // 4) <releaseConfiguration> => application label
             String applicationLabel = projectModule.getApplicationLabel();
             if (applicationLabel != null)
-                gluonConfig += "\n<releaseConfiguration>\n"
-                               + "<!-- macOS/iOS -->\n"
-                               + "<bundleName>" + applicationLabel + "</bundleName>\n"
-                               + "<!-- Android -->\n"
-                               + "<appLabel>" + applicationLabel + "</appLabel>\n"
-                               + "</releaseConfiguration>";
-            template = template.replace("${plugin.gluonfx.configuration}", gluonConfig);
+                gluonConfig
+                    .append("""                        
+                        \n<releaseConfiguration>
+                        <!-- macOS/iOS -->
+                        <bundleName>""")
+                    .append(applicationLabel)
+                    .append("""
+                        </bundleName>
+                        <!-- Android -->
+                        <appLabel>""")
+                    .append(applicationLabel)
+                    .append("""
+                        </appLabel>
+                        </releaseConfiguration>""");
+            // 5) extra gluon configuration (from webfx.xml)
+            Element gluonConfiguration = projectModule.getWebFxModuleFile().getGluonConfiguration();
+            if (gluonConfiguration != null) {
+                for (Element child : gluonConfiguration.elements()) {
+                    gluonConfig.append("\n").append(XmlUtil.formatXmlText(child));
+                }
+            }
+            template = template.replace("${plugin.gluonfx.configuration}", gluonConfig.toString());
         }
         // J2CL resources
         if (template.contains("${resourceArtifactItems}")) {

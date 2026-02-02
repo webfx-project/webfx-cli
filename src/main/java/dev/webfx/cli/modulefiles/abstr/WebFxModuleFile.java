@@ -253,6 +253,10 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
         return lookupElement("maven-pom-manual[1]");
     }
 
+    default Element getGluonConfiguration() {
+        return lookupElement("gluon-configuration[1]");
+    }
+
     default boolean skipMavenPomUpdate() {
         return !fileExists() || lookupNode("update-options[1]/skip-maven-pom[1]") != null;
     }

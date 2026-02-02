@@ -262,6 +262,10 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
+    default Element getGluonConfiguration() {
+        return getDelegate().getGluonConfiguration();
+    }
+
     default boolean skipMavenPomUpdate() {
         return getDelegate().skipMavenPomUpdate();
     }
