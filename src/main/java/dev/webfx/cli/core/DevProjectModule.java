@@ -249,6 +249,10 @@ public class DevProjectModule extends ProjectModuleImpl {
         return getHomeDirectory().resolve(SpecificFolders.TARGET).resolve(getName() + "-" + getVersion() + "/" + getName().replace('-', '_') + "/" + SpecificFiles.INDEX_HTML);
     }
 
+    public Path getTeaVMExecutableFilePath() {
+        return getHomeDirectory().resolve(SpecificFolders.TARGET).resolve(getName() + "-" + getVersion() + "/" + SpecificFiles.INDEX_HTML);
+    }
+
     private LinkedHashMap<String, Path> moduleWebFxPathsAsc;
     private LinkedHashMap<String, Path> moduleWebFxPathsDesc;
 

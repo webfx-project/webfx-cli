@@ -25,6 +25,9 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-j", "--j2cl"}, description = "Runs the J2CL app")
     private boolean j2cl;
 
+    @CommandLine.Option(names = {"-t", "--teavm"}, description = "Includes the TeaVM compilation")
+    private boolean teavm;
+
     @CommandLine.Option(names = {"-f", "--openjfx-fatjar"}, description = "Runs the OpenJFX fat jar")
     private boolean fatjar;
 
@@ -78,7 +81,7 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
+        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, teavm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
