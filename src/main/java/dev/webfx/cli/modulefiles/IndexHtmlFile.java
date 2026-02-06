@@ -284,18 +284,64 @@ public class IndexHtmlFile extends DevModuleFileImpl {
         if (module.getBuildInfo().isForTeaVm) {
             if (module.isWasmModule()) {
                 bodySb.append("""
-                    <script>
-                        async function main() {
-                            let teavm = await TeaVM.wasmGC.load("classes.wasm", {
-                                stackDeobfuscator: {
-                                    enabled: false // Can be set to true during development to get clear stack traces
-                                }
-                            });
-                            teavm.exports.main([]);
+        <script>
+            async function main() {
+                // Manual polyfill for wasm:js-string (needed for browsers like Safari that don't support it yet)
+                const importObject = {
+                    "wasm:js-string": {
+                        "fromCharCode": String.fromCharCode,
+                        "fromCodePoint": String.fromCodePoint,
+                        "charCodeAt": (s, i) => s.charCodeAt(i),
+                        "codePointAt": (s, i) => s.codePointAt(i),
+                        "length": (s) => s.length,
+                        "concat": (s1, s2) => s1 + s2,
+                        "substring": (s, a, b) => s.substring(a, b),
+                        "equals": (s1, s2) => s1 === s2,
+                        "compare": (s1, s2) => s1 < s2 ? -1 : (s1 > s2 ? 1 : 0),
+                        "fromCharCodeArray": (a, start, end) => {
+                            let s = "";
+                            for (let i = start; i < end; ++i) s += String.fromCharCode(a[i]);
+                            return s;
+                        },
+                        "intoCharCodeArray": (s, a, start) => {
+                            for (let i = 0; i < s.length; ++i) a[start + i] = s.charCodeAt(i);
                         }
-                        main();
-                    </script>
-                    """.indent(8));
+                    }
+                };
+                // Force TeaVM to use the modern string built-in path
+                if (typeof WebAssembly.validate !== "undefined") {
+                    const oldValidate = WebAssembly.validate;
+                    WebAssembly.validate = function(bytes, options) {
+                        return (options && options.builtins && options.builtins.includes("js-string")) || oldValidate(bytes, options);
+                    };
+                }
+                // Handle browsers that throw on 'builtins' option in instantiate (like Safari)
+                if (typeof WebAssembly.instantiate !== "undefined") {
+                    const oldInstantiate = WebAssembly.instantiate;
+                    WebAssembly.instantiate = function(bytes, importObject, options) {
+                        if (options && options.builtins && options.builtins.includes("js-string")) {
+                            try {
+                                return oldInstantiate(bytes, importObject, options);
+                            } catch (e) {
+                                return oldInstantiate(bytes, importObject);
+                            }
+                        }
+                        return oldInstantiate(bytes, importObject, options);
+                    };
+                }
+                const teavm = await TeaVM.wasmGC.load("classes.wasm", {
+                    installImports: (imports) => {
+                        Object.assign(imports, importObject);
+                    },
+                    stackDeobfuscator: {
+                        enabled: false // Can be set to true during development to get clear stack traces
+                    }
+                });
+                teavm.exports.main([]);
+            }
+            main();
+        </script>
+        """.indent(8));
             } else
                 bodySb.append("        <script>main()</script>");
         }
