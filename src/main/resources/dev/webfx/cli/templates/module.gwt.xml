@@ -7,7 +7,7 @@
     <set-property name="gwt.logging.enabled" value="TRUE"/>
     <set-property name="gwt.logging.logLevel" value="FINEST"/>
     <set-property name="gwt.logging.consoleHandler" value="ENABLED"/>
-    <set-property name="domino.slf4j.logging.level" value="OFF"/> <!-- This is to remove GWT-time log pollution -->
+    <!-- If GWT-time is used, set domino.slf4j.logging.level=OFF to remove log pollution -->
 
     <!-- Source maps configuration (considered by GWT only if gwt-sourcemaps Maven profile is activated) -->
     <set-configuration-property name="compiler.embedSourceMaps" value="true"/>
