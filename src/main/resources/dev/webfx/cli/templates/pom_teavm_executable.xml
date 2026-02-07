@@ -6,9 +6,10 @@
 
     <dependencies/>
 
+    <!-- Unpacking all resources for this web archive, but only when the user activates the ${teavmProfileId} profile -->
     <profiles>
         <profile>
-            <id>teavm</id>
+            <id>${teavmProfileId}</id>
             <build>
                 <plugins>
                     <plugin>

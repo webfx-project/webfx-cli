@@ -116,7 +116,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             }
             template = template.replace("${plugin.gluonfx.configuration}", gluonConfig.toString());
         }
-        // J2CL resources
+        // TeaVM or J2CL resources unpacking
         if (template.contains("${resourceArtifactItems}")) {
             String artifactItems = ProjectModule.filterProjectModules(projectModule.getMainJavaSourceRootAnalyzer().getTransitiveModules()) // Not getThisAndTransitiveModules() because for teavm modules, this module is a war and the unpack goal fails with them
                 .map(pm -> {
@@ -136,6 +136,8 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                 artifactItems = "<skip>true</skip>"; // We skip the resource plugin, otherwise it will fail if no artifact items are provided
             else
                 artifactItems = "<artifactItems>\n" + artifactItems + "</artifactItems>";
+            if (template.contains("${teavmProfileId}"))
+                template = template.replace("${teavmProfileId}",  projectModule.isWasmModule() ? "teavm-wasm" : "teavm-js");
             template = template.replace("${resourceArtifactItems}", artifactItems);
         }
         Document document = XmlUtil.parseXmlString(template);
