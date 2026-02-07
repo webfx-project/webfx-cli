@@ -147,6 +147,8 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
         if (isExecutable()) {
             String moduleName = getName();
             String applicationModuleName = moduleName;
+            if (getTarget().hasTag(TargetTag.JS) && moduleName.endsWith("-js"))
+                applicationModuleName = moduleName.substring(0, applicationModuleName.lastIndexOf('-'));
             if (getTarget().hasTag(TargetTag.WASM) && moduleName.endsWith("-wasm"))
                 applicationModuleName = moduleName.substring(0, applicationModuleName.lastIndexOf('-'));
             applicationModuleName = moduleName.substring(0, applicationModuleName.lastIndexOf('-'));

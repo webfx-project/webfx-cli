@@ -23,6 +23,8 @@ final class BuildRunCommon {
     final boolean gwt;
     final boolean j2cl;
     final boolean teavm;
+    final boolean javascript;
+    final boolean wasm;
     final boolean fatjar;
     final boolean openJfxDesktop;
     final boolean gluonDesktop;
@@ -35,13 +37,21 @@ final class BuildRunCommon {
     final boolean rpm;
     final boolean open;
 
-    public BuildRunCommon(boolean clean, boolean build, boolean run, boolean gwt, boolean j2cl, boolean teavm, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open) {
+    public BuildRunCommon(boolean clean, boolean build, boolean run, boolean gwt, boolean j2cl, boolean teavm, boolean javascript, boolean wasm, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open) {
+        if (teavm) {
+            if (!javascript && !wasm)
+                javascript = wasm = true;
+        } else if (javascript || wasm) {
+            teavm = true;
+        }
         this.clean = clean;
         this.build = build;
         this.run = run;
         this.gwt = gwt;
         this.j2cl = j2cl;
         this.teavm = teavm;
+        this.javascript = javascript;
+        this.wasm = wasm;
         this.fatjar = fatjar;
         this.openJfxDesktop = openJfxDesktop;
         this.gluonDesktop = gluonDesktop;
@@ -106,7 +116,7 @@ final class BuildRunCommon {
                 .filter(m ->
                         m.isExecutable(Platform.GWT) ? gwt :
                         m.isExecutable(Platform.J2CL) ? j2cl :
-                        m.isExecutable(Platform.TEAVM) ? teavm :
+                        m.isExecutable(Platform.TEAVM) ? teavm && m instanceof DevProjectModule dpm && (dpm.isWasmModule() ? wasm : javascript) :
                         m.getTarget().hasTag(TargetTag.OPENJFX) ? openJfx :
                         m.getTarget().hasTag(TargetTag.GLUON) && gluon)
                 .map(DevProjectModule.class::cast)
@@ -121,7 +131,7 @@ final class BuildRunCommon {
             if (gwt)
                 executablePaths.add(module.getGwtExecutableFilePath());
         } else if (module.isExecutable(Platform.TEAVM)) {
-            if (teavm)
+            if (teavm && (module.isWasmModule() ? wasm : javascript))
                 executablePaths.add(module.getTeaVMExecutableFilePath());
         } else if (module.isExecutable(Platform.JRE)) {
             String applicationName = DevMavenPomModuleFile.getApplicationName(module);

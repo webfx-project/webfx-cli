@@ -22,11 +22,17 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-g", "--gwt"}, description = "Includes the GWT compilation")
     private boolean gwt;
 
-    @CommandLine.Option(names = {"-j", "--j2cl"}, description = "Includes the J2CL compilation")
+    @CommandLine.Option(names = {"--j2cl"}, description = "Includes the J2CL compilation")
     private boolean j2cl;
 
     @CommandLine.Option(names = {"-t", "--teavm"}, description = "Includes the TeaVM compilation")
     private boolean teavm;
+
+    @CommandLine.Option(names = {"-j", "--javascript"}, description = "Includes JavaScript module in the TeaVM compilation")
+    private boolean javascript;
+
+    @CommandLine.Option(names = {"-w", "--wasm"}, description = "Includes the Wasm module in the TeaVM compilation")
+    private boolean wasm;
 
     @CommandLine.Option(names = {"-f", "--openjfx-fatjar"}, description = "Creates a fat jar for the OpenJFX version")
     private boolean fatjar;
@@ -75,7 +81,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(clean, true, run, gwt, j2cl, teavm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
+        execute(new BuildRunCommon(clean, true, run, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
@@ -96,11 +102,12 @@ public final class Build extends CommonSubcommand implements Runnable {
 */
         String command = "mvn " +
                 (brc.clean ? "clean " : "") +
-                (gluonModule != null || brc.j2cl ? "install " : "package ") + // for Gluon & J2CL: 1) install 2) subsequent build (see below)
+                (gluonModule != null || brc.j2cl ? "install " : "package ") + // for Gluon & J2CL: 1) install 2) later build (see below)
                 (brc.fatjar ? "-P openjfx-fatjar " : "") +
                 (brc.openJfxDesktop ? "-P openjfx-desktop " : "") +
                 (brc.gwt ? "-P gwt-compile " : "") +
-                (brc.teavm ? "-P teavm " : "");
+                (brc.teavm && brc.javascript ? "-P teavm-js " : "") +
+                (brc.teavm && brc.wasm ? "-P teavm-wasm " : "");
         ProcessCall processCall = new ProcessCall();
         if (brc.openJfxDesktop && OperatingSystem.isWindows()) { // Ensuring WiX and Inno is in the environment path (usually not done by the installer)
             String innoResultLine = new ProcessCall()
