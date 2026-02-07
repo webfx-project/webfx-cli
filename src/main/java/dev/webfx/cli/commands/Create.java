@@ -80,8 +80,8 @@ public final class Create extends CommonSubcommand {
             }
             webFxModuleFile.setExecutable(executable);
             if (executable && module.getBuildInfo().isForTeaVm) {
-                webFxModuleFile.addProvider("org.teavm.classlib.ResourceSupplier", TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName());
-                webFxModuleFile.addProvider("dev.webfx.platform.resource.spi.impl.web.WebResourceBundle", TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName());
+                webFxModuleFile.addProvider("org.teavm.classlib.ResourceSupplier", TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName(module));
+                webFxModuleFile.addProvider("dev.webfx.platform.resource.spi.impl.web.WebResourceBundle", TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName(module));
             }
             webFxModuleFile.writeFile();
             return module;
