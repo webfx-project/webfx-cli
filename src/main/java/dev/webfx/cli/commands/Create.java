@@ -176,6 +176,8 @@ public final class Create extends CommonSubcommand {
             createTagApplicationModule(TargetTag.OPENJFX);
             createTagApplicationModule(TargetTag.GWT);
             createTagApplicationModule(TargetTag.GLUON);
+            createTagApplicationModule(TargetTag.TEAVM, TargetTag.JS);
+            createTagApplicationModule(TargetTag.TEAVM, TargetTag.WASM);
             writeParentMavenModuleFile(applicationModule);
             new Update().run();
             return null;
@@ -185,11 +187,14 @@ public final class Create extends CommonSubcommand {
             if (javaFxApplication != null && (!SourceVersion.isName(javaFxApplication) || javaFxApplication.contains("$")))
                 throw new CliException("'" + javaFxApplication + "' is not a valid java class name");
         }
-
         private DevProjectModule createTagApplicationModule(TargetTag targetTag) throws IOException {
+            return createTagApplicationModule(targetTag, null);
+        }
+
+        private DevProjectModule createTagApplicationModule(TargetTag targetTag, TargetTag langTag) throws IOException {
             if (targetTag == null)
                 return createSourceModule(prefix + "-application", helloWorld ? "JavaFxHelloWorldApplication.javat" : "JavaFxApplication.javat", javaFxApplication, false);
-            return createSourceModule(prefix + "-application-" + targetTag.name().toLowerCase(), null, null, true);
+            return createSourceModule(prefix + "-application-" + targetTag.name().toLowerCase() + (langTag == null ? ""  : "-" + langTag.name().toLowerCase()), null, null, true);
         }
     }
 }
