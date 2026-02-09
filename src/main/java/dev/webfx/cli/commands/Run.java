@@ -1,17 +1,24 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.core.MavenUtil;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 import java.awt.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.StringTokenizer;
 
 /**
  * @author Bruno Salmon
@@ -76,8 +83,8 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"--open"}, description = "Runs the executable via 'open' (macOS)")
     boolean open;
 
-    /*@Option(names= {"-p", "--port"}, description = "Port of the web server.")
-    int port;*/
+    @CommandLine.Option(names= {"-p", "--port"}, description = "Port of the web server.")
+    int port;
 
     @Override
     public void run() {
@@ -87,7 +94,7 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
+        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open, port), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
@@ -100,10 +107,10 @@ public final class Run extends CommonSubcommand implements Runnable {
     static void executeNoBuild(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule executableModule = brc.findExecutableModule(workspace);
         if (executableModule != null) // null with --locate or --show
-            brc.getExecutableFilePath(executableModule).forEach(path -> executeFile(path, brc.open));
+            brc.getExecutableFilePath(executableModule).forEach(path -> executeFile(path, brc.open, brc.port));
     }
 
-    private static void executeFile(Path executableFilePath, boolean usesOpen) {
+    private static void executeFile(Path executableFilePath, boolean usesOpen, int port) {
         try {
             String fileName = executableFilePath.getFileName().toString();
             String pathName = executableFilePath.toString();
@@ -112,13 +119,10 @@ public final class Run extends CommonSubcommand implements Runnable {
             else if (fileName.endsWith(".jar"))
                 ProcessCall.executeCommandTokens("java", "-jar", pathName);
             else if (fileName.endsWith(".html")) {
-                Desktop.getDesktop().open(executableFilePath.toFile()); // Works cross-platform
-                /*if (OperatingSystem.isWindows())
-                    ProcessCall.executePowershellCommand(". " + ProcessCall.toShellLogCommandToken(executableFilePath));
-                else if (OperatingSystem.isLinux())
-                    ProcessCall.executeCommandTokens("xdg-open", pathName);
+                if (port > 0)
+                    runWebAppWithBuiltInWebServer(executableFilePath, port);
                 else
-                    ProcessCall.executeCommandTokens("open", pathName);*/
+                    Desktop.getDesktop().open(executableFilePath.toFile()); // Works cross-platform
             } else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
                 boolean android = fileName.endsWith(".apk");
                 Path gluonModulePath = executableFilePath.getParent();
@@ -147,6 +151,77 @@ public final class Run extends CommonSubcommand implements Runnable {
         } catch (Exception e) {
             throw new CliException(e.getMessage());
         }
+    }
+
+    private static void runWebAppWithBuiltInWebServer(Path webappHtmlPath, int port) throws Exception {
+        // We use ServerSocket instead of HttpServer because HttpServer strictly validates the request URI.
+        // If the URI contains special characters like { or } (which can happen with Maven placeholders in query strings),
+        // HttpServer rejects the request with a 400 Bad Request error before it even reaches our handler.
+        // ServerSocket allows us to read the raw request and handle such URIs manually.
+        @SuppressWarnings("resource") // We don't use try-with-resources here because we want to keep the socket open
+        ServerSocket serverSocket = new ServerSocket(port);
+        String htmlFileName = webappHtmlPath.getFileName().toString();
+        Path directory = webappHtmlPath.getParent();
+        new Thread(() -> {
+            while (true) {
+                try {
+                    Socket socket = serverSocket.accept();
+                    new Thread(() -> { // Each request is processed in a separate thread
+                        try (socket) {
+                            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                            String line = in.readLine();
+                            if (line == null) return;
+                            StringTokenizer st = new StringTokenizer(line);
+                            if (!st.hasMoreElements()) return;
+                            st.nextToken(); // Method (ignored - only GET is supported)
+                            if (!st.hasMoreElements()) return;
+                            String path = st.nextToken();
+
+                            // Stripping query string or hash if any
+                            int qp = path.indexOf('?');
+                            if (qp != -1) path = path.substring(0, qp);
+                            int hp = path.indexOf('#');
+                            if (hp != -1) path = path.substring(0, hp);
+
+                            if ("/".equals(path))
+                                path = "/" + htmlFileName;
+                            // Decoding the path (ex: %20 -> space) to resolve the file correctly
+                            try {
+                                path = new URI(null, null, path, null).getPath();
+                            } catch (Exception ignored) { }
+                            Path file = directory.resolve(path.substring(1));
+                            // Probing the MIME type
+                            String contentType = Files.probeContentType(file);
+                            // Fallback for .wasm in case the OS doesn't know about it
+                            if (contentType == null && path.endsWith(".wasm")) {
+                                contentType = "application/wasm";
+                            }
+
+                            OutputStream out = socket.getOutputStream();
+                            if (Files.exists(file) && !Files.isDirectory(file)) {
+                                byte[] bytes = Files.readAllBytes(file);
+                                out.write("HTTP/1.1 200 OK\r\n".getBytes());
+                                if (contentType != null)
+                                    out.write(("Content-Type: " + contentType + "\r\n").getBytes());
+                                out.write(("Content-Length: " + bytes.length + "\r\n").getBytes());
+                                out.write("\r\n".getBytes());
+                                out.write(bytes);
+                            } else {
+                                out.write("HTTP/1.1 404 Not Found\r\n\r\n".getBytes());
+                            }
+                            out.flush();
+                        } catch (Exception ignored) { }
+                    }).start();
+                } catch (Exception e) {
+                    if (serverSocket.isClosed())
+                        break;
+                }
+            }
+        }).start();
+        String url = "http://localhost:" + port;
+        Logger.log("Serving " + webappHtmlPath.getParent().getFileName() + " on " + url + " (Ctrl+C to stop)");
+        Desktop.getDesktop().browse(new URI(url));
+        Thread.currentThread().join(); // Wait forever (until Ctrl+C)
     }
 
 }

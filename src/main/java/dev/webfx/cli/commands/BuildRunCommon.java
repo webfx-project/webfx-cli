@@ -36,8 +36,9 @@ final class BuildRunCommon {
     final boolean deb;
     final boolean rpm;
     final boolean open;
+    final int port;
 
-    public BuildRunCommon(boolean clean, boolean build, boolean run, boolean gwt, boolean j2cl, boolean teavm, boolean javascript, boolean wasm, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open) {
+    public BuildRunCommon(boolean clean, boolean build, boolean run, boolean gwt, boolean j2cl, boolean teavm, boolean javascript, boolean wasm, boolean fatjar, boolean openJfxDesktop, boolean gluonDesktop, boolean android, boolean ios, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, boolean open, int port) {
         if (teavm) {
             if (!javascript && !wasm)
                 javascript = wasm = true;
@@ -63,6 +64,7 @@ final class BuildRunCommon {
         this.deb = deb;
         this.rpm = rpm;
         this.open = open;
+        this.port = port;
         // Checking this is a compatible machine for the target
         if (android && !OperatingSystem.isLinux())
             throw new CliException("Please use a Linux machine to build the Android app");

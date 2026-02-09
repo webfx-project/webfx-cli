@@ -73,6 +73,9 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"--open"}, description = "Runs the executable via 'open' (macOS)")
     boolean open;
 
+    @CommandLine.Option(names= {"-p", "--port"}, description = "Port of the web server.")
+    int port;
+
     @Override
     public void run() {
         if (mobile) {
@@ -81,7 +84,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(clean, true, run, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open), getWorkspace());
+        execute(new BuildRunCommon(clean, true, run, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open, port), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
