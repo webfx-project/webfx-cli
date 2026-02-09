@@ -1,9 +1,10 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.DevRootModule;
+import dev.webfx.cli.core.ProjectModuleImpl;
 import dev.webfx.cli.core.TargetTag;
+import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.modulefiles.DevMavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
@@ -34,6 +35,9 @@ public final class Create extends CommonSubcommand {
 
         @Option(names = {"-p", "--project"}, arity = "0..1", fallbackValue = "!", description = "Create as a separate new project.")
         String project;
+
+        @Option(names = {"-s", "--skipUpdate"}, description = "Skip `webfx update` after creation.")
+        boolean skipUpdate;
 
         private DevProjectModule createModule(String name, boolean aggregate) {
             CommandWorkspace workspace = getWorkspace();
@@ -80,11 +84,17 @@ public final class Create extends CommonSubcommand {
             }
             webFxModuleFile.setExecutable(executable);
             if (executable && module.getBuildInfo().isForTeaVm) {
-                webFxModuleFile.addProvider("org.teavm.classlib.ResourceSupplier", TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName(module));
-                webFxModuleFile.addProvider("dev.webfx.platform.resource.spi.impl.web.WebResourceBundle", TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName(module));
+                String providerClassName = TeaVMEmbedResourcesBundleSourceGenerator.getProviderClassName(module);
+                webFxModuleFile.addProvider("org.teavm.classlib.ResourceSupplier", providerClassName);
+                webFxModuleFile.addProvider("dev.webfx.platform.resource.spi.impl.web.WebResourceBundle", providerClassName);
             }
             webFxModuleFile.writeFile();
             return module;
+        }
+
+        void runUpdateIfRequested() {
+            if (!skipUpdate)
+                new Update().run();
         }
     }
 
@@ -112,6 +122,7 @@ public final class Create extends CommonSubcommand {
             module.setVersion(version);
             module.setInlineWebFxParent(inline);
             module.getMavenModuleFile().writeFile();
+            runUpdateIfRequested();
             return null;
         }
     }
@@ -130,8 +141,17 @@ public final class Create extends CommonSubcommand {
 
         @Override
         public Void call() throws Exception {
-            DevProjectModule module = aggregate ? createAggregateModule(name, true) : createSourceModule(name, ResourceTextFileReader.readTemplate("Class.javat"), moduleClassName, false);
-            writeParentMavenModuleFile(module);
+            if (aggregate)
+                createAggregateModule(name, false);
+            else if (moduleClassName != null)
+                createSourceModule(name, ResourceTextFileReader.readTemplate("Class.javat"), moduleClassName, false);
+            else {
+                String possibleApplicationModuleName = ProjectModuleImpl.getPossibleApplicationModuleName(name);
+                dev.webfx.cli.core.Module possibleApplicationModule = getWorkspace().getWorkingDevProjectModule().searchRegisteredModule(possibleApplicationModuleName);
+                boolean executable = possibleApplicationModule != null;
+                createSourceModule(name, null, null, executable);
+            }
+            runUpdateIfRequested();
             return null;
         }
     }
@@ -141,12 +161,6 @@ public final class Create extends CommonSubcommand {
         if (mavenModuleFile instanceof DevMavenPomModuleFile)
             return (DevMavenPomModuleFile) mavenModuleFile;
         return null;
-    }
-
-    private static void writeParentMavenModuleFile(DevProjectModule module) {
-        DevMavenPomModuleFile parentDevMavenModuleFile = getParentDevMavenModuleFile(module);
-        if (parentDevMavenModuleFile != null)
-            parentDevMavenModuleFile.writeFile();
     }
 
     @Command(name = "application", description = "Create modules for a new WebFX application.")
@@ -172,14 +186,12 @@ public final class Create extends CommonSubcommand {
                 else
                     prefix = getWorkspace().getModuleRegistry().getOrCreateDevProjectModule(getWorkspace().getProjectDirectoryPath()).getName();
             }
-            DevProjectModule applicationModule = createTagApplicationModule(null);
             createTagApplicationModule(TargetTag.OPENJFX);
             createTagApplicationModule(TargetTag.GWT);
             createTagApplicationModule(TargetTag.GLUON);
             createTagApplicationModule(TargetTag.TEAVM, TargetTag.JS);
             createTagApplicationModule(TargetTag.TEAVM, TargetTag.WASM);
-            writeParentMavenModuleFile(applicationModule);
-            new Update().run();
+            runUpdateIfRequested();
             return null;
         }
 

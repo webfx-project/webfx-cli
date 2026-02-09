@@ -143,18 +143,25 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     }
 
     public ProjectModule getApplicationModule() {
-        ProjectModule applicationModule = null;
         if (isExecutable()) {
-            String moduleName = getName();
-            String applicationModuleName = moduleName;
-            if (getTarget().hasTag(TargetTag.JS) && moduleName.endsWith("-js"))
-                applicationModuleName = moduleName.substring(0, applicationModuleName.lastIndexOf('-'));
-            if (getTarget().hasTag(TargetTag.WASM) && moduleName.endsWith("-wasm"))
-                applicationModuleName = moduleName.substring(0, applicationModuleName.lastIndexOf('-'));
-            applicationModuleName = moduleName.substring(0, applicationModuleName.lastIndexOf('-'));
-            applicationModule = getModuleRegistry().getRegisteredProjectModule(applicationModuleName);
+            return getApplicationModule(getName(), getModuleRegistry());
         }
-        return applicationModule;
+        return null;
+    }
+
+    public static ProjectModule getApplicationModule(String executableModuleName, ModuleRegistry moduleRegistry) {
+        String possibleApplicationModuleName = getPossibleApplicationModuleName(executableModuleName);
+        return moduleRegistry.getRegisteredProjectModule(possibleApplicationModuleName);
+    }
+
+    public static String getPossibleApplicationModuleName(String executableModuleName) {
+        String applicationModuleName = executableModuleName;
+        if (executableModuleName.endsWith("-js"))
+            applicationModuleName = executableModuleName.substring(0, applicationModuleName.lastIndexOf('-'));
+        if (executableModuleName.endsWith("-wasm"))
+            applicationModuleName = executableModuleName.substring(0, applicationModuleName.lastIndexOf('-'));
+        int lastDashIndex = applicationModuleName.lastIndexOf('-');
+        return lastDashIndex <= 0 ? null : executableModuleName.substring(0, lastDashIndex);
     }
 
     @Override
