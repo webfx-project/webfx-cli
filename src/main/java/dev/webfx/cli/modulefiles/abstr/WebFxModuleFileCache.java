@@ -38,7 +38,7 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
     private Boolean pwa;
 
     @Override
-    public boolean isPwa() {
+    public Boolean isPwa() {
         if (pwa == null)
             pwa = WebFxModuleFileDelegate.super.isPwa();
         return pwa;

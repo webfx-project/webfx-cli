@@ -187,7 +187,7 @@ public interface ProjectModule extends Module {
         return getWebFxModuleFile().isExecutable();
     }
 
-    default boolean isPwa() {
+    default Boolean isPwa() {
         return getWebFxModuleFile().isPwa();
     }
 

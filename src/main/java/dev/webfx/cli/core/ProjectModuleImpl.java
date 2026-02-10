@@ -165,9 +165,9 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     }
 
     @Override
-    public boolean isPwa() {
-        boolean pwa = ProjectModule.super.isPwa();
-        if (!pwa && getBuildInfo().isForWeb) {
+    public Boolean isPwa() {
+        Boolean pwa = ProjectModule.super.isPwa();
+        if (pwa == null && getBuildInfo().isForWeb) {
             ProjectModule applicationModule = getApplicationModule();
             if (applicationModule != null)
                 pwa = applicationModule.isPwa();

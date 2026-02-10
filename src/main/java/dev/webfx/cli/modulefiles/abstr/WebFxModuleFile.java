@@ -7,6 +7,7 @@ import dev.webfx.cli.modulefiles.WebFxMavenRepository;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.xml.XmlUtil;
 import dev.webfx.lib.reusablestream.ReusableStream;
+import dev.webfx.platform.util.Booleans;
 import dev.webfx.platform.util.Strings;
 import org.dom4j.Document;
 import org.dom4j.Element;
@@ -25,8 +26,9 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
         return getBooleanProjectAttributeValue("executable");
     }
 
-    default boolean isPwa() {
-        return getBooleanProjectAttributeValue("pwa");
+    default Boolean isPwa() {
+        String pwa = getProjectAttributeValue("pwa");
+        return pwa == null ? null : Booleans.isTrue(pwa);
     }
 
     default boolean requiresTimeZoneData() {

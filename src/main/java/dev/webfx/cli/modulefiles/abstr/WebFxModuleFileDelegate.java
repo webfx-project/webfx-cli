@@ -42,7 +42,7 @@ public interface WebFxModuleFileDelegate extends WebFxModuleFile {
     }
 
     @Override
-    default boolean isPwa() {
+    default Boolean isPwa() {
         return getDelegate().isPwa();
     }
 
