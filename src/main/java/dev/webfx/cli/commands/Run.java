@@ -80,11 +80,11 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"--rpm"}, description = "Takes the rpm package as executable (Linux)")
     boolean rpm;
 
-    @CommandLine.Option(names= {"--open"}, description = "Runs the executable via 'open' (macOS)")
-    boolean open;
-
     @CommandLine.Option(names= {"-p", "--port"}, description = "Port of the web server.")
-    int port;
+    int port = 8080;
+
+    @CommandLine.Option(names= {"--file"}, description = "Runs the webapp via file:// rather than http://")
+    boolean file;
 
     @Override
     public void run() {
@@ -94,7 +94,7 @@ public final class Run extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open, port), getWorkspace());
+        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, port, file), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
@@ -107,10 +107,10 @@ public final class Run extends CommonSubcommand implements Runnable {
     static void executeNoBuild(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule executableModule = brc.findExecutableModule(workspace);
         if (executableModule != null) // null with --locate or --show
-            brc.getExecutableFilePath(executableModule).forEach(path -> executeFile(path, brc.open, brc.port));
+            brc.getExecutableFilePath(executableModule).forEach(path -> executeFile(path, brc.port, brc.file));
     }
 
-    private static void executeFile(Path executableFilePath, boolean usesOpen, int port) {
+    private static void executeFile(Path executableFilePath, int port, boolean file) {
         try {
             String fileName = executableFilePath.getFileName().toString();
             String pathName = executableFilePath.toString();
@@ -118,11 +118,8 @@ public final class Run extends CommonSubcommand implements Runnable {
                 Logger.log("Can't execute nonexistent file " + ProcessCall.toShellLogCommandToken(executableFilePath));
             else if (fileName.endsWith(".jar"))
                 ProcessCall.executeCommandTokens("java", "-jar", pathName);
-            else if (fileName.endsWith(".html")) {
-                if (port > 0)
-                    runWebAppWithBuiltInWebServer(executableFilePath, port);
-                else
-                    Desktop.getDesktop().open(executableFilePath.toFile()); // Works cross-platform
+            else if (fileName.endsWith(".html") && !file) {
+                runWebAppWithBuiltInWebServer(executableFilePath, port);
             } else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
                 boolean android = fileName.endsWith(".apk");
                 Path gluonModulePath = executableFilePath.getParent();
@@ -138,15 +135,7 @@ public final class Run extends CommonSubcommand implements Runnable {
                     Logger.log("\nIn addition to the desktop icon, you can now type '" + commandName + "' in the terminal to launch the application.\nUse 'sudo apt remove " + commandName.toLowerCase() + "' to uninstall the application.");
                 }
             } else { // Everything else should be an executable file that we can call directly
-                int exitCode;
-                if (usesOpen && OperatingSystem.isLinux())
-                    exitCode = ProcessCall.executeCommandTokens("xdg-open", pathName);
-                else if(usesOpen && !OperatingSystem.isWindows())
-                    exitCode = ProcessCall.executeCommandTokens("open", pathName);
-                else
-                    exitCode = ProcessCall.executeCommandTokens(pathName);
-                if (exitCode != 0 && fileName.endsWith(".AppImage"))
-                    Logger.log("\nYou can install FUSE with 'sudo apt install fuse'");
+                Desktop.getDesktop().open(executableFilePath.toFile()); // Works cross-platform
             }
         } catch (Exception e) {
             throw new CliException(e.getMessage());

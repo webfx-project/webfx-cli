@@ -70,11 +70,11 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names= {"--rpm"}, description = "Takes the rpm package as executable (Linux)")
     boolean rpm;
 
-    @CommandLine.Option(names= {"--open"}, description = "Runs the executable via 'open' (macOS)")
-    boolean open;
-
     @CommandLine.Option(names= {"-p", "--port"}, description = "Port of the web server.")
-    int port;
+    int port = 8080;
+
+    @CommandLine.Option(names= {"--file"}, description = "Runs the webapp via file:// rather than http://")
+    boolean file;
 
     @Override
     public void run() {
@@ -84,7 +84,7 @@ public final class Build extends CommonSubcommand implements Runnable {
             else
                 android = true;
         }
-        execute(new BuildRunCommon(clean, true, run, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, open, port), getWorkspace());
+        execute(new BuildRunCommon(clean, true, run, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, port, file), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
