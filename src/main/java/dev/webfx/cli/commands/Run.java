@@ -81,7 +81,7 @@ public final class Run extends CommonSubcommand implements Runnable {
     boolean rpm;
 
     @CommandLine.Option(names= {"-p", "--port"}, description = "Port of the web server.")
-    int port = 8080;
+    int port;
 
     @CommandLine.Option(names= {"--file"}, description = "Runs the webapp via file:// rather than http://")
     boolean file;
@@ -147,14 +147,29 @@ public final class Run extends CommonSubcommand implements Runnable {
         // If the URI contains special characters like { or } (which can happen with Maven placeholders in query strings),
         // HttpServer rejects the request with a 400 Bad Request error before it even reaches our handler.
         // ServerSocket allows us to read the raw request and handle such URIs manually.
-        @SuppressWarnings("resource") // We don't use try-with-resources here because we want to keep the socket open
-        ServerSocket serverSocket = new ServerSocket(port);
+        boolean portSpecified = port != 0;
+        if (!portSpecified)
+            port = 8080;
+        ServerSocket serverSocket;
+        int count = 0;
+        while (true) {
+            try {
+                serverSocket = new ServerSocket(port); // We don't use try-with-resources here because we want to keep the socket open
+                break;
+            } catch (java.net.BindException e) {
+                if (portSpecified || ++count > 100)
+                    throw new CliException("Port " + port + " is busy" + (portSpecified ? "" : " (tried 100 ports before giving up)"));
+                port++;
+            }
+        }
+        ServerSocket finalServerSocket = serverSocket;
+        int finalPort = port;
         String htmlFileName = webappHtmlPath.getFileName().toString();
         Path directory = webappHtmlPath.getParent();
         new Thread(() -> {
             while (true) {
                 try {
-                    Socket socket = serverSocket.accept();
+                    Socket socket = finalServerSocket.accept();
                     new Thread(() -> { // Each request is processed in a separate thread
                         try (socket) {
                             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -202,12 +217,12 @@ public final class Run extends CommonSubcommand implements Runnable {
                         } catch (Exception ignored) { }
                     }).start();
                 } catch (Exception e) {
-                    if (serverSocket.isClosed())
+                    if (finalServerSocket.isClosed())
                         break;
                 }
             }
         }).start();
-        String url = "http://localhost:" + port;
+        String url = "http://localhost:" + finalPort;
         Logger.log("Serving " + webappHtmlPath.getParent().getFileName() + " on " + url + " (Ctrl+C to stop)");
         Desktop.getDesktop().browse(new URI(url));
         Thread.currentThread().join(); // Wait forever (until Ctrl+C)
