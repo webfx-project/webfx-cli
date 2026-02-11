@@ -29,7 +29,7 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-g", "--gwt"}, description = "Runs the GWT app")
     private boolean gwt;
 
-    @CommandLine.Option(names = {"--j2cl"}, description = "Runs the J2CL app")
+    //@CommandLine.Option(names = {"--j2cl"}, description = "Runs the J2CL app")
     private boolean j2cl;
 
     @CommandLine.Option(names = {"-t", "--teavm"}, description = "Runs the TeaVM app")

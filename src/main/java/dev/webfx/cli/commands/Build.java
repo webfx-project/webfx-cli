@@ -22,7 +22,7 @@ public final class Build extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-g", "--gwt"}, description = "Includes the GWT compilation")
     private boolean gwt;
 
-    @CommandLine.Option(names = {"--j2cl"}, description = "Includes the J2CL compilation")
+    //@CommandLine.Option(names = {"--j2cl"}, description = "Includes the J2CL compilation")
     private boolean j2cl;
 
     @CommandLine.Option(names = {"-t", "--teavm"}, description = "Includes the TeaVM compilation")
