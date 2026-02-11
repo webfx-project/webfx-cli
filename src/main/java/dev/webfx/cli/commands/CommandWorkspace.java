@@ -103,7 +103,7 @@ public final class CommandWorkspace {
     }
 
     DevProjectModule getTopRootModule() {
-        if (topRootModule == null)
+        if (topRootModule == null && getTopRootDirectoryPath() != null)
             topRootModule = getModuleRegistry().getOrCreateDevProjectModule(topRootDirectoryPath);
         return topRootModule;
     }

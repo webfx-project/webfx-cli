@@ -24,12 +24,12 @@ import java.util.concurrent.Callable;
  * @author Bruno Salmon
  */
 @Command(name = "create", description = "Create WebFX module(s).",
-subcommands = {
+    subcommands = {
         Create.Project.class,
         Create.Application.class,
         Create.Module.class,
-})
-public final class Create {
+    })
+public final class Create extends CommonSubcommand {
 
     static abstract class CreateSubCommand extends FollowedByUpdateSubCommand implements Callable<Void> {
 
@@ -55,7 +55,7 @@ public final class Create {
             return module;
         }
 
-        DevProjectModule createSourceModule(String name, String templateFileName, String fullClassName, boolean executable) throws IOException {
+        DevProjectModule createSourceModule(String name, String templateFileName, String fullQualifiedApplicationClassName, boolean executable) throws IOException {
             DevProjectModule module = createModule(name, false);
             Path modulePath = module.getHomeDirectory();
             Path sourcePath = modulePath.resolve("src/main/java");
@@ -65,19 +65,19 @@ public final class Create {
             Files.createDirectories(resourcesPath);
             Files.createDirectories(testPath);
             WebFxModuleFile webFxModuleFile = module.getWebFxModuleFile();
-            if (templateFileName != null && fullClassName != null) {
-                int p = fullClassName.lastIndexOf('.');
-                String packageName = fullClassName.substring(0, p);
-                String className = fullClassName.substring(p + 1);
+            if (templateFileName != null && fullQualifiedApplicationClassName != null) {
+                int p = fullQualifiedApplicationClassName.lastIndexOf('.');
+                String packageName = fullQualifiedApplicationClassName.substring(0, p);
+                String className = fullQualifiedApplicationClassName.substring(p + 1);
                 Path packagePath = sourcePath.resolve(packageName.replace('.', '/'));
                 Path javaFilePath = packagePath.resolve(className + ".java");
                 String template = ResourceTextFileReader.readTemplate(templateFileName)
-                        .replace("${package}", packageName)
-                        .replace("${class}", className);
+                    .replace("${package}", packageName)
+                    .replace("${class}", className);
                 if (!Files.exists(javaFilePath))
                     TextFileReaderWriter.writeTextFile(template, javaFilePath);
                 if (template.contains("javafx.application.Application"))
-                    webFxModuleFile.addProvider("javafx.application.Application", fullClassName);
+                    webFxModuleFile.addProvider("javafx.application.Application", fullQualifiedApplicationClassName);
             }
             webFxModuleFile.setExecutable(executable);
             if (executable && module.getBuildInfo().isForTeaVm) {
@@ -159,26 +159,28 @@ public final class Create {
     @Command(name = "application", description = "Create modules for a new WebFX application.")
     static class Application extends CreateSubCommand {
 
-        @Parameters(paramLabel = "class", arity = "0..1", description = "Fully qualified JavaFX Application class name.")
-        private String javaFxApplication;
+        @Parameters(paramLabel = "module", description = "The application module name.")
+        private String applicationModuleName;
 
-        @Option(names = {"--prefix"}, description = "Prefix of the application modules that will be created.")
-        private String prefix;
-
-        @Option(names = {"-w", "--helloWorld"}, description = "Use hello world code template.")
-        private boolean helloWorld;
+        private String fullQualifiedApplicationClassName;
 
         @Override
         public Void call() throws Exception {
-            validateParameters();
-            if ("!".equals(project))
-                project = prefix;
-            if (prefix == null) {
-                if (project != null)
-                    prefix = project;
-                else
-                    prefix = getWorkspace().getModuleRegistry().getOrCreateDevProjectModule(getWorkspace().getProjectDirectoryPath()).getName();
+            CommandWorkspace workspace = getWorkspace();
+            if (workspace.getTopRootModule() == null) { // happens when the project has not been initialized through the Init command
+                // We provide a default dummy initialization to reduce effort when playing with WebFX for the first time
+                String groupId = "org.example";
+                String artifactId = workspace.getProjectDirectoryPath().getFileName().toString();
+                String version = "1.0.0";
+                if (artifactId.equals(applicationModuleName))
+                    artifactId = applicationModuleName.equals("webfx-example") ? "webfx-project" : "webfx-example";
+                Init.execute(groupId + ":" + artifactId + ":" + version, true, workspace);
             }
+            String applicationName = decideApplicationClassName();
+            String packageName = decidePackageName();
+            fullQualifiedApplicationClassName = packageName + "." + applicationName;
+            validateParameters();
+            createTagApplicationModule(null);
             createTagApplicationModule(TargetTag.OPENJFX);
             createTagApplicationModule(TargetTag.GWT);
             createTagApplicationModule(TargetTag.GLUON);
@@ -188,9 +190,53 @@ public final class Create {
             return null;
         }
 
+        private String decidePackageName() {
+            DevProjectModule topRootModule = getWorkspace().getTopRootModule();
+            String groupId = topRootModule.getGroupId();
+            String packageName = groupId;
+            String modulePackageName = applicationModuleName.replace('-', '.');
+            if (modulePackageName.equals(groupId) || modulePackageName.startsWith(groupId + ".")) {
+                packageName = modulePackageName;
+            } else {
+                int lastDot = groupId.lastIndexOf('.');
+                String lastGroupIdToken = lastDot == -1 ? groupId : groupId.substring(lastDot + 1);
+                if (modulePackageName.equals(lastGroupIdToken))
+                    packageName = groupId;
+                else if (modulePackageName.startsWith(lastGroupIdToken + "."))
+                    packageName += "." + modulePackageName.substring(lastGroupIdToken.length() + 1);
+                else
+                    packageName += "." + modulePackageName;
+            }
+            return packageName;
+        }
+
+        private String decideApplicationClassName() {
+            return toPascalCase(applicationModuleName)
+                .replace("Webfx", "WebFX")
+                .replace("WebFXapp", "WebFXApp");
+        }
+
+        private static String toPascalCase(String s) {
+            StringBuilder sb = new StringBuilder();
+            boolean capitalizeNext = true;
+            for (char c : s.toCharArray()) {
+                if (!Character.isLetterOrDigit(c)) {
+                    capitalizeNext = true;
+                } else {
+                    if (capitalizeNext) {
+                        sb.append(Character.toUpperCase(c));
+                        capitalizeNext = false;
+                    } else {
+                        sb.append(c);
+                    }
+                }
+            }
+            return sb.toString();
+        }
+
         private void validateParameters() {
-            if (javaFxApplication != null && (!SourceVersion.isName(javaFxApplication) || javaFxApplication.contains("$")))
-                throw new CliException("'" + javaFxApplication + "' is not a valid java class name");
+            if (fullQualifiedApplicationClassName != null && (!SourceVersion.isName(fullQualifiedApplicationClassName) || fullQualifiedApplicationClassName.contains("$")))
+                throw new CliException("'" + fullQualifiedApplicationClassName + "' is not a valid java class name");
         }
         private DevProjectModule createTagApplicationModule(TargetTag targetTag) throws IOException {
             return createTagApplicationModule(targetTag, null);
@@ -198,8 +244,8 @@ public final class Create {
 
         private DevProjectModule createTagApplicationModule(TargetTag targetTag, TargetTag langTag) throws IOException {
             if (targetTag == null)
-                return createSourceModule(prefix + "-application", helloWorld ? "JavaFxHelloWorldApplication.javat" : "JavaFxApplication.javat", javaFxApplication, false);
-            return createSourceModule(prefix + "-application-" + targetTag.name().toLowerCase() + (langTag == null ? ""  : "-" + langTag.name().toLowerCase()), null, null, true);
+                return createSourceModule(applicationModuleName, "JavaFxHelloWorldApplication.javat", fullQualifiedApplicationClassName, false);
+            return createSourceModule(applicationModuleName + "-" + targetTag.name().toLowerCase() + (langTag == null ? ""  : "-" + langTag.name().toLowerCase()), null, null, true);
         }
     }
 }

@@ -21,12 +21,12 @@ public final class Init extends FollowedByUpdateSubCommand implements Callable<V
 
     @Override
     public Void call() {
-        execute(artifact, getWorkspace());
+        execute(artifact, false, getWorkspace());
         runUpdateIfNotSkipped();
         return null;
     }
 
-    public static void execute(String artifact, CommandWorkspace workspace) {
+    public static void execute(String artifact, boolean writeNow, CommandWorkspace workspace) {
         Path projectDirectoryPath = workspace.getProjectDirectoryPath();
         workspace.setWorkspaceDirectoryPath(projectDirectoryPath.getParent());
         String[] split = artifact.split(":");
@@ -42,8 +42,10 @@ public final class Init extends FollowedByUpdateSubCommand implements Callable<V
         module.setVersion(version);
         //module.setInlineWebFxParent(inline);
         module.getWebFxModuleFile().writeFile();
-        //module.getMavenModuleFile().writeFile();
-        //module.getMavenModuleFile().updateAndWrite();
+        if (writeNow) {
+            module.getMavenModuleFile().writeFile();
+            module.getMavenModuleFile().updateAndWrite();
+        }
     }
 
 }
