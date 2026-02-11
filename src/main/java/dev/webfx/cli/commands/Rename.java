@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 public final class Rename extends CommonSubcommand {
 
     @Command(name = "module", description = "Rename a module")
-    static class Module extends CommonSubcommand implements Runnable {
+    static class Module extends FollowedByUpdateSubCommand implements Runnable {
 
         @CommandLine.Parameters(description = "Original name of the module.")
         private String moduleName;
@@ -36,6 +36,7 @@ public final class Rename extends CommonSubcommand {
         public void run() {
             setUpLogger();
             execute(moduleName, moduleNewName, getWorkspace());
+            runUpdateIfNotSkipped();
         }
 
         static void execute(String moduleName, String moduleNewName, CommandWorkspace workspace) {

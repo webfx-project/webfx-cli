@@ -29,15 +29,12 @@ subcommands = {
         Create.Application.class,
         Create.Module.class,
 })
-public final class Create extends CommonSubcommand {
+public final class Create {
 
-    static abstract class CreateSubCommand extends CommonSubcommand implements Callable<Void> {
+    static abstract class CreateSubCommand extends FollowedByUpdateSubCommand implements Callable<Void> {
 
         @Option(names = {"-p", "--project"}, arity = "0..1", fallbackValue = "!", description = "Create as a separate new project.")
         String project;
-
-        @Option(names = {"-s", "--skipUpdate"}, description = "Skip `webfx update` after creation.")
-        boolean skipUpdate;
 
         private DevProjectModule createModule(String name, boolean aggregate) {
             CommandWorkspace workspace = getWorkspace();
@@ -92,16 +89,12 @@ public final class Create extends CommonSubcommand {
             return module;
         }
 
-        void runUpdateIfRequested() {
-            if (!skipUpdate)
-                new Update().run();
-        }
     }
 
     @Command(name = "project", description = "Create a new project.")
     static class Project extends CreateSubCommand {
 
-        @Option(names = {"-i", "--inline"}, description = "Inline the WebFX parent pom instead of referencing it.")
+        //@Option(names = {"-i", "--inline"}, description = "Inline the WebFX parent pom instead of referencing it.")
         private boolean inline;
 
         @Parameters(paramLabel = "groupId", description = "GroupId of the project artifact.")
@@ -122,7 +115,7 @@ public final class Create extends CommonSubcommand {
             module.setVersion(version);
             module.setInlineWebFxParent(inline);
             module.getMavenModuleFile().writeFile();
-            runUpdateIfRequested();
+            runUpdateIfNotSkipped();
             return null;
         }
     }
@@ -151,7 +144,7 @@ public final class Create extends CommonSubcommand {
                 boolean executable = possibleApplicationModule != null;
                 createSourceModule(name, null, null, executable);
             }
-            runUpdateIfRequested();
+            runUpdateIfNotSkipped();
             return null;
         }
     }
@@ -191,7 +184,7 @@ public final class Create extends CommonSubcommand {
             createTagApplicationModule(TargetTag.GLUON);
             createTagApplicationModule(TargetTag.TEAVM, TargetTag.JS);
             createTagApplicationModule(TargetTag.TEAVM, TargetTag.WASM);
-            runUpdateIfRequested();
+            runUpdateIfNotSkipped();
             return null;
         }
 

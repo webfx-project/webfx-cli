@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
  * @author Bruno Salmon
  */
 @Command(name = "init", description = "Initialize a WebFX repository.")
-public final class Init extends CommonSubcommand implements Callable<Void> {
+public final class Init extends FollowedByUpdateSubCommand implements Callable<Void> {
 
     /*@Option(names = {"-i", "--inline"}, description = "Inline the WebFX parent pom instead of referencing it.")
     private boolean inline;*/
@@ -22,6 +22,7 @@ public final class Init extends CommonSubcommand implements Callable<Void> {
     @Override
     public Void call() {
         execute(artifact, getWorkspace());
+        runUpdateIfNotSkipped();
         return null;
     }
 
@@ -41,8 +42,8 @@ public final class Init extends CommonSubcommand implements Callable<Void> {
         module.setVersion(version);
         //module.setInlineWebFxParent(inline);
         module.getWebFxModuleFile().writeFile();
-        module.getMavenModuleFile().writeFile();
-        module.getMavenModuleFile().updateAndWrite();
+        //module.getMavenModuleFile().writeFile();
+        //module.getMavenModuleFile().updateAndWrite();
     }
 
 }
