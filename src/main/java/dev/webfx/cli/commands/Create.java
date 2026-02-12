@@ -1,9 +1,6 @@
 package dev.webfx.cli.commands;
 
-import dev.webfx.cli.core.DevProjectModule;
-import dev.webfx.cli.core.DevRootModule;
-import dev.webfx.cli.core.ProjectModuleImpl;
-import dev.webfx.cli.core.TargetTag;
+import dev.webfx.cli.core.*;
 import dev.webfx.cli.exceptions.CliException;
 import dev.webfx.cli.modulefiles.DevMavenPomModuleFile;
 import dev.webfx.cli.modulefiles.abstr.MavenPomModuleFile;
@@ -11,6 +8,7 @@ import dev.webfx.cli.modulefiles.abstr.WebFxModuleFile;
 import dev.webfx.cli.sourcegenerators.TeaVMEmbedResourcesBundleSourceGenerator;
 import dev.webfx.cli.util.textfile.ResourceTextFileReader;
 import dev.webfx.cli.util.textfile.TextFileReaderWriter;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -19,6 +17,7 @@ import javax.lang.model.SourceVersion;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Callable;
 /**
  * @author Bruno Salmon
@@ -28,6 +27,7 @@ import java.util.concurrent.Callable;
         Create.Project.class,
         Create.Application.class,
         Create.Module.class,
+        Create.Target.class
     })
 public final class Create extends CommonSubcommand {
 
@@ -36,10 +36,11 @@ public final class Create extends CommonSubcommand {
         @Option(names = {"-p", "--project"}, arity = "0..1", fallbackValue = "!", description = "Create as a separate new project.")
         String project;
 
-        private DevProjectModule createModule(String name, boolean aggregate) {
+        private DevProjectModule createModule(String name, boolean aggregate, Path parentDirectoryPath) {
             CommandWorkspace workspace = getWorkspace();
-            Path projectDirectoryPath = project != null ? workspace.getWorkspaceDirectoryPath().resolve(project) : workspace.getProjectDirectoryPath();
-            Path modulePath = projectDirectoryPath.resolve(name);
+            if (parentDirectoryPath == null)
+                parentDirectoryPath = project != null ? workspace.getWorkspaceDirectoryPath().resolve(project) : workspace.getProjectDirectoryPath();
+            Path modulePath = parentDirectoryPath.resolve(name);
             DevProjectModule module = workspace.getModuleRegistry().getOrCreateDevProjectModule(modulePath);
             module.getMavenModuleFile().setAggregate(aggregate);
             DevMavenPomModuleFile parentDevMavenModuleFile = getParentDevMavenModuleFile(module);
@@ -49,14 +50,14 @@ public final class Create extends CommonSubcommand {
         }
 
         DevProjectModule createAggregateModule(String name, boolean writePom) {
-            DevProjectModule module = createModule(name, true);
+            DevProjectModule module = createModule(name, true, null);
             if (writePom)
                 module.getMavenModuleFile().writeFile();
             return module;
         }
 
-        DevProjectModule createSourceModule(String name, String templateFileName, String fullQualifiedApplicationClassName, boolean executable) throws IOException {
-            DevProjectModule module = createModule(name, false);
+        DevProjectModule createSourceModule(String name, String templateFileName, String fullQualifiedApplicationClassName, boolean executable, Path parentDirectoryPath) throws IOException {
+            DevProjectModule module = createModule(name, false, parentDirectoryPath);
             Path modulePath = module.getHomeDirectory();
             Path sourcePath = modulePath.resolve("src/main/java");
             Path resourcesPath = modulePath.resolve("src/main/resources");
@@ -115,35 +116,6 @@ public final class Create extends CommonSubcommand {
             module.setVersion(version);
             module.setInlineWebFxParent(inline);
             module.getMavenModuleFile().writeFile();
-            runUpdateIfNotSkipped();
-            return null;
-        }
-    }
-
-    @Command(name = "module", description = "Create a single generic module.")
-    static class Module extends CreateSubCommand {
-
-        @Parameters(paramLabel = "name", description = "Name of the new module.")
-        private String name;
-
-        @Option(names={"-c", "--class"}, description = "Fully qualified class name.")
-        private String moduleClassName;
-
-        @Option(names={"-a", "--aggregate"}, description = "Will create an aggregate pom.xml module.")
-        private boolean aggregate;
-
-        @Override
-        public Void call() throws Exception {
-            if (aggregate)
-                createAggregateModule(name, false);
-            else if (moduleClassName != null)
-                createSourceModule(name, ResourceTextFileReader.readTemplate("Class.javat"), moduleClassName, false);
-            else {
-                String possibleApplicationModuleName = ProjectModuleImpl.getPossibleApplicationModuleName(name);
-                dev.webfx.cli.core.Module possibleApplicationModule = getWorkspace().getWorkingDevProjectModule().searchRegisteredModule(possibleApplicationModuleName);
-                boolean executable = possibleApplicationModule != null;
-                createSourceModule(name, null, null, executable);
-            }
             runUpdateIfNotSkipped();
             return null;
         }
@@ -244,8 +216,100 @@ public final class Create extends CommonSubcommand {
 
         private DevProjectModule createTagApplicationModule(TargetTag targetTag, TargetTag langTag) throws IOException {
             if (targetTag == null)
-                return createSourceModule(applicationModuleName, "JavaFxHelloWorldApplication.javat", fullQualifiedApplicationClassName, false);
-            return createSourceModule(applicationModuleName + "-" + targetTag.name().toLowerCase() + (langTag == null ? ""  : "-" + langTag.name().toLowerCase()), null, null, true);
+                return createSourceModule(applicationModuleName, "JavaFxHelloWorldApplication.javat", fullQualifiedApplicationClassName, false, null);
+            return createSourceModule(applicationModuleName + "-" + targetTag.name().toLowerCase() + (langTag == null ? ""  : "-" + langTag.name().toLowerCase()), null, null, true, null);
+        }
+    }
+
+    @Command(name = "module", description = "Create a single generic module.")
+    static class Module extends CreateSubCommand {
+
+        @Parameters(paramLabel = "name", description = "Name of the new module.")
+        private String name;
+
+        @Option(names={"-c", "--class"}, description = "Fully qualified class name.")
+        private String moduleClassName;
+
+        @Option(names={"-a", "--aggregate"}, description = "Will create an aggregate pom.xml module.")
+        private boolean aggregate;
+
+        @Override
+        public Void call() throws Exception {
+            if (aggregate)
+                createAggregateModule(name, false);
+            else if (moduleClassName != null)
+                createSourceModule(name, ResourceTextFileReader.readTemplate("Class.javat"), moduleClassName, false, null);
+            else {
+                String possibleApplicationModuleName = ProjectModuleImpl.getPossibleApplicationModuleName(name);
+                dev.webfx.cli.core.Module possibleApplicationModule = getWorkspace().getWorkingDevProjectModule().searchRegisteredModule(possibleApplicationModuleName);
+                boolean executable = possibleApplicationModule != null;
+                createSourceModule(name, null, null, executable, null);
+            }
+            runUpdateIfNotSkipped();
+            return null;
+        }
+    }
+
+    @Command(name = "target", description = "Create one or several executable module(s) for the specified platform(s).")
+    static class Target extends CreateSubCommand {
+
+        @CommandLine.Option(names = {"-a", "--all"}, description = "All supported targets")
+        private boolean all;
+
+        @CommandLine.Option(names = {"-g", "--gwt"}, description = "Includes the GWT target")
+        private boolean gwt;
+
+        @CommandLine.Option(names = {"-o", "--openjfx"}, description = "Includes the OpenJFX target")
+        private boolean openjfx;
+
+        @CommandLine.Option(names = {"-u", "--gluon"}, description = "Includes the Gluon target")
+        private boolean gluon;
+
+        //@CommandLine.Option(names = {"--j2cl"}, description = "Includes the J2CL compilation")
+        private boolean j2cl;
+
+        @CommandLine.Option(names = {"-t", "--teavm"}, description = "Includes the TeaVM targets (JS and Wasm)")
+        private boolean teavm;
+
+        @CommandLine.Option(names = {"-j", "--javascript"}, description = "Includes the TeaVM JS target")
+        private boolean javascript;
+
+        @CommandLine.Option(names = {"-w", "--wasm"}, description = "Includes the TeaVM Wasm target")
+        private boolean wasm;
+
+
+        @Override
+        public Void call() throws Exception {
+            DevProjectModule workingModule = getWorkspace().getWorkingDevProjectModule();
+            List<DevProjectModule> applicationModules = workingModule.getThisAndChildrenModulesInDepth()
+                .filter(DevProjectModule.class::isInstance)
+                .map(DevProjectModule.class::cast)
+                .filter(ProjectModule::isExecutable)
+                .filter(m -> !m.getBuildInfo().isForVertx)
+                .map(DevProjectModule::getApplicationModule)
+                .distinct()
+                .map(DevProjectModule.class::cast)
+                .stream().toList();
+            for (DevProjectModule applicationModule : applicationModules) {
+                String applicationModuleName = applicationModule.getName();
+                Path parentDirectory = applicationModule.getParentModule().getHomeDirectory();
+                if (all || gwt)
+                    createTargetModule(applicationModuleName + "-gwt", parentDirectory);
+                if (all || openjfx)
+                    createTargetModule(applicationModuleName + "-openjfx", parentDirectory);
+                if (all || gluon)
+                    createTargetModule(applicationModuleName + "-gluon", parentDirectory);
+                if (all || teavm || javascript)
+                    createTargetModule(applicationModuleName + "-teavm-js", parentDirectory);
+                if (all || teavm || wasm)
+                    createTargetModule(applicationModuleName + "-teavm-wasm", parentDirectory);
+            }
+            runUpdateIfNotSkipped();
+            return null;
+        }
+
+        private void createTargetModule(String targetModuleName, Path parentDirectory) throws IOException {
+            createSourceModule(targetModuleName, null, null, true, parentDirectory);
         }
     }
 }
