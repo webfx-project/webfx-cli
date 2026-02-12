@@ -1,0 +1,34 @@
+{
+    "bin": {"webfx-cli": "jdeploy-bundle/jdeploy.js"},
+    "author": "Bruno Salmon",
+    "description": "The WebFX CLI creates and maintains all the application modules, including all the necessary build chain module files, from the information declared in the webfx.xml files and the module source code. For example, it will automatically compute all the dependencies of a module (in pom.xml) from an analysis of the module's Java source code.",
+    "main": "index.js",
+    "preferGlobal": true,
+    "version": "1.0.0",
+    "jdeploy": {
+        "jar": "target/webfx-cli-0.1.0-SNAPSHOT-fat.jar",
+        "fallbackToUniversal": false,
+        "generateLegacyBundles": false,
+        "publishTargets": [],
+        "javaVersion": "21",
+        "title": "WebFX CLI",
+        "commands": {"webfx": {
+            "implements": ["updater"],
+            "description": "Command-line interface to webfx",
+            "updateTrigger": "bump"
+        }},
+        "platformBundlesEnabled": false,
+        "downloadPage": {"platforms": ["default"]}
+    },
+    "dependencies": {
+        "command-exists-promise": "^2.0.2",
+        "node-fetch": "2.6.7",
+        "tar": "^4.4.8",
+        "yauzl": "^2.10.0",
+        "shelljs": "^0.8.4"
+    },
+    "license": "Apache 2.0",
+    "name": "webfx",
+    "files": ["jdeploy-bundle"],
+    "scripts": {"test": "echo \"Error: no test specified\" && exit 1"}
+}
