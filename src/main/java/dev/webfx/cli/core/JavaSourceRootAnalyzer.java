@@ -659,7 +659,7 @@ public final class JavaSourceRootAnalyzer {
                     ReusableStream<ProjectModule> searchScope = ReusableStream.concat(ReusableStream.fromIterable(walkingModules), requiredSearchScope).distinct();
                     ReusableStream<ProjectModule> requiredModules = RootModule.findModulesProvidingJavaService(searchScope, spi, executableModule, true);
                     requiredModules.findFirst().ifPresent(requiredModule -> {
-                        providerModules.put(spi, Collections.singletonList(requiredModule)); // singleton list because there only 1 instance for required services
+                        providerModules.put(spi, new HashList<>(Collections.singletonList(requiredModule))); // singleton list because there only 1 instance for required services - HashList because it might be
                         if (collectingSourceRoot == executableSourceRoot) {
                             // Adding the module implementing the service to the walking modules (for later research on the next loop)
                             walkingModules.add(requiredModule);
