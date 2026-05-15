@@ -27,7 +27,7 @@ public interface WebFxModuleFile extends XmlGavModuleFile, PathBasedXmlModuleFil
     }
 
     default Boolean isPwa() {
-        String pwa = getProjectAttributeValue("pwa");
+        Boolean pwa = Booleans.parseBoolean(getProjectAttributeValue("pwa"));
         return pwa == null ? null : Booleans.isTrue(pwa);
     }
 
