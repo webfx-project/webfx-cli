@@ -37,7 +37,8 @@ import java.util.stream.Collectors;
                 Update.class,
                 Rename.class,
                 Bump.class,
-                Install.class
+                Install.class,
+                Secret.class
         },
         mixinStandardHelpOptions = true,
         versionProvider = WebFxCLI.DevVersionProvider.class)

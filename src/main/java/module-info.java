@@ -13,6 +13,7 @@ module webfx.cli {
     requires webfx.platform.ast.json.plugin;
     requires webfx.platform.conf;
     requires webfx.platform.meta;
+    requires webfx.platform.secret.jre;
     requires webfx.platform.util;
 
     // Exported packages
