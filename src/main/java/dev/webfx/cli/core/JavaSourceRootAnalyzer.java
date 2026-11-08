@@ -485,6 +485,17 @@ public final class JavaSourceRootAnalyzer {
             .anyMatch(pm -> pm.getMainJavaSourceRootAnalyzer().usesJavaPackage(SpecificPackages.JAVA_TIME));
     }
 
+    private boolean usesJavaNio() {
+        return Arrays.stream(SpecificPackages.GWT_NIO_EMULATED_PACKAGES).anyMatch(this::usesJavaPackage);
+    }
+
+    public boolean isThisOrTransitiveDependenciesUsingJavaNio() {
+        if (usesJavaNio())
+            return true;
+        return ProjectModule.filterDestinationProjectModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
+            .anyMatch(pm -> pm.getMainJavaSourceRootAnalyzer().usesJavaNio());
+    }
+
     /// // Services
 
     public ReusableStream<String> getUsedRequiredJavaServices() {
@@ -755,8 +766,7 @@ public final class JavaSourceRootAnalyzer {
     private ReusableStream<Module> collectExecutableEmulationModules() {
         RootModule rootModule = projectModule.getRootModule();
         if (projectModule.isExecutable(Platform.J2CL)) {
-            boolean isUsingJavaNio = ProjectModule.mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
-                .anyMatch(pm -> pm.getName().equals(SpecificModules.JAVA_NIO_EMUL));
+            boolean isUsingJavaNio = isThisOrTransitiveDependenciesUsingJavaNio();
             return ReusableStream.of(
                 rootModule.searchRegisteredModule(SpecificModules.J2CL_ANNOTATIONS),
                 rootModule.searchRegisteredModule(SpecificModules.J2CL_PROCESSORS),
@@ -768,6 +778,7 @@ public final class JavaSourceRootAnalyzer {
         }
         if (projectModule.isExecutable(Platform.GWT)) {
             boolean isUsingJavaTime = isThisOrTransitiveDependenciesUsingJavaTime();
+            boolean isUsingJavaNio = isThisOrTransitiveDependenciesUsingJavaNio();
             boolean requiresTimezoneData =
                 ProjectModule.filterDestinationProjectModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                     .anyMatch(ProjectModule::requiresTimeZoneData);
@@ -775,7 +786,8 @@ public final class JavaSourceRootAnalyzer {
                 rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_ELEMENTAL2),
                 rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_JAVABASE_EMUL_GWT),
                 isUsingJavaTime ? rootModule.searchRegisteredModule(SpecificModules.GWT_TIME) : null,
-                !requiresTimezoneData ? null : rootModule.searchRegisteredModule(SpecificModules.ORG_JRESEARCH_GWT_TIME_TZDB)
+                !requiresTimezoneData ? null : rootModule.searchRegisteredModule(SpecificModules.ORG_JRESEARCH_GWT_TIME_TZDB),
+                isUsingJavaNio ? rootModule.searchRegisteredModule(SpecificModules.JAVA_NIO_EMUL) : null
             ).filter(Objects::nonNull);
         }
         if (projectModule.isExecutable(Platform.JRE)) {

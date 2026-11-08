@@ -15,7 +15,8 @@
                 <package>java.math</package>
                 <package>java.net</package>
                 <package>java.net.spi</package>
-                <!-- Commented to force search for gwt-nio
+                <!-- Note: java.nio packages are not emulated by GWT/J2CL. The CLI automatically adds gwt-nio
+                     (java-nio-emul) to GWT & J2CL executables that use them (see collectExecutableEmulationModules()) -->
                 <package>java.nio</package>
                 <package>java.nio.channels</package>
                 <package>java.nio.channels.spi</package>
@@ -24,7 +25,6 @@
                 <package>java.nio.file</package>
                 <package>java.nio.file.attribute</package>
                 <package>java.nio.file.spi</package>
-                -->
                 <package>java.security</package>
                 <package>java.security.acl</package>
                 <package>java.security.cert</package>

@@ -6,6 +6,8 @@ package dev.webfx.cli.specific;
 public interface SpecificPackages {
 
     String JAVA_NIO = "java.nio";
+    // java.nio packages emulated by gwt-nio (java-nio-emul) for GWT & J2CL
+    String[] GWT_NIO_EMULATED_PACKAGES = { JAVA_NIO, "java.nio.charset", "java.nio.file", "java.nio.file.attribute" };
     String JAVA_LANG_REF = "java.lang.ref";
     String JAVA_TEXT = "java.text";
     String JAVA_TIME = "java.time";
