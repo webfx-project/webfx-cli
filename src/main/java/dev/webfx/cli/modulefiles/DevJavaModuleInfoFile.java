@@ -117,6 +117,14 @@ public final class DevJavaModuleInfoFile extends DevModuleFileImpl {
             case SpecificModules.WEBFX_KIT_JAVAFXWEB_EMUL -> SpecificModules.JAVAFX_WEB.replace('-', '.');
             case SpecificModules.WEBFX_KIT_JAVAFXFXML_EMUL -> SpecificModules.JAVAFX_FXML.replace('-', '.');
             default -> {
+                // For third-party libraries, the module name declared by the jar itself (module-info.class or
+                // Automatic-Module-Name) is authoritative, as it may differ from the artifactId (ex: teavm-jso-apis
+                // => org.teavm.jso.apis).
+                if (module instanceof LibraryModule libraryModule) {
+                    String jarJavaModuleName = libraryModule.getJarJavaModuleName();
+                    if (jarJavaModuleName != null)
+                        yield jarJavaModuleName;
+                }
                 if (module instanceof ProjectModule projectModule) {
                     String abstractModule = projectModule.implementedInterfaces().findFirst().orElse(null);
                     if (abstractModule != null && !abstractModule.isEmpty())

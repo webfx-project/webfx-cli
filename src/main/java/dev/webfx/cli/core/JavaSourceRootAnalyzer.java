@@ -209,6 +209,24 @@ public final class JavaSourceRootAnalyzer {
             .name("transitiveDependenciesWithoutEmulationAndImplicitProvidersCache");
 
     /**
+     * Returns the bytecode analyzers of the third-party libraries (declared in webfx.xml with their exported packages)
+     * that this module directly depends on. Their bytecode usage is considered as part of this module usage when
+     * evaluating if-uses-java-package / if-uses-java-class directives. This is important for applications whose code
+     * is partly provided as a jar (ex: a UI using ScrollPane or TableView inside a library jar).
+     */
+    private final ReusableStream<JarBytecodeAnalyzer> directLibrariesBytecodeAnalyzersCache =
+        ReusableStream.create(() -> getProjectModule() instanceof M2ProjectModule ? ReusableStream.<JarBytecodeAnalyzer>empty() :
+                directDependenciesWithoutEmulationAndImplicitProvidersCache
+                    .map(ModuleDependency::getDestinationModule)
+                    .filter(LibraryModule.class::isInstance)
+                    .map(m -> ((LibraryModule) m).getJarBytecodeAnalyzer())
+                    .filter(Objects::nonNull)
+                    .distinct()
+            )
+            .cache()
+            .name("directLibrariesBytecodeAnalyzersCache");
+
+    /**
      * Returns the emulation modules required for this executable module (returns nothing if this module is not executable).
      */
     private final ReusableStream<ModuleDependency> executableEmulationDependenciesCaches =
@@ -436,7 +454,8 @@ public final class JavaSourceRootAnalyzer {
             // Otherwise if the result is null, we need to continue with the general case which pulls the stream,
             // so this will cause the download of the sources by Maven (if not already downloaded)
         }
-        return getUsedJavaPackages().anyMatch(javaPackage::equals);
+        return getUsedJavaPackages().anyMatch(javaPackage::equals)
+               || directLibrariesBytecodeAnalyzersCache.anyMatch(a -> a.usesJavaPackage(javaPackage));
     }
 
     public boolean usesJavaClass(String javaClass) {
@@ -453,7 +472,8 @@ public final class JavaSourceRootAnalyzer {
         boolean excludeWebFxKit = packageName.startsWith("javafx.");
         if (excludeWebFxKit && projectModule.getName().startsWith("webfx-kit-"))
             return false;
-        return usesJavaPackage(packageName) && getSourceFiles().anyMatch(jc -> jc.usesJavaClass(javaClass));
+        return getUsedJavaPackages().anyMatch(packageName::equals) && getSourceFiles().anyMatch(jc -> jc.usesJavaClass(javaClass))
+               || directLibrariesBytecodeAnalyzersCache.anyMatch(a -> a.usesJavaClass(javaClass));
     }
 
     public boolean requiresJavaBaseJ2clEmulation() {

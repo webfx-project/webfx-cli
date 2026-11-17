@@ -228,6 +228,7 @@ public class IndexHtmlFile extends DevModuleFileImpl {
         Workaround.fixTerminalReusableStream(transitiveProjectModules); // TODO: remove this once fixed
         Path mainCssPath = getModule().getWebAppSourceDirectory().resolve(MAIN_CSS_RELATIVE_PATH);
         boolean isMainCssPresent = Files.exists(mainCssPath);
+        java.util.Set<String> emittedHeadOrBodyBlocks = new java.util.HashSet<>();
         // Now the stream should be complete
         ReusableStream.concat(
                 transitiveProjectModules.flatMap(m -> m.getWebFxModuleFile().getHtmlNodes()),
@@ -250,6 +251,10 @@ public class IndexHtmlFile extends DevModuleFileImpl {
                     xmlText = xmlText.substring(xmlText.indexOf('>') + 1);
                     xmlText = xmlText.substring(0, xmlText.length() - 3 - nodeName.length());
                     xmlText = xmlText.replaceAll("<META http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">", "");
+                    // Skipping identical blocks already added (ex: perfect-scrollbar declared both for ScrollPane
+                    // and TableView usages => included only once when the application uses both)
+                    if (!emittedHeadOrBodyBlocks.add(nodeName.toLowerCase() + ":" + xmlText.strip()))
+                        return;
                     Scanner scanner = new Scanner(xmlText);
                     boolean firstEmptyLineReached = false;
                     int shift = 0, emptyLines = 0;

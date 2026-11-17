@@ -97,6 +97,9 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
             if (SpecificModules.isJavafxEmulModule(destinationModuleName)
                 // Except for GWT executables (which use only WebFX modules and need them all)
                 && !targetModule.isExecutable(Platform.GWT)
+                // Same with TeaVM executables (which compile the WebFX emulation instead of OpenJFX, so they need the
+                // transitive dependencies such as the controls registry => controls peers, perfect scrollbar, etc...)
+                && !targetModule.isExecutable(Platform.TEAVM)
                 // Same with J2CL (except for fat modules
                 && !(targetModule.isExecutable(Platform.J2CL) && !SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(destinationModuleName) /*&& !SpecificModules.isModulePartOfWebfxExtrasVisualGridFatJ2cl(destinationModuleName)*/)
                 // Also except for Gluon modules using media => they need webfx-kit-javafxmedia-gluon + transitive dependencies such as webfx-platform-audio-gluon, Gluon Attach audio, etc...
