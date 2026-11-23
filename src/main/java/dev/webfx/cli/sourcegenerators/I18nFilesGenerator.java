@@ -2,6 +2,7 @@ package dev.webfx.cli.sourcegenerators;
 
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.Logger;
+import dev.webfx.cli.specific.SpecificFolders;
 import dev.webfx.cli.util.hashlist.HashList;
 import dev.webfx.cli.util.splitfiles.SplitFiles;
 import dev.webfx.cli.util.stopwatch.StopWatch;
@@ -52,8 +53,17 @@ public final class I18nFilesGenerator {
         int[] filesCount = {0};
         // I18n merge
         i18nMerges.forEach((language, languageMerge) -> {
-            Path i18nPropertiesPath = module.getMainResourcesDirectory().resolve("dev/webfx/extras/i18n/" + language + ".properties");
-            Path i18nJsonPath = module.getMainResourcesDirectory().resolve("dev/webfx/extras/i18n/" + language + ".json");
+            Path mainResourcesDirectory = module.getMainResourcesDirectory();
+            // Deleting this language's dictionary at its former location, which an earlier CLI generated directly in
+            // dev/webfx/extras/i18n — the package of webfx-extras-i18n's own API, so leaving it there keeps that
+            // package split in this executable and the module path keeps refusing the boot layer. It would also be a
+            // frozen copy of the translations, which a webfx-extras-i18n older than the .exe location would go on
+            // reading. Same move, same reasons, as dev/webfx/platform/conf/exe — including that a full update would
+            // sweep it away anyway, and a targeted one would not.
+            TextFileReaderWriter.deleteTextFile(mainResourcesDirectory.resolve(SpecificFolders.LEGACY_RES_I18N_FOLDER + "/" + language + ".properties"));
+            TextFileReaderWriter.deleteTextFile(mainResourcesDirectory.resolve(SpecificFolders.LEGACY_RES_I18N_FOLDER + "/" + language + ".json"));
+            Path i18nPropertiesPath = mainResourcesDirectory.resolve(SpecificFolders.RES_I18N_FOLDER + "/" + language + ".properties");
+            Path i18nJsonPath = mainResourcesDirectory.resolve(SpecificFolders.RES_I18N_FOLDER + "/" + language + ".json");
             if (languageMerge.mergeConfigs(i18nPropertiesPath, i18nJsonPath))
                 filesCount[0]++;
         });

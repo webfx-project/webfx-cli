@@ -117,8 +117,15 @@ public interface ProjectModule extends Module {
     }
 
     default ReusableStream<String> getOpenPackages() { // Direct call: DevJavaModuleInfoFile (to generate opens packages)
-        // Not necessary to open packages on final executable modules
-        return isExecutable() ? ReusableStream.empty() : getResourcePackages();
+        // Executables are included, although they were not before. A resource in a named module is reachable through
+        // ClassLoader.getResource() only if its package is opened unconditionally, and that is how every one of them is
+        // read: Resource.getText(path) passes no loading class and ends at getClass().getClassLoader(), inside
+        // webfx-platform-resource-jre, so the lookup is always cross-module. Without opens, an executable launched on
+        // the module path cannot read its own src-root (config missing), its own exe.properties (Meta.isCLI() and
+        // friends silently false) or its own dictionaries (every translation silently falling back) — one cause, three
+        // symptoms that look unrelated. It went unnoticed because executables are normally launched from the
+        // classpath, where encapsulation does not apply at all.
+        return getResourcePackages();
     }
 
     default ReusableStream<String> getMetaResource() {
@@ -134,11 +141,9 @@ public interface ProjectModule extends Module {
             return ReusableStream.empty();
         // May cause the download of the sources artifact
         Path mainResourcesDirectory = getMainResourcesDirectory();
-        Path srcRootConfFolderPath = mainResourcesDirectory.resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FOLDER);
-        if (!TextFileReaderWriter.fileExists(srcRootConfFolderPath))
-            return ReusableStream.empty();
-        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(srcRootConfFolderPath, 1, FileVisitOption.FOLLOW_LINKS))
-            .filter(Files::isRegularFile)
+        Path srcRootConfFolderPath = mainResourcesDirectory.resolve(SourcesConfig.SRC_ROOT_CONF_EXE_RESOURCE_FOLDER);
+        // listFiles() rather than a walk: during the update that moves this resource, it is not on disk yet
+        return ReusableStream.fromIterable(() -> TextFileReaderWriter.listFiles(srcRootConfFolderPath, 1).iterator())
             .map(path -> mainResourcesDirectory.relativize(path).toString());
     }
 
@@ -146,10 +151,10 @@ public interface ProjectModule extends Module {
         if (!isExecutable())  // Also important optimization to avoid downloading the sources artifact
             return ReusableStream.empty();
         // May cause the download of the sources artifact
-        Path srcRootConfFolderPath = getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_RESOURCE_FOLDER);
-        if (!TextFileReaderWriter.fileExists(srcRootConfFolderPath))
+        Path srcRootConfFolderPath = getMainResourcesDirectory().resolve(SourcesConfig.SRC_ROOT_CONF_EXE_RESOURCE_FOLDER);
+        if (!TextFileReaderWriter.folderContainsFile(srcRootConfFolderPath)) // asks what this update leaves behind
             return ReusableStream.empty();
-        return ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_PACKAGE);
+        return ReusableStream.of(SourcesConfig.SRC_ROOT_CONF_EXE_PACKAGE);
     }
 
     String I18N_RESOURCE_FOLDER = SpecificFolders.RES_I18N_FOLDER;
@@ -160,7 +165,7 @@ public interface ProjectModule extends Module {
             return ReusableStream.empty();
         // May cause the download of the sources artifact
         Path i18nFolderPath = getMainResourcesDirectory().resolve(I18N_RESOURCE_FOLDER);
-        if (!TextFileReaderWriter.fileExists(i18nFolderPath))
+        if (!TextFileReaderWriter.folderContainsFile(i18nFolderPath)) // asks what this update leaves behind
             return ReusableStream.empty();
         return ReusableStream.of(I18N_PACKAGE);
     }
@@ -171,10 +176,8 @@ public interface ProjectModule extends Module {
         // May cause the download of the sources artifact
         Path mainResourcesDirectory = getMainResourcesDirectory();
         Path i18nFolderPath = mainResourcesDirectory.resolve(I18N_RESOURCE_FOLDER);
-        if (!TextFileReaderWriter.fileExists(i18nFolderPath))
-            return ReusableStream.empty();
-        return ReusableStream.create(() -> SplitFiles.uncheckedWalk(i18nFolderPath, 1, FileVisitOption.FOLLOW_LINKS))
-            .filter(Files::isRegularFile)
+        // listFiles() rather than a walk: during the update that moves these resources, they are not on disk yet
+        return ReusableStream.fromIterable(() -> TextFileReaderWriter.listFiles(i18nFolderPath, 1).iterator())
             .map(path -> mainResourcesDirectory.relativize(path).toString());
     }
 

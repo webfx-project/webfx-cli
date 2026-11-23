@@ -20,5 +20,12 @@ public interface SpecificFolders {
     String META_INF_SERVICES = "META-INF/services";
     String META_INF_WEBFX = "META-INF/webfx";
 
-    String RES_I18N_FOLDER = "dev/webfx/extras/i18n";
+    /**
+     * Where the merged i18n dictionaries used to be generated, and the package of webfx-extras-i18n's own API
+     * (I18n, Dictionary, I18nKeys) — hence a split package in every executable carrying dictionaries, refused on
+     * the module path. Kept only so that the file left there by an earlier CLI can be deleted.
+     */
+    String LEGACY_RES_I18N_FOLDER = "dev/webfx/extras/i18n";
+    /** Where they are generated now, by the same .exe convention as dev.webfx.platform.meta.exe. */
+    String RES_I18N_FOLDER = LEGACY_RES_I18N_FOLDER + "/exe";
 }

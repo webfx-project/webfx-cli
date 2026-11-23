@@ -39,15 +39,20 @@ public class DevProjectModule extends ProjectModuleImpl {
     private DevProjectModule webFxRootModule;
 
     private final ReusableStream<String> fileResourcePackagesCache =
-        ReusableStream.create(() -> ReusableStream.create(() -> // Using deferred creation because we can't call these methods before the constructor is executed
-                    hasMainResourcesDirectory() ? SplitFiles.uncheckedWalk(getMainResourcesDirectory()) : Spliterators.emptySpliterator())
+        ReusableStream.create(() -> ReusableStream.<Path>fromIterable(() -> // Using deferred creation because we can't call these methods before the constructor is executed
+                    // Note: the files this update will LEAVE BEHIND, which is not what the filesystem shows while it
+                    // runs — generated files are written and deleted by a transaction that commits at the very end.
+                    // Walking the disk instead would report a generated resource at its old location during the run
+                    // that moves it, and the packages computed here end up in module-info's opens, where naming a
+                    // package that the same run empties is refused by the module system outright.
+                    (hasMainResourcesDirectory() ? TextFileReaderWriter.listFiles(getMainResourcesDirectory(), Integer.MAX_VALUE) : Collections.<Path>emptyList()).iterator())
                 // We want to filter directories that are not empty. To do that by walking through files and getting their parent directory
+                // (listFiles() already excludes directories)
                 .filter(path -> {
-                    if (Files.isDirectory(path))
-                        return false;
-                    // We also ignore hidden files
+                    // We also ignore hidden files, asking only about the ones actually on disk: a file that is not
+                    // there yet is one this update is about to write, and never a hidden one.
                     try {
-                        if (Files.isHidden(path))
+                        if (Files.exists(path) && Files.isHidden(path))
                             return false;
                     } catch (IOException e) {
                         return false;

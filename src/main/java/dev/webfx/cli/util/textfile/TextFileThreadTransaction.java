@@ -41,6 +41,17 @@ public final class TextFileThreadTransaction implements AutoCloseable {
         return threadLocalTransactions.get();
     }
 
+    /**
+     * Collects the paths this transaction, and any it is nested in, will have written once committed. Nested
+     * transactions transfer their operations to the enclosing one on commit, but a read taken from inside one that has
+     * not committed yet would otherwise miss the enclosing transaction's writes, so the whole chain is walked.
+     */
+    void collectToWritePaths(Collection<Path> collector) {
+        collector.addAll(toWritePaths);
+        if (previousTransaction != null)
+            previousTransaction.collectToWritePaths(collector);
+    }
+
     public TextFileThreadTransaction(TextFileThreadTransaction previousTransaction) {
         this.previousTransaction = previousTransaction;
     }

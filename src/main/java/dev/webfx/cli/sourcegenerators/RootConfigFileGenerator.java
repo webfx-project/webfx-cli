@@ -59,8 +59,28 @@ public final class RootConfigFileGenerator {
         });
 
         // Conf merge
-        Path propertiesPath = module.getMainResourcesDirectory().resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
-        Path jsonPath = module.getMainResourcesDirectory().resolve(SourcesConfig.JSON_SRC_ROOT_CONF_RESOURCE_FILE_PATH);
+        Path mainResourcesDirectory = module.getMainResourcesDirectory();
+
+        // The generated file used to live directly in dev.webfx.platform.conf, i.e. in the very package that declares
+        // SourcesConfig, so every executable module declared that package too and split it on the module path (boot
+        // layer creation refused with LayerInstantiationException). It now lives in the .exe sub-package, mirroring
+        // dev.webfx.platform.meta.exe.
+        //
+        // Deleting the file at its former location matters because leaving it there would keep the split package
+        // alive, so the move would deliver nothing, and because it would be a frozen copy of the configuration as it
+        // stood on the day of the move, which a platform older than the .exe location would go on reading. Emptying
+        // the old folder of regular files is enough: a directory holding only the exe/ sub-directory declares no
+        // package.
+        //
+        // A FULL `webfx update` would already remove it without this, by virtually deleting dev/webfx under every
+        // executable's resources and garbage collecting whatever is not regenerated (Update.executeUpdateTasks). That
+        // sweep is skipped when only some tasks are requested, which is exactly when a move would otherwise be left
+        // half-done, so the deletion is stated here rather than relied upon there.
+        TextFileReaderWriter.deleteTextFile(mainResourcesDirectory.resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_RESOURCE_FILE_PATH));
+        TextFileReaderWriter.deleteTextFile(mainResourcesDirectory.resolve(SourcesConfig.JSON_SRC_ROOT_CONF_RESOURCE_FILE_PATH));
+
+        Path propertiesPath = mainResourcesDirectory.resolve(SourcesConfig.PROPERTIES_SRC_ROOT_CONF_EXE_RESOURCE_FILE_PATH);
+        Path jsonPath = mainResourcesDirectory.resolve(SourcesConfig.JSON_SRC_ROOT_CONF_EXE_RESOURCE_FILE_PATH);
         return confMerge.mergeConfigs(propertiesPath, jsonPath);
     }
 }
