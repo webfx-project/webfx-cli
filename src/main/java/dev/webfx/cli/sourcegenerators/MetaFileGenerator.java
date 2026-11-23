@@ -22,6 +22,11 @@ public final class MetaFileGenerator {
                     .replace("${executableModuleName}", module.getName())
                     .replace("${executableModuleVersion}", module.getVersion())
                     .replace("${applicationModuleName}", applicationModuleName)
+                    // Whether this executable is a command-line program, from its cli target tag (under
+                    // CLIENT). Read back by Meta.isCLI(), which the boot sequence consults: a one-shot command
+                    // should not be preceded by 80 lines of framework progress. hasTag() rather than a name
+                    // test, because a cli token also appears in modules that are not command-line programs.
+                    .replace("${cli}", String.valueOf(module.getTarget().hasTag(TargetTag.CLI)))
                     .replace("${pwa}", String.valueOf(module.isPwa()))
                 , module.getMainResourcesDirectory().resolve(Meta.META_EXE_RESOURCE_FILE_PATH));
             /* Note that the file template also contains ${maven.build.timestamp} and ${webfx.meta.environment} which we
