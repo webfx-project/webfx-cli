@@ -2,9 +2,7 @@ package dev.webfx.cli.commands;
 
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.Logger;
-import dev.webfx.cli.core.MavenUtil;
 import dev.webfx.cli.exceptions.CliException;
-import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -47,17 +45,8 @@ public final class Run extends CommonSubcommand implements Runnable {
     @CommandLine.Option(names = {"-k", "--openjfx-desktop"}, description = "Runs the OpenJFX desktop app")
     private boolean openJfxDesktop;
 
-    @CommandLine.Option(names = {"-d", "--gluon-desktop"}, description = "Runs the Gluon native desktop app")
-    private boolean gluonDesktop;
-
-    @CommandLine.Option(names = {"-m", "--gluon-mobile"}, description = "Same as --gluon-android on Linux, --gluon-ios on macOS")
-    private boolean mobile;
-
-    @CommandLine.Option(names = {"-a", "--gluon-android"}, description = "Runs the Gluon native Android app")
-    private boolean android;
-
-    @CommandLine.Option(names = {"-i", "--gluon-ios"}, description = "Runs the Gluon native iOS app")
-    private boolean ios;
+    @CommandLine.Option(names = {"-n", "--native"}, description = "Runs the GraalVM native desktop app")
+    private boolean nativeDesktop;
 
     @CommandLine.Option(names= {"-l", "--locate"}, description = "Just prints the location of the expected executable file (no run)")
     boolean locate;
@@ -88,13 +77,7 @@ public final class Run extends CommonSubcommand implements Runnable {
 
     @Override
     public void run() {
-        if (mobile) {
-            if (OperatingSystem.isMacOs())
-                ios = true;
-            else
-                android = true;
-        }
-        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, gluonDesktop, android, ios, locate, show, appImage, deb, rpm, port, file), getWorkspace());
+        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, nativeDesktop, locate, show, appImage, deb, rpm, port, file), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
@@ -120,14 +103,6 @@ public final class Run extends CommonSubcommand implements Runnable {
                 ProcessCall.executeCommandTokens("java", "-jar", pathName);
             else if (fileName.endsWith(".html") && !file) {
                 runWebAppWithBuiltInWebServer(executableFilePath, port);
-            } else if (fileName.endsWith(".apk") || fileName.endsWith(".ipa")) {
-                boolean android = fileName.endsWith(".apk");
-                Path gluonModulePath = executableFilePath.getParent();
-                while (gluonModulePath != null && !Files.exists(gluonModulePath.resolve("pom.xml")))
-                    gluonModulePath = gluonModulePath.getParent();
-                if (gluonModulePath != null)
-                    MavenUtil.invokeMavenGoal("-P gluon-" + (android ? "android" : "ios") + " gluonfx:install gluonfx:nativerun"
-                            , new ProcessCall().setWorkingDirectory(gluonModulePath));
             } else if (fileName.endsWith(".deb")) {
                 int exitCode = ProcessCall.executeCommandTokens("sudo", "apt", "install", pathName);
                 if (exitCode == 0 && fileName.contains("_")) {

@@ -32,7 +32,7 @@ public final class Target {
                 .filter(tag -> ignoredTargetTags == null || ignoredTargetTags.noneMatch(ignoredTag -> ignoredTag == tag))
                 .toList();
         platformTags = this.tags.stream()
-                // filtering platform tags (ex: GWT, JRE, GLUON, VERTX, ...) from this tag and transitive implied tags (ex: SERVER => JRE)
+                // filtering platform tags (ex: GWT, JRE, NATIVE, VERTX, ...) from this tag and transitive implied tags (ex: SERVER => JRE)
                 .flatMap(tag -> Stream.concat(Stream.of(tag), Stream.of(tag.getTransitiveImpliedTags())))
                 .filter(Objects::nonNull)
                 .filter(TargetTag::isPlatformTag)

@@ -46,7 +46,7 @@ public final class Update extends CommonSubcommand implements Runnable {
     @Option(names = {"-e", "--embed"}, description = "Update GWT/J2CL embed resource files.")
     boolean embedResource;
 
-    //@Option(names={"-a", "--graalvm"}, description = "Update GraalVM files (Gluon).")
+    //@Option(names={"-a", "--graalvm"}, description = "Update GraalVM files (native).")
     //boolean graalvm;
 
     @Option(names = {"-b", "--callbacks"}, description = "Update callbacks build files.")
@@ -196,8 +196,9 @@ public final class Update extends CommonSubcommand implements Runnable {
                             // resources under `supe` (containing super sources for gwt executables)
                             TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve("super"));
                         }
-                        if (m.isExecutable(Platform.JRE) && m.getTarget().hasTag(TargetTag.GLUON)) {
-                            // Cleaning GraalVM conf
+                        if (m.isExecutable(Platform.JRE) && m.getTarget().hasTag(TargetTag.NATIVE)) {
+                            // Cleaning GraalVM native-image metadata (+ legacy Gluon conf folder)
+                            TextFileReaderWriter.deleteFolder(mainResourcesDirectory.resolve(NativeImageFilesGenerator.NATIVE_IMAGE_RESOURCES_FOLDER));
                             TextFileReaderWriter.deleteFolder(m.getHomeDirectory().resolve("src/main/graalvm_conf"));
                         }
                     }
@@ -318,14 +319,14 @@ public final class Update extends CommonSubcommand implements Runnable {
                 });
         }
 
-        // Generate files for executable Gluon modules (graalvm_config/reflection.json)
+        // Generate GraalVM metadata for executable native modules (META-INF/native-image/.../reachability-metadata.json)
         if (tasks.callbacks) {
             workingAndChildrenModulesInDepthCache
                 .filter(m -> m.isExecutable(Platform.JRE))
-                .filter(m -> m.getTarget().hasTag(TargetTag.GLUON))
+                .filter(m -> m.getTarget().hasTag(TargetTag.NATIVE))
                 .forEach(m -> {
                     tasks.callbacksStopWatch.on();
-                    if (GluonFilesGenerator.generateGraalVmReflectionJson(m))
+                    if (NativeImageFilesGenerator.generateReachabilityMetadataJson(m))
                         tasks.callbacksCount++;
                     tasks.callbacksStopWatch.off();
                 });

@@ -37,33 +37,30 @@ import java.util.zip.GZIPInputStream;
         })
 public final class Install extends CommonSubcommand {
 
-    @Command(name = "graalvm", description = "Install or upgrade GraalVM.")
+    @Command(name = "graalvm", description = "Install or upgrade GraalVM (Liberica NIK Full, which includes JavaFX).")
     static class GraalVm extends CommonSubcommand implements Runnable {
 
-        private static final boolean LATEST_VERSION = false; // Can't make the latest version work at the moment
-
-        // To see all releases: https://api.github.com/repos/gluonhq/graal/releases
-
-        private final static String GITHUB_GRAAL_RELEASE_PAGE_URL = LATEST_VERSION ?
-            "https://api.github.com/repos/gluonhq/graal/releases/latest" :
-            "https://api.github.com/repos/gluonhq/graal/releases/68947997"; // This is gluon-22.1.0.1-Final
+        // Liberica NIK (Native Image Kit) is a GraalVM distribution by BellSoft. Its Full bundle includes JavaFX, which
+        // is required to build native images of JavaFX applications without Gluon Substrate.
+        // API documentation: https://api.bell-sw.com/
+        private final static String BELLSOFT_NIK_API_URL = "https://api.bell-sw.com/v1/nik/releases?bundle-type=full&version-modifier=latest&bitness=64";
 
         @Override
         public void run() {
-            String osToken = null;
+            String osToken = null, packageType = null;
             switch (OperatingSystem.getOsFamily()) {
-                case WINDOWS: osToken = "windows"; break;
-                case MAC_OS: osToken = "darwin"; break;
-                case LINUX: osToken = "linux"; break;
+                case WINDOWS: osToken = "windows"; packageType = "zip"; break;
+                case MAC_OS: osToken = "macos"; packageType = "tar.gz"; break;
+                case LINUX: osToken = "linux"; packageType = "tar.gz"; break;
             }
-            String archToken = "aarch64".equalsIgnoreCase(System.getProperty("os.arch")) ? "aarch64" : "amd64";
-            Logger.log("Checking for update on " + GITHUB_GRAAL_RELEASE_PAGE_URL);
-            String pageContent = downloadPage(GITHUB_GRAAL_RELEASE_PAGE_URL);
-            Pattern pattern = Pattern.compile(
-                LATEST_VERSION ?
-                    "\"browser_download_url\":\"([^\"]*/gluonhq/graal/releases/download/[^\"]*-java[^\"]*-" + osToken + "-" + archToken + "[^\"]*)\"" :
-                    "\"browser_download_url\":\"([^\"]*/gluonhq/graal/releases/download/[^\"]*-java17[^\"]*-" + osToken + "[^\"]*)\""
-                , 1);
+            String osArch = System.getProperty("os.arch");
+            String archToken = "aarch64".equalsIgnoreCase(osArch) || "arm64".equalsIgnoreCase(osArch) ? "arm" : "x86";
+            String apiUrl = BELLSOFT_NIK_API_URL + "&os=" + osToken + "&arch=" + archToken + "&package-type=" + packageType;
+            Logger.log("Checking for update on " + apiUrl);
+            String pageContent = downloadPage(apiUrl);
+            // The response is a JSON array of releases, each having a top-level downloadUrl for the NIK archive (the
+            // components array also contains downloadUrl entries, but for other files, so we look for the NIK archive name)
+            Pattern pattern = Pattern.compile("\"downloadUrl\"\\s*:\\s*\"([^\"]*/bellsoft-liberica-vm-full-[^\"]*\\." +Pattern.quote(packageType) + ")\"");
             Matcher matcher = pattern.matcher(pageContent);
             if (!matcher.find()) {
                 Logger.log("No GraalVM found for your system!");
@@ -71,8 +68,6 @@ public final class Install extends CommonSubcommand {
             }
 
             String vmUrl = matcher.group(1);
-            if (vmUrl.startsWith("/"))
-                vmUrl = "https://github.com" + vmUrl;
 
             Path hiddenVmFolder = WebFXHiddenFolder.getCliSubFolder("graalvm");
             String vmDownloadFileName = vmUrl.substring(vmUrl.lastIndexOf('/') + 1);
@@ -263,18 +258,15 @@ public final class Install extends CommonSubcommand {
                     .setWorkingDirectory(hiddenVsFolder)
                     .setCommandTokens(vsDownloadFileName
                             , "--passive" // Display the installer user interface to show progress bars but in automatic mode (doesn't interact with the user)
-                            , "--addProductLang",  "En-us" // Mentioned in Gluon doc
-                            , "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64" // Not mentioned in Gluon doc => install cl.exe (called by Gluon toolchain)
-                            , "--add",  "Microsoft.VisualStudio.Component.Windows10SDK.19041" // Mentioned in Gluon doc => if not installed, the Gluon toolchain raises this error: launcher.c(28): fatal error C1083: Cannot open include file: 'stdio.h': No such file or directory
-                            // , "--add", "Microsoft.VisualStudio.Component.VC.CLI.Support" // Mentioned in Gluon doc (but not sure what it is for)
-                            // , "--add", "Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64" // Mentioned in Gluon doc (but not sure what it is for)
-                            // , "--add", "Microsoft.Component.VC.Runtime.UCRTSDK" // Mentioned in Gluon doc (but not sure what it is for)
+                            , "--addProductLang",  "En-us"
+                            , "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64" // => installs cl.exe (called by native-image)
+                            , "--add",  "Microsoft.VisualStudio.Component.Windows10SDK.19041" // => if not installed, native-image raises this error: launcher.c(28): fatal error C1083: Cannot open include file: 'stdio.h': No such file or directory
                     )
                     .executeAndWait();
         }
     }
 
-    @Command(name = "ubuntu-tools", description = "Install or upgrade the dev tools required by Gluon (Ubuntu).")
+    @Command(name = "ubuntu-tools", description = "Install or upgrade the dev tools required by GraalVM native-image for JavaFX (Ubuntu).")
     static class UbuntuTools extends CommonSubcommand implements Runnable {
 
         @Override
@@ -282,7 +274,7 @@ public final class Install extends CommonSubcommand {
             if (OperatingSystem.getOsFamily() != OsFamily.LINUX)
                 throw new CliException("This command is to be executed on Ubuntu machines only.");
 
-            ProcessCall.executeBashCommand("sudo apt install g++ libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev");
+            ProcessCall.executeBashCommand("sudo apt install build-essential zlib1g-dev g++ libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libgl-dev libgtk-3-dev libpango1.0-dev libxtst-dev");
         }
     }
 
@@ -294,14 +286,13 @@ public final class Install extends CommonSubcommand {
             if (OperatingSystem.getOsFamily() != OsFamily.MAC_OS)
                 throw new CliException("This command is to be executed on Macs only.");
 
-            //ProcessCall.executeCommandTokens("xcode-select", "--install"); // Installs the command line tools (not enough for Gluon)
-
-            checkOrFixXcodePathForGluon(true);
+            
+            checkOrFixXcodePath(true);
         }
     }
 
-    static boolean checkOrFixXcodePathForGluon(boolean install) {
-        // Fixing wrong Xcode path on macOS causing build failure (see issue https://github.com/gluonhq/substrate/issues/978)
+    static boolean checkOrFixXcodePath(boolean install) {
+        // Checking the Xcode path on macOS (a wrong path can cause native build failures)
         String xcodePath = new ProcessCall("xcode-select", "-p")
                 .setLogsCalling(install)
                 .setLogsCallDuration(false)

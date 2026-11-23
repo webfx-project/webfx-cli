@@ -388,12 +388,12 @@ public class WebFxModuleFileCache implements WebFxModuleFileDelegate {
         return mavenManualNode;
     }
 
-    private Element gluonConfiguration;
+    private Element nativeConfiguration;
     @Override
-    public Element getGluonConfiguration() {
-        if (gluonConfiguration == null)
-            gluonConfiguration = WebFxModuleFileDelegate.super.getGluonConfiguration();
-        return gluonConfiguration;
+    public Element getNativeConfiguration() {
+        if (nativeConfiguration == null)
+            nativeConfiguration = WebFxModuleFileDelegate.super.getNativeConfiguration();
+        return nativeConfiguration;
     }
 
     private Boolean skipMavenPomUpdate;

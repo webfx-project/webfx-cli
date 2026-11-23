@@ -14,7 +14,7 @@ public class BuildInfo {
     public final boolean isForElemental2;
     public final boolean isForWeb;
     public final boolean isForOpenJfx;
-    public final boolean isForGluon;
+    public final boolean isForNative;
     public final boolean isForVertx;
     public final boolean isExecutable;
     public final boolean isJ2clCompilable;
@@ -30,7 +30,7 @@ public class BuildInfo {
         isForWeb = isForGwt || isForJ2cl || isForTeaVm || isForElemental2;
         isForVertx = target.isMonoPlatform(Platform.JRE) && target.hasTag(TargetTag.VERTX);
         isForOpenJfx = target.isMonoPlatform(Platform.JRE) && (target.hasTag(TargetTag.OPENJFX));
-        isForGluon = target.isMonoPlatform(Platform.JRE) && target.hasTag(TargetTag.GLUON);
+        isForNative = target.isMonoPlatform(Platform.JRE) && target.hasTag(TargetTag.NATIVE);
         isExecutable = projectModule.isExecutable();
         String moduleName = projectModule.getName();
         isJ2clCompilable = (isForJ2cl || target.isPlatformSupported(Platform.J2CL) || target.hasTag(TargetTag.J2CL) || target.hasTag(TargetTag.EMUL)) && !SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(moduleName);

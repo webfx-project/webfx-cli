@@ -25,6 +25,9 @@ import java.util.Set;
  */
 public final class MavenUtil {
 
+    // Maven profile defined in pom_native_executable.xml to build the GraalVM native desktop image
+    public static final String NATIVE_DESKTOP_PROFILE = "native-desktop";
+
     public static final StopWatch MAVEN_INVOCATION_STOPWATCH = StopWatch.createSystemNanoStopWatch();
 
     //private final static boolean USE_MAVEN_INVOKER = false; // if false, just using shell invocation
@@ -131,17 +134,28 @@ public final class MavenUtil {
     }
 
     public static int invokeMavenGoal(String goal, ProcessCall processCall) {
+        return invokeMavenGoal(goal, processCall, null);
+    }
+
+    /**
+     * @param shellPreCommand optional shell command (PowerShell on Windows, bash otherwise) executed before mvn
+     */
+    public static int invokeMavenGoal(String goal, ProcessCall processCall, String shellPreCommand) {
         MAVEN_INVOCATION_STOPWATCH.on();
-        boolean gluonPluginCall = goal.contains("gluonfx:");
-        Path graalVmHome = gluonPluginCall ? WebFXHiddenFolder.getGraalVmHome() : null;
+        // For native builds, we pass the GraalVM installed by `webfx install graalvm` (if any) to the native-maven-plugin
+        boolean nativeBuild = goal.contains("-P " + NATIVE_DESKTOP_PROFILE);
+        Path graalVmHome = nativeBuild ? WebFXHiddenFolder.getGraalVmHome() : null;
         processCall.setCommand("mvn " + goal);
         //if (!USE_MAVEN_INVOKER) {
             // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
-            if (graalVmHome != null)
+            if (graalVmHome != null || shellPreCommand != null) {
+                String preCommand = shellPreCommand == null ? "" : shellPreCommand + "; ";
                 if (OperatingSystem.isWindows())
-                    processCall.setPowershellCommand("$env:GRAALVM_HOME = " + ProcessCall.toShellLogCommandToken(graalVmHome) + "; mvn " + goal);
+                    // Always quoted: an unquoted path on the right side of a PowerShell assignment is parsed as a command
+                    processCall.setPowershellCommand(preCommand + (graalVmHome == null ? "" : "$env:GRAALVM_HOME = '" + graalVmHome.toString().replace("'", "''") + "'; ") + "mvn " + goal);
                 else
-                    processCall.setBashCommand("export GRAALVM_HOME=" + ProcessCall.toShellLogCommandToken(graalVmHome) + "; mvn " + goal);
+                    processCall.setBashCommand(preCommand + (graalVmHome == null ? "" : "export GRAALVM_HOME=\"" + graalVmHome + "\"; ") + "mvn " + goal);
+            }
             processCall
                     //.setErrorLineFilter(line -> line.contains("ERROR")) // Commented as it prevents colors
                     .executeAndWait();

@@ -25,7 +25,7 @@ final class GwtWebToJavaCallbacksGenerator {
                 .map(DevProjectModule.class::cast)
                 .flatMap(pm -> pm.getWebFxModuleFile().getJavaCallbacks())
                 .forEach(javaCallbacks -> javaCallbacks.getMethodCallbacks().forEach((className, constructorOrMethods) -> {
-                    // Ignoring constructors (only for Gluon/GraalVM)
+                    // Ignoring constructors (only for GraalVM native image)
                     List<JavaCallbacks.JavaMethodSignature> methods = Collections.filter(constructorOrMethods, m -> !m.isConstructor());
                     if (methods.isEmpty())
                         return;

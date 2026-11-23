@@ -33,7 +33,7 @@ public final class CssFilesGenerator {
     // New overload allowing removal of unsupported fxweb@ declarations during generation
     public static int generateExecutableModuleCssResourceFiles(DevProjectModule module, boolean canUseCache, StopWatch mergePrepStopWatch, boolean skipCssErrors, boolean removeCssErrors) {
         boolean isWebExecutable = module.getBuildInfo().isForWeb;
-        boolean isJavaFxExecutable = !isWebExecutable && module.isExecutable() && (module.getTarget().hasTag(TargetTag.OPENJFX) || module.getTarget().hasTag(TargetTag.GLUON));
+        boolean isJavaFxExecutable = !isWebExecutable && module.isExecutable() && (module.getTarget().hasTag(TargetTag.OPENJFX) || module.getTarget().hasTag(TargetTag.NATIVE));
         if (!isWebExecutable && !isJavaFxExecutable)
             return 0;
 

@@ -77,7 +77,7 @@
         <!-- Third-party plugins versions -->
         <plugin.buildhelper.version>3.3.0</plugin.buildhelper.version>
         <plugin.gwt.version>1.0.1</plugin.gwt.version>
-        <plugin.gluonfx.version>1.0.14</plugin.gluonfx.version>
+        <plugin.native.version>1.1.18</plugin.native.version>
         <plugin.javapackager.version>1.6.6</plugin.javapackager.version>
         <plugin.javafx.version>0.0.8</plugin.javafx.version>
 
@@ -94,8 +94,6 @@
         <plugin.gwt.param.draftCompile>false</plugin.gwt.param.draftCompile>
         <plugin.gwt.param.optimize>9</plugin.gwt.param.optimize>
         <plugin.gwt.param.module>${project.artifactId}</plugin.gwt.param.module>
-        <plugin.gluonfx.param.target>TBD</plugin.gluonfx.param.target>
-        <plugin.gluonfx.param.mainClass>${webfx.mainClass}</plugin.gluonfx.param.mainClass>
         <plugin.javapackager.mainClass>${webfx.mainClass}</plugin.javapackager.mainClass>
         <plugin.javapackager.runnableJar>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</plugin.javapackager.runnableJar>
         <plugin.javapackager.name>WebFxApp</plugin.javapackager.name>
@@ -416,22 +414,17 @@
 
 
                 <!--
-                 ******************************
-                 * Gluon plugin configuration *
-                 ******************************
+                 *******************************************
+                 * GraalVM native-image plugin configuration *
+                 *******************************************
                  -->
                 <plugin>
-                    <groupId>com.gluonhq</groupId>
-                    <artifactId>gluonfx-maven-plugin</artifactId>
-                    <version>${plugin.gluonfx.version}</version>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <version>${plugin.native.version}</version>
+                    <extensions>true</extensions>
                     <configuration>
-                        <target>${plugin.gluonfx.param.target}</target>
-                        <mainClass>${plugin.gluonfx.param.mainClass}</mainClass>
-                        <nativeImageArgs>
-                            <!-- SL4J -->
-                            <arg>--allow-incomplete-classpath</arg>
-                            <arg>-H:ReflectionConfigurationFiles=${project.basedir}/src/main/graalvm_conf/reflection.json</arg>
-                        </nativeImageArgs>
+                        <mainClass>${webfx.mainClass}</mainClass>
                     </configuration>
                 </plugin>
 
@@ -512,26 +505,6 @@
         </profile>
 
         <profile>
-            <id>gluon-desktop</id>
-            <properties>
-                <plugin.gluonfx.param.target>host</plugin.gluonfx.param.target>
-            </properties>
-        </profile>
-        <profile>
-            <id>gluon-ios</id>
-            <properties>
-                <plugin.gluonfx.param.target>ios</plugin.gluonfx.param.target>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>gluon-android</id>
-            <properties>
-                <plugin.gluonfx.param.target>android</plugin.gluonfx.param.target>
-            </properties>
-        </profile>
-
-        <profile>
             <id>auto-attach-sources</id>
             <activation>
                 <file>
@@ -599,24 +572,6 @@
                     <plugin>
                         <groupId>net.ltgt.gwt.maven</groupId>
                         <artifactId>gwt-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>auto-plugin-gluon</id>
-            <!-- Recognizing an executable gluon module by the presence of a GraalVM conf folder -->
-            <activation>
-                <file>
-                    <exists>src/main/graalvm_conf</exists>
-                </file>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>com.gluonhq</groupId>
-                        <artifactId>gluonfx-maven-plugin</artifactId>
                     </plugin>
                 </plugins>
             </build>

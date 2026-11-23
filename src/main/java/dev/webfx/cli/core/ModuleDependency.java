@@ -102,7 +102,7 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
                 && !targetModule.isExecutable(Platform.TEAVM)
                 // Same with J2CL (except for fat modules
                 && !(targetModule.isExecutable(Platform.J2CL) && !SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(destinationModuleName) /*&& !SpecificModules.isModulePartOfWebfxExtrasVisualGridFatJ2cl(destinationModuleName)*/)
-                // Also except for Gluon modules using media => they need webfx-kit-javafxmedia-gluon + transitive dependencies such as webfx-platform-audio-gluon, Gluon Attach audio, etc...
+                // Also except for native modules using media => they need webfx-kit-javafxmedia-gluon + transitive dependencies such as webfx-platform-audio-gluon, Gluon Attach audio, etc...
                 && !destinationModuleName.equals(SpecificModules.WEBFX_KIT_JAVAFXMEDIA_GLUON))
                 return;
             ProjectModule pm = destinationModule instanceof ProjectModule ? (ProjectModule) destinationModule : null;

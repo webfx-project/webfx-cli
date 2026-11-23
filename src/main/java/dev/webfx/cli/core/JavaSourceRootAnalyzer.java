@@ -812,8 +812,8 @@ public final class JavaSourceRootAnalyzer {
         }
         if (projectModule.isExecutable(Platform.JRE)) {
             boolean isForOpenJFX = projectModule.getTarget().hasTag(TargetTag.OPENJFX);
-            boolean isForGluon = projectModule.getTarget().hasTag(TargetTag.GLUON);
-            if (!isForOpenJFX && !isForGluon)
+            boolean isForNative = projectModule.getTarget().hasTag(TargetTag.NATIVE);
+            if (!isForOpenJFX && !isForNative)
                 return mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache)
                     .filter(m -> SpecificModules.isJavafxEmulModule(m.getName()));
             boolean usesMedia = mapDestinationModules(transitiveDependenciesWithoutEmulationAndImplicitProvidersCache).anyMatch(m -> SpecificModules.isJavaFxMediaModule(m.getName()));
@@ -822,7 +822,7 @@ public final class JavaSourceRootAnalyzer {
             return ReusableStream.of(
                 rootModule.searchRegisteredModule(SpecificModules.WEBFX_PLATFORM_BOOT_JAVA),
                 rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXGRAPHICS_OPENJFX),
-                !usesMedia ? null : rootModule.searchRegisteredModule(isForGluon ? SpecificModules.WEBFX_KIT_JAVAFXMEDIA_GLUON : SpecificModules.WEBFX_KIT_JAVAFXMEDIA_EMUL),
+                !usesMedia ? null : rootModule.searchRegisteredModule(isForNative ? SpecificModules.WEBFX_KIT_JAVAFXMEDIA_GLUON : SpecificModules.WEBFX_KIT_JAVAFXMEDIA_EMUL),
                 !usesWeb ? null : rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXWEB_EMUL),
                 !usesFxml ? null : rootModule.searchRegisteredModule(SpecificModules.WEBFX_KIT_JAVAFXFXML_EMUL)
             ).filter(Objects::nonNull);

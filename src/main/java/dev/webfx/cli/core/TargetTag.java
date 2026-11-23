@@ -11,7 +11,7 @@ public enum TargetTag {
     JAVA            ("java", PLATFORM_PARTITION, Platform.JRE, Platform.GWT, Platform.J2CL, Platform.TEAVM),
     JRE             ("jre", JAVA, Platform.JRE),
     OPENJFX         ("openjfx", JRE), // => DESKTOP
-    GLUON           ("gluon", OPENJFX), // => native
+    NATIVE          ("native", OPENJFX), // GraalVM native image (desktop)
     VERTX           ("vertx", JRE),
     WEB             ("web", JAVA, Platform.GWT, Platform.J2CL, Platform.TEAVM), // => BROWSER
     ELEMENTAL2      ("elemental2", WEB), // => BROWSER
@@ -163,7 +163,7 @@ public enum TargetTag {
 
     private int gradePartitionCompatibility(TargetTag requestedTag) {
         // We don't accept a tag that is deeper than the requested tag (related to the same partition tag). For example,
-        // webfx-platform-shutdown-gluon is for gluon only; it shouldn't be taken for openjfx, which should take
+        // webfx-platform-shutdown-gluon is for native only; it shouldn't be taken for openjfx, which should take
         // webfx-platform-shutdown-java (less deep) instead.
         if (getPartitionTag() == requestedTag.getPartitionTag() && getPartitionDepth() > requestedTag.getPartitionDepth())
             return -1;
@@ -210,6 +210,9 @@ public enum TargetTag {
     }
 
     public static TargetTag fromTagName(String tagName) {
+        // Legacy tag name: modules suffixed with -gluon (ex: webfx-platform-shutdown-gluon) are considered native modules
+        if ("gluon".equals(tagName))
+            return NATIVE;
         return Arrays.stream(TargetTag.values())
                 .filter(tag -> tagName.equals(tag.getTagName()))
                 .findFirst()
@@ -218,7 +221,7 @@ public enum TargetTag {
 
     public static TargetTag[] parseTags(String text, boolean skipFirstToken) {
         return Arrays.stream(text.split("-"))
-                .skip(skipFirstToken ? 1 : 0) // Ignoring the first tag for module names (ex: gluon-image-issue-application-gwt => for gwt, not gluon)
+                .skip(skipFirstToken ? 1 : 0) // Ignoring the first tag for module names (ex: native-image-issue-application-gwt => for gwt, not native)
                 .map(TargetTag::fromTagName)
                 .filter(Objects::nonNull)
                 .toArray(TargetTag[]::new);
