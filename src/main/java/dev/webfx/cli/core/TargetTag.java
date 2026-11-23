@@ -31,6 +31,9 @@ public enum TargetTag {
     CLIENT          ("client", SHARED), // TODO: automatically assign CLIENT when code is using javafx.graphics, etc... Ex: kbs-magiclink-application
     BACKOFFICE      ("backoffice", CLIENT),
     FRONTOFFICE     ("frontoffice", CLIENT),
+    CLI             ("cli", CLIENT), // a command-line program talking to the server IS a client, so it must
+                                     // resolve the client implementations of the push, submit and session
+                                     // SPIs; without this, a module named *-cli-*-jre gets the SERVER ones
     WORKERTHREAD    ("workerthread", CLIENT),
 
     VIEWER_PARTITION(), // => CLIENT
