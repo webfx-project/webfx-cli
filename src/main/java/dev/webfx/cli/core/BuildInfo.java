@@ -16,6 +16,7 @@ public class BuildInfo {
     public final boolean isForOpenJfx;
     public final boolean isForGluon;
     public final boolean isForVertx;
+    public final boolean isForJre;
     public final boolean isExecutable;
     public final boolean isJ2clCompilable;
     public final boolean requiresJavafxEmul;
@@ -31,6 +32,11 @@ public class BuildInfo {
         isForVertx = target.isMonoPlatform(Platform.JRE) && target.hasTag(TargetTag.VERTX);
         isForOpenJfx = target.isMonoPlatform(Platform.JRE) && (target.hasTag(TargetTag.OPENJFX));
         isForGluon = target.isMonoPlatform(Platform.JRE) && target.hasTag(TargetTag.GLUON);
+        // A plain JRE executable: it runs on the JVM and is none of the above - no Vert.x, no JavaFX
+        // desktop, no Gluon. A command-line program is the case this exists for. Without it such a
+        // module fell through to the OpenJFX template, which gave a terminal program an
+        // 'openjfx-fatjar' profile and JavaPackager desktop properties it can never use.
+        isForJre = target.isMonoPlatform(Platform.JRE) && !isForVertx && !isForOpenJfx && !isForGluon;
         isExecutable = projectModule.isExecutable();
         String moduleName = projectModule.getName();
         isJ2clCompilable = (isForJ2cl || target.isPlatformSupported(Platform.J2CL) || target.hasTag(TargetTag.J2CL) || target.hasTag(TargetTag.EMUL)) && !SpecificModules.isModulePartOfWebfxKitJavaFxGraphicsFatJ2cl(moduleName);

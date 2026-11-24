@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- File managed by WebFX (DO NOT EDIT MANUALLY) -->
+<project>
+
+    <dependencies/>
+
+    <profiles>
+
+        <!-- profile to make a fat standalone executable jar with all dependencies included inside.
+             Everything it needs is already in the parent's `fat` execution - the Main-Class from
+             ${webfx.mainClass}, which for a WebFX executable is the platform booter, and the
+             ServicesResourceTransformer that an SPI-driven program cannot do without - and pluginManagement
+             CONFIGURES without RUNNING, so declaring the plugin is the whole job. -->
+        <profile>
+            <id>jre-fatjar</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+
+            <build>
+                <plugins>
+
+                    <!-- Generating the fat jar using the Shade plugin -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
+
+</project>

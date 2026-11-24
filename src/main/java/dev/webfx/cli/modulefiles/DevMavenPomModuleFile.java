@@ -162,6 +162,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             : buildInfo.isForTeaVm ? "pom_teavm_executable.xml"
             : buildInfo.isForGluon ? "pom_gluon_executable.xml"
             : buildInfo.isForVertx ? "pom_vertx_executable.xml"
+            : buildInfo.isForJre ? "pom_jre_executable.xml"
             : "pom_openjfx_executable.xml";
     }
 
