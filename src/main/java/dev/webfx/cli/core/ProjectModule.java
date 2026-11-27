@@ -91,7 +91,7 @@ public interface ProjectModule extends Module {
 
     ReusableStream<String> getFileResourcePackages();
 
-    default ReusableStream<String> getResourcePackages() { // Direct calls: 1) DevGwtModuleFile (to list resources packages in GWT module) & 2) NativeImageFilesGenerator to generate the resources metadata for native modules
+    default ReusableStream<String> getResourcePackages() { // Direct call: NativeImageFilesGenerator to generate the resources metadata for native modules
         return ReusableStream.concat(
             getNonEmbedResourcePackages(),
             getMetaResourcePackage(),
@@ -100,14 +100,14 @@ public interface ProjectModule extends Module {
         ).distinct();
     }
 
-    default ReusableStream<String> getNonEmbedResourcePackages() { // Direct calls: 1) DevGwtModuleFile (to list resources packages in GWT module) & 2) NativeImageFilesGenerator to generate the resources metadata for native modules
+    default ReusableStream<String> getNonEmbedResourcePackages() { // Direct calls: NativeImageFilesGenerator (resources metadata for native modules) & DevMavenPomModuleFile (TeaVM/J2CL resources unpacking)
         return ReusableStream.concat(
             getExplicitResourcePackages(),
             getWebFxModuleFile().areResourcePackagesAutomaticallyExported() ? getFileResourcePackages() : ReusableStream.empty()
         ).distinct();
     }
 
-    default ReusableStream<String> getEmbedResources() { // Direct call: GwtEmbedResourcesBundleSourceGenerator (to generate GWT bundles)
+    default ReusableStream<String> getEmbedResources() { // Direct calls: J2CL & TeaVM embed resources bundle generators
         return ReusableStream.concat(
             getWebFxModuleFile().getEmbedResources(),
             getMetaResource(),

@@ -43,8 +43,8 @@ public interface RootModule extends ProjectModule {
     static ReusableStream<ProjectModule> findModulesProvidingJavaService(ReusableStream<ProjectModule> implementationScope, String javaService, ProjectModuleImpl targetModule, boolean keepBestOnly) {
         // Searching modules within the scope that are compatible with the requested target and that implement the service
         Target requestedTarget = targetModule.getTarget();
-        // ApplicationBooterProvider is actually implemented by the GWT/J2CL entry point, no need to search for it elsewhere
-        if (SpecificClasses.WEBFX_APPLICATION_BOOTER_PROVIDER.equals(javaService) && (requestedTarget.hasTag(TargetTag.GWT) || requestedTarget.hasTag(TargetTag.J2CL)))
+        // ApplicationBooterProvider is actually implemented by the J2CL entry point, no need to search for it elsewhere
+        if (SpecificClasses.WEBFX_APPLICATION_BOOTER_PROVIDER.equals(javaService) && requestedTarget.hasTag(TargetTag.J2CL))
             return ReusableStream.empty();
         ReusableStream<ProjectModule> modules = implementationScope
             .filter(m -> m.getModuleRegistry().isSuitableModule(m, targetModule))

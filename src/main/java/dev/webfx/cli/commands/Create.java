@@ -154,7 +154,6 @@ public final class Create extends CommonSubcommand {
             validateParameters();
             createTagApplicationModule(null);
             createTagApplicationModule(TargetTag.OPENJFX);
-            createTagApplicationModule(TargetTag.GWT);
             createTagApplicationModule(TargetTag.NATIVE);
             createTagApplicationModule(TargetTag.TEAVM, TargetTag.JS);
             createTagApplicationModule(TargetTag.TEAVM, TargetTag.WASM);
@@ -256,9 +255,6 @@ public final class Create extends CommonSubcommand {
         @CommandLine.Option(names = {"-a", "--all"}, description = "All supported targets")
         private boolean all;
 
-        @CommandLine.Option(names = {"-g", "--gwt"}, description = "Includes the GWT target")
-        private boolean gwt;
-
         @CommandLine.Option(names = {"-o", "--openjfx"}, description = "Includes the OpenJFX target")
         private boolean openjfx;
 
@@ -293,8 +289,6 @@ public final class Create extends CommonSubcommand {
             for (DevProjectModule applicationModule : applicationModules) {
                 String applicationModuleName = applicationModule.getName();
                 Path parentDirectory = applicationModule.getParentModule().getHomeDirectory();
-                if (all || gwt)
-                    createTargetModule(applicationModuleName + "-gwt", parentDirectory);
                 if (all || openjfx)
                     createTargetModule(applicationModuleName + "-openjfx", parentDirectory);
                 if (all || nativeTarget)

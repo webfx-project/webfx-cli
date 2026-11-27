@@ -11,7 +11,8 @@ import java.nio.file.Path;
  * Chooses the GraalVM used by native desktop builds ({@code webfx build -n}, Maven profile native-desktop).
  *
  * <p>Order: the GraalVM in the {@code GRAALVM_HOME} environment variable (if it contains native-image), otherwise the
- * one installed by {@code webfx install graalvm} in the WebFX hidden folder.
+ * one installed in the WebFX hidden folder by {@code webfx install graalvm} (latest LTS release) or
+ * {@code webfx install graalvm-latest} (latest non-LTS release).
  *
  * <p>The chosen GraalVM must not contain JavaFX in its JDK (like Liberica NIK Full does): the native-desktop profile
  * takes JavaFX from the OpenJFX jars on the classpath (webfx-kit-javafxgraphics-openjfx). With JavaFX also in the JDK,
@@ -33,7 +34,7 @@ public final class GraalVm {
         String origin = "GRAALVM_HOME";
         if (home == null) {
             home = WebFXHiddenFolder.getGraalVmHome();
-            origin = "webfx install graalvm";
+            origin = "webfx install graalvm / graalvm-latest";
         }
         if (home == null)
             return null;
@@ -59,17 +60,49 @@ public final class GraalVm {
      * Reads the MODULES line of the JDK release file (present in every JDK, including GraalVM distributions).
      */
     static boolean containsJavaFx(Path home) {
-        Path release = home.resolve("release");
-        if (!Files.exists(release))
+        String modules = readReleaseValue(home, "MODULES");
+        return modules != null && modules.contains("javafx.");
+    }
+
+    /**
+     * @return the GraalVM version of the release file (ex: "25.0.0" or "25.1.3"), or null if unknown
+     */
+    public static String getVersion(Path home) {
+        return home == null ? null : readReleaseValue(home, "GRAALVM_VERSION");
+    }
+
+    /**
+     * @return true if the version (ex: "25.1.3") is at least major.minor, false if it is older or unknown
+     */
+    public static boolean isVersionAtLeast(String version, int major, int minor) {
+        if (version == null)
             return false;
+        String[] tokens = version.split("[.+-]");
         try {
-            for (String line : Files.readAllLines(release)) {
-                if (line.startsWith("MODULES=") && line.contains("javafx."))
-                    return true;
-            }
-        } catch (IOException e) {
+            int vMajor = Integer.parseInt(tokens[0]);
+            int vMinor = tokens.length > 1 ? Integer.parseInt(tokens[1]) : 0;
+            return vMajor > major || vMajor == major && vMinor >= minor;
+        } catch (NumberFormatException e) {
             return false;
         }
-        return false;
+    }
+
+    private static String readReleaseValue(Path home, String key) {
+        Path release = home.resolve("release");
+        if (!Files.exists(release))
+            return null;
+        try {
+            for (String line : Files.readAllLines(release)) {
+                if (line.startsWith(key + "=")) {
+                    String value = line.substring(key.length() + 1).trim();
+                    if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\""))
+                        value = value.substring(1, value.length() - 1);
+                    return value;
+                }
+            }
+        } catch (IOException e) {
+            return null;
+        }
+        return null;
     }
 }

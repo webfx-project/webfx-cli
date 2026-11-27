@@ -15,7 +15,7 @@ public enum TargetTag {
     VERTX           ("vertx", JRE),
     WEB             ("web", JAVA, Platform.GWT, Platform.J2CL, Platform.TEAVM), // => BROWSER
     ELEMENTAL2      ("elemental2", WEB), // => BROWSER
-    GWT             ("gwt", ELEMENTAL2, Platform.GWT),
+    GWT             ("gwt", ELEMENTAL2, Platform.GWT), // only GWT-specific library modules (no GWT executables anymore)
     J2CL            ("j2cl", ELEMENTAL2, Platform.J2CL),
     TEAVM           ("teavm", ELEMENTAL2, Platform.TEAVM),
     EMUL            ("emul", WEB),

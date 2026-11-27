@@ -85,7 +85,7 @@ public final class WebFxCLI extends CommonCommand {
             // Description
             String description = "<html><div style='text-align: center; width: 350px;'>" +
                     "WebFX CLI is a command-line tool for creating and managing WebFX projects.<br><br>" +
-                    "WebFX allows you to write JavaFX applications that run in the browser via GWT/J2CL transpilation." +
+                    "WebFX allows you to write JavaFX applications that run in the browser via TeaVM/J2CL transpilation." +
                     "</div></html>";
             JLabel descLabel = new JLabel(description);
             descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);

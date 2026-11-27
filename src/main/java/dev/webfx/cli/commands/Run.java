@@ -3,6 +3,7 @@ package dev.webfx.cli.commands;
 import dev.webfx.cli.core.DevProjectModule;
 import dev.webfx.cli.core.Logger;
 import dev.webfx.cli.exceptions.CliException;
+import dev.webfx.cli.util.os.OperatingSystem;
 import dev.webfx.cli.util.process.ProcessCall;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -24,9 +25,6 @@ import java.util.StringTokenizer;
 @Command(name = "run", description = "Run a WebFX application.")
 public final class Run extends CommonSubcommand implements Runnable {
 
-    @CommandLine.Option(names = {"-g", "--gwt"}, description = "Runs the GWT app")
-    private boolean gwt;
-
     //@CommandLine.Option(names = {"--j2cl"}, description = "Runs the J2CL app")
     private boolean j2cl;
 
@@ -47,6 +45,13 @@ public final class Run extends CommonSubcommand implements Runnable {
 
     @CommandLine.Option(names = {"-n", "--native"}, description = "Runs the GraalVM native desktop app")
     private boolean nativeDesktop;
+
+    @CommandLine.Option(names = {"-e", "--per-package"}, description = "With --build: builds each Java package individually (see webfx build --per-package)."
+        + " With --native: runs the executable built on Native Image layers (their shared libraries are next to it)")
+    private boolean perPackage;
+
+    @CommandLine.Option(names = {"--layer-per-package"}, description = "With --build --native: one shared library per Java package (see webfx build --layer-per-package)")
+    private boolean layerPerPackage;
 
     @CommandLine.Option(names= {"-l", "--locate"}, description = "Just prints the location of the expected executable file (no run)")
     boolean locate;
@@ -77,7 +82,7 @@ public final class Run extends CommonSubcommand implements Runnable {
 
     @Override
     public void run() {
-        execute(new BuildRunCommon(clean, build, true, gwt, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, nativeDesktop, locate, show, appImage, deb, rpm, port, file), getWorkspace());
+        execute(new BuildRunCommon(clean, build, true, j2cl, teavm, javascript, wasm, fatjar, openJfxDesktop, nativeDesktop, perPackage, layerPerPackage, locate, show, appImage, deb, rpm, port, file), getWorkspace());
     }
 
     static void execute(BuildRunCommon brc, CommandWorkspace workspace) {
@@ -90,10 +95,10 @@ public final class Run extends CommonSubcommand implements Runnable {
     static void executeNoBuild(BuildRunCommon brc, CommandWorkspace workspace) {
         DevProjectModule executableModule = brc.findExecutableModule(workspace);
         if (executableModule != null) // null with --locate or --show
-            brc.getExecutableFilePath(executableModule).forEach(path -> executeFile(path, brc.port, brc.file));
+            brc.getExecutableFilePath(executableModule).forEach(path -> executeFile(path, brc.port, brc.file, brc.perPackage));
     }
 
-    private static void executeFile(Path executableFilePath, int port, boolean file) {
+    private static void executeFile(Path executableFilePath, int port, boolean file, boolean perPackage) {
         try {
             String fileName = executableFilePath.getFileName().toString();
             String pathName = executableFilePath.toString();
@@ -109,12 +114,23 @@ public final class Run extends CommonSubcommand implements Runnable {
                     String commandName = fileName.substring(0, fileName.lastIndexOf('_'));
                     Logger.log("\nIn addition to the desktop icon, you can now type '" + commandName + "' in the terminal to launch the application.\nUse 'sudo apt remove " + commandName.toLowerCase() + "' to uninstall the application.");
                 }
+            } else if (perPackage && !OperatingSystem.isWindows()) {
+                // Executable built on Native Image layers (webfx build -n --per-package): the shared libraries of the
+                // layers are next to it, in the library path (on Windows, the folder of the executable is searched anyway)
+                String libraryPathVariable = OperatingSystem.isMacOs() ? "DYLD_LIBRARY_PATH" : "LD_LIBRARY_PATH";
+                ProcessCall.executeBashCommand(libraryPathVariable + "=" + bashQuoted(executableFilePath.getParent().toString())
+                                               + ":$" + libraryPathVariable + " " + bashQuoted(pathName));
             } else { // Everything else should be an executable file that we can call directly
                 Desktop.getDesktop().open(executableFilePath.toFile()); // Works cross-platform
             }
         } catch (Exception e) {
             throw new CliException(e.getMessage());
         }
+    }
+
+    private static String bashQuoted(String text) {
+        // Single quotes, with each inner single quote written as '\''
+        return "'" + text.replace("'", "'\\''") + "'";
     }
 
     private static void runWebAppWithBuiltInWebServer(Path webappHtmlPath, int port) throws Exception {

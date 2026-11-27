@@ -129,7 +129,7 @@ public final class CssFilesGenerator {
             }
         });
 
-        Path mergedCssTargetFolder = isWebExecutable ? module.getGwtExecutableFilePath().getParent().resolve("dev/webfx/kit/css") : null;
+        Path mergedCssTargetFolder = isWebExecutable ? module.getWebExecutableFilePath().getParent().resolve("dev/webfx/kit/css") : null;
 
         // Writing down all css files other than main.css (main.css will be merged directly in index.html)
         for (Map.Entry<Path, StringBuilder> entry : cssMerges.entrySet()) {

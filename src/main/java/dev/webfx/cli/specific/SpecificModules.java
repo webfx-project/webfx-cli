@@ -29,15 +29,11 @@ public interface SpecificModules {
     String WEBFX_KIT_JAVAFXMEDIA_GLUON = "webfx-kit-javafxmedia-gluon";
     String WEBFX_KIT_LAUNCHER = "webfx-kit-launcher";
     String WEBFX_PLATFORM_BOOT_JAVA = "webfx-platform-boot-java";
-    String WEBFX_PLATFORM_JAVABASE_EMUL_GWT = "webfx-platform-javabase-emul-gwt";
     String WEBFX_PLATFORM_JAVABASE_EMUL_J2CL = "webfx-platform-javabase-emul-j2cl";
     String WEBFX_PLATFORM_JAVATIME_EMUL_J2CL = "webfx-platform-javatime-emul-j2cl";
     String WEBFX_EXTRAS_VISUAL_GRID_PEERS = "webfx-extras-visual-grid-peers";
     String JAVA_NIO_EMUL = "java-nio-emul";
-    String GWT_USER = "gwt-user";
-    String GWT_DEV = "gwt-dev";
-    String GWT_TIME = "gwt-time";
-    String ORG_JRESEARCH_GWT_TIME_TZDB = "org.jresearch.gwt.time.tzdb";
+    String GWT_USER = "gwt-user"; // library module excluded from J2CL executables
     String J2CL_ANNOTATIONS = "j2cl-annotations";
     String J2CL_PROCESSORS = "j2cl-processors";
     String SLFJ_API = "slf4j.api";

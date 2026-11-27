@@ -72,7 +72,7 @@ public abstract class ProjectModuleImpl extends ModuleImpl implements ProjectMod
     /**
      * Returns the application module to be executed in case this module is executable (otherwise returns nothing). For
      * now the application module is implicitly guessed from the executable module name (ex: if the executable module is
-     * my-app-javafx or my-app-gwt, then the application module is my-app).
+     * my-app-openjfx or my-app-teavm-js, then the application module is my-app).
      */
     // Modules
     final ReusableStream<ModuleDependency> applicationDependencyCache =

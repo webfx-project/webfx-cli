@@ -13,7 +13,6 @@ public final class UpdateTasks {
         moduleInfo,
         metaInfServices,
         indexHtml,
-        gwtXml,
         entryPoint,
         embedResource,
         //graalvm,
@@ -30,7 +29,6 @@ public final class UpdateTasks {
         moduleInfoStopWatch = StopWatch.createSystemNanoStopWatch(),
         metaInfServicesStopWatch = StopWatch.createSystemNanoStopWatch(),
         indexHtmlStopWatch = StopWatch.createSystemNanoStopWatch(),
-        gwtXmlStopWatch = StopWatch.createSystemNanoStopWatch(),
         entryPointStopWatch = StopWatch.createSystemNanoStopWatch(),
         embedResourceStopWatch = StopWatch.createSystemNanoStopWatch(),
         //graalvmStopWatch = StopWatch.createSystemNanoStopWatch(),
@@ -51,7 +49,6 @@ public final class UpdateTasks {
         moduleInfoCount,
         metaInfServicesCount,
         indexHtmlCount,
-        gwtXmlCount,
         entryPointCount,
         embedResourceCount,
         //graalvmCount,
@@ -68,7 +65,6 @@ public final class UpdateTasks {
                moduleInfo == value &&
                metaInfServices == value &&
                indexHtml == value &&
-               gwtXml == value &&
                entryPoint == value &&
                embedResource == value &&
                //graalvm == value &&
@@ -85,7 +81,6 @@ public final class UpdateTasks {
             moduleInfo =
             metaInfServices =
             indexHtml =
-            gwtXml =
             entryPoint =
             embedResource =
             //graalvm =
@@ -106,7 +101,6 @@ public final class UpdateTasks {
                moduleInfoCount +
                metaInfServicesCount +
                indexHtmlCount +
-               gwtXmlCount +
                entryPointCount +
                embedResourceCount +
                //graalvmCount +

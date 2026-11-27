@@ -43,7 +43,7 @@ public interface Module extends GavApi, Comparable<Module> {
         boolean mEmul = SpecificModules.isJavafxEmulModule(mArtifactId);
         if (thisEmul != mEmul)
             return thisEmul ? -1 : 1;
-        // This (temporary) rule is just for GridCollator (which has a different implementation in gwt/j2cl so must be listed first)
+        // This (temporary) rule is just for GridCollator (which has a different implementation for the web (elemental2) so must be listed first)
         if (thisArtifactId.startsWith(SpecificModules.WEBFX_EXTRAS_VISUAL_GRID_PEERS) && mArtifactId.startsWith(SpecificModules.WEBFX_EXTRAS_VISUAL_GRID_PEERS)) {
             if (thisArtifactId.endsWith("-elemental2"))
                 return -1;

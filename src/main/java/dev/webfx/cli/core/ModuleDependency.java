@@ -95,9 +95,7 @@ public final class ModuleDependency implements Comparable<ModuleDependency> {
             // We don't include the JavaFX emulation modules (as they may just be finally mapped to simple JavaFX modules)
             String destinationModuleName = destinationModule.getName();
             if (SpecificModules.isJavafxEmulModule(destinationModuleName)
-                // Except for GWT executables (which use only WebFX modules and need them all)
-                && !targetModule.isExecutable(Platform.GWT)
-                // Same with TeaVM executables (which compile the WebFX emulation instead of OpenJFX, so they need the
+                // Except for TeaVM executables (which compile the WebFX emulation instead of OpenJFX, so they need the
                 // transitive dependencies such as the controls registry => controls peers, perfect scrollbar, etc...)
                 && !targetModule.isExecutable(Platform.TEAVM)
                 // Same with J2CL (except for fat modules

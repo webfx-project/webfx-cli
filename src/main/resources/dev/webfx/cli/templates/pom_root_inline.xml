@@ -38,7 +38,6 @@
         <!-- Java version -->
         <java.version>11</java.version>
         <java.level>${java.version}</java.level>
-        <gwt.sourceLevel>1.${java.version}</gwt.sourceLevel>
 
         <!-- Applying compiler settings -->
         <maven.compiler.source>${java.level}</maven.compiler.source>
@@ -49,14 +48,8 @@
         <!-- OpenJFX version -->
         <openjfx.version>18.0.1</openjfx.version>
 
-        <!-- GWT version -->
-        <gwt.version>2.10.0</gwt.version>
-
-        <!-- Elemental2 version (GWT extension exposing browser APIs directly from Java) -->
+        <!-- Elemental2 version (exposing browser APIs directly from Java) -->
         <elemental2.version>1.1.0</elemental2.version>
-
-        <!-- GWT-time version (GWT library to emulate java.time - not supported by default by GWT) -->
-        <gwttime.version>2.0.8</gwttime.version>
 
         <!-- Maven minimum required version -->
         <maven.min.version>3.3.1</maven.min.version>
@@ -76,7 +69,6 @@
 
         <!-- Third-party plugins versions -->
         <plugin.buildhelper.version>3.3.0</plugin.buildhelper.version>
-        <plugin.gwt.version>1.0.1</plugin.gwt.version>
         <plugin.native.version>1.1.18</plugin.native.version>
         <plugin.javapackager.version>1.6.6</plugin.javapackager.version>
         <plugin.javafx.version>0.0.8</plugin.javafx.version>
@@ -90,10 +82,6 @@
         <plugin.dependency.param.unpack-classes.outputDirectory>${project.build.outputDirectory}</plugin.dependency.param.unpack-classes.outputDirectory>
         <plugin.dependency.param.copy-libs.phase>validate</plugin.dependency.param.copy-libs.phase>
         <plugin.shade.param.fat.phase>package</plugin.shade.param.fat.phase>
-        <plugin.gwt.param.skipCompilation>true</plugin.gwt.param.skipCompilation>
-        <plugin.gwt.param.draftCompile>false</plugin.gwt.param.draftCompile>
-        <plugin.gwt.param.optimize>9</plugin.gwt.param.optimize>
-        <plugin.gwt.param.module>${project.artifactId}</plugin.gwt.param.module>
         <plugin.javapackager.mainClass>${webfx.mainClass}</plugin.javapackager.mainClass>
         <plugin.javapackager.runnableJar>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</plugin.javapackager.runnableJar>
         <plugin.javapackager.name>WebFxApp</plugin.javapackager.name>
@@ -106,11 +94,9 @@
         <application.name>${project.name}</application.name>
         <application.version>${project.version}</application.version>
         <!-- Build number property (should be set by Jenkins server each time a new build is started) -->
-        <!-- Will be passed to GWT compiler so that the java code can get its value using System.getProperty("build.number") -->
         <application.build.number>0</application.build.number>
         <application.build.tool>MAVEN</application.build.tool>
         <!-- Build timestamp property (automatically set using maven but can be overridden using Jenkins) -->
-        <!-- Will be passed to GWT compiler so that the java code can get its value using System.getProperty("build.timestamp") -->
         <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'.000'X</maven.build.timestamp.format>
         <application.build.timestamp>${maven.build.timestamp}</application.build.timestamp>
 
@@ -147,18 +133,6 @@
                 <version>${openjfx.version}</version>
             </dependency>
 
-            <!-- Setting version for GWT modules -->
-            <dependency>
-                <groupId>org.gwtproject</groupId>
-                <artifactId>gwt-user</artifactId>
-                <version>${gwt.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.gwtproject</groupId>
-                <artifactId>gwt-dev</artifactId>
-                <version>${gwt.version}</version>
-            </dependency>
-
             <!-- Setting version for Elemental2 modules -->
             <dependency>
                 <groupId>com.google.elemental2</groupId>
@@ -175,31 +149,9 @@
                 <artifactId>elemental2-svg</artifactId>
                 <version>${elemental2.version}</version>
             </dependency>
-
-            <!-- Setting version for GWT-time modules -->
-            <dependency>
-                <groupId>org.jresearch.gwt.time</groupId>
-                <artifactId>org.jresearch.gwt.time</artifactId>
-                <version>${gwttime.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jresearch.gwt.time</groupId>
-                <artifactId>org.jresearch.gwt.time.tzdb</artifactId>
-                <version>${gwttime.version}</version>
-            </dependency>
         </dependencies>
 
     </dependencyManagement>
-
-    <pluginRepositories>
-        <!-- Adding Snapshots repository which is required to get the GWT 2.8.1-SNAPSHOT Maven plugin -->
-        <pluginRepository>
-            <id>snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-            <releases><enabled>false</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots>
-        </pluginRepository>
-    </pluginRepositories>
 
     <repositories>
 
@@ -325,7 +277,7 @@
                  **************************************
                  * Maven sources plugin configuration *
                  **************************************
-                 Plugin to generate the sources artifacts which will be used by GWT which is java source code transpiler (and not a bytecode transpiler like TeaVM)
+                 Plugin to generate the sources artifacts (used by J2CL, which transpiles java source code - not bytecode like TeaVM)
                  -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -384,32 +336,6 @@
                             </configuration>
                         </execution>
                     </executions>
-                </plugin>
-
-
-                <!--
-                 ****************************
-                 * GWT plugin configuration *
-                 ****************************
-                 -->
-                <plugin>
-                    <groupId>net.ltgt.gwt.maven</groupId>
-                    <artifactId>gwt-maven-plugin</artifactId>
-                    <version>${plugin.gwt.version}</version>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <skipCompilation>${plugin.gwt.param.skipCompilation}</skipCompilation>
-                        <moduleName>${plugin.gwt.param.module}</moduleName>
-                        <failOnError>true</failOnError>
-                        <draftCompile>${plugin.gwt.param.draftCompile}</draftCompile>
-                        <optimize>${plugin.gwt.param.optimize}</optimize>
-                        <sourceLevel>${gwt.sourceLevel}</sourceLevel>
-                        <!-- Trying to solve a java heap OutOfMemoryError on the server -->
-                        <jvmArgs>
-                            <jvmArg>-Xmx1024m</jvmArg>
-                        </jvmArgs>
-                        <!--<localWorkers>1</localWorkers>-->
-                    </configuration>
                 </plugin>
 
 
@@ -493,17 +419,6 @@
 
     <profiles>
 
-        <!-- profile to compile the java code into javascript using GWT -->
-        <profile>
-            <id>gwt-compile</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <plugin.gwt.param.skipCompilation>false</plugin.gwt.param.skipCompilation>
-            </properties>
-        </profile>
-
         <profile>
             <id>auto-attach-sources</id>
             <activation>
@@ -558,26 +473,6 @@
             </build>
         </profile>
 
-        <profile>
-            <id>auto-plugin-gwt</id>
-            <!-- Recognizing an executable gwt module by the presence of a GWT module file -->
-            <activation>
-                <file>
-                    <exists>src/main/module.gwt.xml</exists>
-                </file>
-            </activation>
-            <build>
-                <plugins>
-                    <!-- Calling the GWT maven plugin to compile the gwt module into javascript -->
-                    <plugin>
-                        <groupId>net.ltgt.gwt.maven</groupId>
-                        <artifactId>gwt-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
     </profiles>
 
-</project>
 </project>

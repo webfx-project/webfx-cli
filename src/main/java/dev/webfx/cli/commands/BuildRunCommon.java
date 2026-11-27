@@ -20,7 +20,6 @@ final class BuildRunCommon {
     final boolean clean;
     final boolean build;
     final boolean run;
-    final boolean gwt;
     final boolean j2cl;
     final boolean teavm;
     final boolean javascript;
@@ -28,6 +27,8 @@ final class BuildRunCommon {
     final boolean fatjar;
     final boolean openJfxDesktop;
     final boolean nativeDesktop;
+    final boolean perPackage;
+    final boolean layerPerPackage;
     final boolean locate;
     final boolean show;
     final boolean appImage;
@@ -36,7 +37,7 @@ final class BuildRunCommon {
     final int port;
     final boolean file;
 
-    public BuildRunCommon(boolean clean, boolean build, boolean run, boolean gwt, boolean j2cl, boolean teavm, boolean javascript, boolean wasm, boolean fatjar, boolean openJfxDesktop, boolean nativeDesktop, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, int port, boolean file) {
+    public BuildRunCommon(boolean clean, boolean build, boolean run, boolean j2cl, boolean teavm, boolean javascript, boolean wasm, boolean fatjar, boolean openJfxDesktop, boolean nativeDesktop, boolean perPackage, boolean layerPerPackage, boolean locate, boolean show, boolean appImage, boolean deb, boolean rpm, int port, boolean file) {
         if (teavm) {
             if (!javascript && !wasm)
                 javascript = wasm = true;
@@ -46,7 +47,6 @@ final class BuildRunCommon {
         this.clean = clean;
         this.build = build;
         this.run = run;
-        this.gwt = gwt;
         this.j2cl = j2cl;
         this.teavm = teavm;
         this.javascript = javascript;
@@ -54,6 +54,8 @@ final class BuildRunCommon {
         this.fatjar = fatjar;
         this.openJfxDesktop = openJfxDesktop;
         this.nativeDesktop = nativeDesktop;
+        this.layerPerPackage = layerPerPackage;
+        this.perPackage = perPackage || layerPerPackage; // --layer-per-package implies --per-package
         this.locate = locate;
         this.show = show;
         this.appImage = appImage;
@@ -107,7 +109,6 @@ final class BuildRunCommon {
                 .getThisAndChildrenModulesInDepth()
                 .filter(ProjectModule::isExecutable)
                 .filter(m ->
-                        m.isExecutable(Platform.GWT) ? gwt :
                         m.isExecutable(Platform.J2CL) ? j2cl :
                         m.isExecutable(Platform.TEAVM) ? teavm && m instanceof DevProjectModule dpm && (dpm.isWasmModule() ? wasm : javascript) :
                         m.getTarget().hasTag(TargetTag.OPENJFX) ? openJfx :
@@ -120,10 +121,7 @@ final class BuildRunCommon {
         List<Path> executablePaths = new ArrayList<>();
 
         Path targetPath = module.getHomeDirectory().resolve("target");
-        if (module.isExecutable(Platform.GWT)) {
-            if (gwt)
-                executablePaths.add(module.getGwtExecutableFilePath());
-        } else if (module.isExecutable(Platform.TEAVM)) {
+        if (module.isExecutable(Platform.TEAVM)) {
             if (teavm && (module.isWasmModule() ? wasm : javascript))
                 executablePaths.add(module.getTeaVMExecutableFilePath());
         } else if (module.isExecutable(Platform.JRE)) {

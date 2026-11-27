@@ -138,7 +138,9 @@ public final class MavenUtil {
     }
 
     /**
-     * @param shellPreCommand optional shell command (PowerShell on Windows, bash otherwise) executed before mvn
+     * @param shellPreCommand optional shell command (PowerShell on Windows, bash otherwise) executed before mvn. An
+     *                        empty string runs mvn through the shell without a pre-command (necessary for a goal with
+     *                        single-quoted arguments)
      */
     public static int invokeMavenGoal(String goal, ProcessCall processCall, String shellPreCommand) {
         MAVEN_INVOCATION_STOPWATCH.on();
@@ -150,7 +152,7 @@ public final class MavenUtil {
         //if (!USE_MAVEN_INVOKER) {
             // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
             if (graalVmHome != null || shellPreCommand != null) {
-                String preCommand = shellPreCommand == null ? "" : shellPreCommand + "; ";
+                String preCommand = shellPreCommand == null || shellPreCommand.isEmpty() ? "" : shellPreCommand + "; ";
                 if (OperatingSystem.isWindows())
                     // Always quoted: an unquoted path on the right side of a PowerShell assignment is parsed as a command
                     processCall.setPowershellCommand(preCommand + (graalVmHome == null ? "" : "$env:GRAALVM_HOME = '" + graalVmHome.toString().replace("'", "''") + "'; ") + "mvn " + goal);

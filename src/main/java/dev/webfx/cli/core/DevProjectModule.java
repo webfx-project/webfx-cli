@@ -32,7 +32,6 @@ public class DevProjectModule extends ProjectModuleImpl {
     private DevJavaModuleInfoFile mainJavaModuleInfoFile;
     private WebFxModuleFile webFxModuleFile;
     private DevMavenPomModuleFile mavenPomModuleFile;
-    private DevGwtModuleFile gwtModuleFile;
     private IndexHtmlFile indexHtmlFile;
     // The webfx root module of the application repository which may be different from the root module in the case of
     // aggregate modules with different submodules (each submodule is a different app repo with its own root webfx module).
@@ -149,12 +148,6 @@ public class DevProjectModule extends ProjectModuleImpl {
         return getMainResourcesDirectory().resolve(SpecificFolders.META_INF_SERVICES);
     }
 
-    public DevGwtModuleFile getGwtModuleFile() {
-        if (gwtModuleFile == null)
-            gwtModuleFile = new DevGwtModuleFile(this);
-        return gwtModuleFile;
-    }
-
     public Path getWebAppSourceDirectory() {
         if (getBuildInfo().isForTeaVm) {
             return getMainSourceDirectory().resolve("webapp");
@@ -245,12 +238,20 @@ public class DevProjectModule extends ProjectModuleImpl {
         return homeDirectory != null && homeDirectory.startsWith(getRootModule().getHomeDirectory());
     }
 
-    public Path getGwtExecutableFilePath() {
-        return getHomeDirectory().resolve(SpecificFolders.TARGET).resolve(getName() + "-" + getVersion() + "/" + getName().replace('-', '_') + "/" + SpecificFiles.INDEX_HTML);
-    }
-
     public Path getTeaVMExecutableFilePath() {
         return getHomeDirectory().resolve(SpecificFolders.TARGET).resolve(getName() + "-" + getVersion() + "/" + SpecificFiles.INDEX_HTML);
+    }
+
+    public Path getJ2clExecutableFilePath() {
+        // See outputDirectory in pom_j2cl_executable.xml
+        return getHomeDirectory().resolve(SpecificFolders.TARGET).resolve(getName() + "-" + getVersion() + "/" + getName() + "/" + SpecificFiles.INDEX_HTML);
+    }
+
+    /**
+     * @return the index.html of the built web application (TeaVM or J2CL executable)
+     */
+    public Path getWebExecutableFilePath() {
+        return getBuildInfo().isForJ2cl ? getJ2clExecutableFilePath() : getTeaVMExecutableFilePath();
     }
 
     private LinkedHashMap<String, Path> moduleWebFxPathsAsc;
@@ -267,7 +268,10 @@ public class DevProjectModule extends ProjectModuleImpl {
         LinkedHashMap<String, Path> moduleWebFxPaths = new LinkedHashMap<>();
 
         // Reading the cache file (if allowed)
-        String moduleCacheName = getHomeDirectory().toAbsolutePath().toString().replace('/', '~') + "-transitive-webfx-" + (asc ? "asc" : "desc") + ".txt";
+        // The file name is the module path with ~ as separator (also on Windows: an absolute path like D:\... would
+        // otherwise make the cache file land next to the module directory instead of the cache folder)
+        String moduleCacheName = getHomeDirectory().toAbsolutePath().toString().replace('/', '~').replace('\\', '~').replace(':', '~')
+                                 + "-transitive-webfx-" + (asc ? "asc" : "desc") + ".txt";
         Path moduleCacheFile = WebFXHiddenFolder.getCacheFolder().resolve(moduleCacheName);
         boolean cacheRead = false;
         if (canUseCache && Files.exists(moduleCacheFile)) {
@@ -357,8 +361,12 @@ public class DevProjectModule extends ProjectModuleImpl {
     }
 
     private static ProjectModule getRepositoryModule(ProjectModule pm) {
-        if (pm instanceof DevProjectModule)
-            return ((DevProjectModule) pm).getWebFxRootModule();
+        if (pm instanceof DevProjectModule) {
+            DevProjectModule webFxRootModule = ((DevProjectModule) pm).getWebFxRootModule();
+            // Maven modules without webfx.xml (ex: libraries built in the same Maven reactor) have no webfx root module
+            if (webFxRootModule != null)
+                return webFxRootModule;
+        }
         return pm.getRootModule();
     }
 

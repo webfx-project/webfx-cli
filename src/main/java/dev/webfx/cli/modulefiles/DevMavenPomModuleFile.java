@@ -67,7 +67,9 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             Element nativeConfiguration = projectModule.getWebFxModuleFile().getNativeConfiguration();
             if (nativeConfiguration != null) {
                 for (Element child : nativeConfiguration.elements()) {
-                    nativeConfig.append("\n").append(XmlUtil.formatXmlText(child));
+                    if (!nativeConfig.isEmpty()) // No line break before the first element (would leave a blank line)
+                        nativeConfig.append("\n");
+                    nativeConfig.append(XmlUtil.formatXmlText(child));
                 }
             }
             template = template.replace("${plugin.native.configuration}", nativeConfig.toString());
@@ -113,7 +115,6 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         return isMavenRootModule ? "pom_root.xml" // (((RootModule) projectModule).isInlineWebFxParent() ? "pom_root_inline.xml" : "pom_root.xml")
             : projectModule.isAggregate() ? "pom_aggregate.xml"
             : !buildInfo.isExecutable ? "pom_not_executable.xml"
-            : buildInfo.isForGwt ? "pom_gwt_executable.xml"
             : buildInfo.isForJ2cl ? "pom_j2cl_executable.xml"
             : buildInfo.isForTeaVm ? "pom_teavm_executable.xml"
             : buildInfo.isForNative ? "pom_native_executable.xml"
@@ -174,7 +175,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
             Element dependenciesNode = lookupOrCreateNode("dependencies");
             XmlUtil.removeChildren(dependenciesNode);
             Set<String> gas = new HashSet<>(); // set of groupId:artifactId listed so far in the pom dependencies - used for duplicate removal below
-            // Always running the main java source root dependencies even if there is no main java source directory (ex: gwt modules)
+            // Always running the main java source root dependencies even if there is no main java source directory (ex: teavm modules)
             addSourceRootDependencies(module.getMainJavaSourceRootAnalyzer(), false, dependenciesNode, gas);
             // Running the test java source root dependencies only if there is a test java source directory
             if (module.hasTestJavaSourceDirectory())
@@ -253,9 +254,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
         try (BuildInfoThreadLocal ignoredClosable = BuildInfoThreadLocal.open(buildInfo)) { // To pass this buildInfo to ArtifactResolver when sorting the dependencies via Module.compareTo()
             // We need to get all dependencies of the module to populate <dependencies> in the pom.xml
             ReusableStream<ModuleDependency> dependencies =
-                // For a GWT executable module, we need to list all transitive dependencies (to pull all the source code to compile by GWT)
-                buildInfo.isForGwt && buildInfo.isExecutable ? javaSourceRootAnalyzer.getTransitiveDependencies() :
-                    // For other modules, we just need the direct dependencies, but also the implicit providers
+                // We just need the direct dependencies, but also the implicit providers
                     ReusableStream.concat(
                             javaSourceRootAnalyzer.getDirectDependencies(),
                             javaSourceRootAnalyzer.getTransitiveDependencies()
@@ -310,7 +309,7 @@ public final class DevMavenPomModuleFile extends DevXmlModuleFileImpl implements
                             if (type != null)
                                 XmlUtil.appendElementWithTextContent(dependencyElement, "/type", type);
                             String classifier = ArtifactResolver.getClassifier(moduleGroup, buildInfo);
-                            // Adding scope if provided, except if scope="runtime" and classifier="sources" (this would prevent GWT to access the source)
+                            // Adding scope if provided, except if scope="runtime" and classifier="sources" (sources artifacts are compile-time inputs)
                             if (scope != null && !("runtime".equals(scope) && "sources".equals(classifier)))
                                 XmlUtil.appendElementWithTextContent(dependencyElement, "/scope", scope);
                             if (classifier != null)

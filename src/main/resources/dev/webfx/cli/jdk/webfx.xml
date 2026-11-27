@@ -15,8 +15,8 @@
                 <package>java.math</package>
                 <package>java.net</package>
                 <package>java.net.spi</package>
-                <!-- Note: java.nio packages are not emulated by GWT/J2CL. The CLI automatically adds gwt-nio
-                     (java-nio-emul) to GWT & J2CL executables that use them (see collectExecutableEmulationModules()) -->
+                <!-- Note: java.nio packages are not emulated by J2CL. The CLI automatically adds gwt-nio
+                     (java-nio-emul) to J2CL executables that use them (see collectExecutableEmulationModules()) -->
                 <package>java.nio</package>
                 <package>java.nio.channels</package>
                 <package>java.nio.channels.spi</package>
