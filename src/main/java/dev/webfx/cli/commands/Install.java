@@ -37,13 +37,14 @@ import java.util.zip.GZIPInputStream;
         })
 public final class Install extends CommonSubcommand {
 
-    @Command(name = "graalvm", description = "Install or upgrade GraalVM (Liberica NIK Full, which includes JavaFX).")
+    @Command(name = "graalvm", description = "Install or upgrade GraalVM (GraalVM Community Edition, without JavaFX).")
     static class GraalVm extends CommonSubcommand implements Runnable {
 
-        // Liberica NIK (Native Image Kit) is a GraalVM distribution by BellSoft. Its Full bundle includes JavaFX, which
-        // is required to build native images of JavaFX applications without Gluon Substrate.
-        // API documentation: https://api.bell-sw.com/
-        private final static String BELLSOFT_NIK_API_URL = "https://api.bell-sw.com/v1/nik/releases?bundle-type=full&version-modifier=latest&bitness=64";
+        // GraalVM Community Edition, latest release of github.com/graalvm/graalvm-ce-builds. It has no JavaFX in its JDK
+        // (unlike Liberica NIK Full, which conflicts with the OpenJFX jars that the native-desktop profile puts on the
+        // classpath: the executable then crashes at startup, see dev.webfx.cli.core.GraalVm).
+        // API documentation: https://docs.github.com/en/rest/releases/releases#get-the-latest-release
+        private final static String GRAALVM_CE_RELEASE_API_URL = "https://api.github.com/repos/graalvm/graalvm-ce-builds/releases/latest";
 
         @Override
         public void run() {
@@ -54,13 +55,14 @@ public final class Install extends CommonSubcommand {
                 case LINUX: osToken = "linux"; packageType = "tar.gz"; break;
             }
             String osArch = System.getProperty("os.arch");
-            String archToken = "aarch64".equalsIgnoreCase(osArch) || "arm64".equalsIgnoreCase(osArch) ? "arm" : "x86";
-            String apiUrl = BELLSOFT_NIK_API_URL + "&os=" + osToken + "&arch=" + archToken + "&package-type=" + packageType;
-            Logger.log("Checking for update on " + apiUrl);
-            String pageContent = downloadPage(apiUrl);
-            // The response is a JSON array of releases, each having a top-level downloadUrl for the NIK archive (the
-            // components array also contains downloadUrl entries, but for other files, so we look for the NIK archive name)
-            Pattern pattern = Pattern.compile("\"downloadUrl\"\\s*:\\s*\"([^\"]*/bellsoft-liberica-vm-full-[^\"]*\\." +Pattern.quote(packageType) + ")\"");
+            String archToken = "aarch64".equalsIgnoreCase(osArch) || "arm64".equalsIgnoreCase(osArch) ? "aarch64" : "x64";
+            Logger.log("Checking for update on " + GRAALVM_CE_RELEASE_API_URL);
+            String pageContent = downloadPage(GRAALVM_CE_RELEASE_API_URL);
+            // The response lists the release assets with their browser_download_url, ex:
+            // .../graal-25.6.5.1/graalvm-community-jdk-25i6-25.0.5.1_windows-x64_bin.zip (also .sha256 and .sig files,
+            // which the pattern excludes by requiring the archive extension at the end)
+            Pattern pattern = Pattern.compile("\"browser_download_url\"\\s*:\\s*\"([^\"]*/graalvm-community-[^\"/]*_"
+                    + Pattern.quote(osToken + "-" + archToken) + "_bin\\." + Pattern.quote(packageType) + ")\"");
             Matcher matcher = pattern.matcher(pageContent);
             if (!matcher.find()) {
                 Logger.log("No GraalVM found for your system!");

@@ -7,7 +7,7 @@
     <dependencies/>
 
     <profiles>
-        <!-- Builds the native desktop executable with GraalVM native-image (requires GRAALVM_HOME, ex: Liberica NIK) -->
+        <!-- Builds the native desktop executable with GraalVM native-image (GraalVM without JavaFX in its JDK, ex: GraalVM Community, installed by webfx install graalvm; see dev.webfx.cli.core.GraalVm) -->
         <!-- Usage: mvn -P native-desktop package => target/${application.name}(.exe) -->
         <profile>
             <id>native-desktop</id>

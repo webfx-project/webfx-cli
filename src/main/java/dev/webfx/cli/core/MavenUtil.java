@@ -142,9 +142,10 @@ public final class MavenUtil {
      */
     public static int invokeMavenGoal(String goal, ProcessCall processCall, String shellPreCommand) {
         MAVEN_INVOCATION_STOPWATCH.on();
-        // For native builds, we pass the GraalVM installed by `webfx install graalvm` (if any) to the native-maven-plugin
+        // For native builds, we pass the GraalVM chosen by GraalVm (GRAALVM_HOME, otherwise the one installed by
+        // `webfx install graalvm`) to the native-maven-plugin
         boolean nativeBuild = goal.contains("-P " + NATIVE_DESKTOP_PROFILE);
-        Path graalVmHome = nativeBuild ? WebFXHiddenFolder.getGraalVmHome() : null;
+        Path graalVmHome = nativeBuild ? GraalVm.getNativeDesktopGraalVmHome() : null;
         processCall.setCommand("mvn " + goal);
         //if (!USE_MAVEN_INVOKER) {
             // Preferred way as it's not necessary to eventually call "mvn -version", so it's quicker
